@@ -174,7 +174,7 @@ class Menu {
                 Start-Process -FilePath cmd.exe -verb runas -ArgumentList $args
             }
             "4" {
-                $args = @("-NoExit", "-Command", "cd `"$($this.props.home_dir)`"")
+                $args = @("-NoExit", "-Command", "cd `"" + $this.props.home_dir + "`"")
                 Start-Process -FilePath powershell.exe -verb runas -ArgumentList $args
             }
             "5" {
