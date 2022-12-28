@@ -175,6 +175,7 @@ class Menu {
     }
 
     [void]OpenMenu() {
+        Write-Host "Corvette"
         while ($true) {
             Write-Host "************************************"
             Write-Host " 1) Create a new command shell"
