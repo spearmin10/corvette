@@ -164,16 +164,18 @@ class Menu {
     hidden [bool]LaunchCommand($cmd) {
         switch ($cmd) {
             "1" {
-                Start-Process -FilePath cmd.exe
+                Start-Process -FilePath cmd.exe -WorkingDirectory $this.props.home_dir
             }
             "2" {
-                Start-Process -FilePath powershell.exe
+                Start-Process -FilePath powershell.exe -WorkingDirectory $this.props.home_dir
             }
             "3" {
-                Start-Process -FilePath cmd.exe -verb runas
+                $args = @("/k cd /d `"$($this.props.home_dir)`"")
+                Start-Process -FilePath cmd.exe -verb runas -ArgumentList $args
             }
             "4" {
-                Start-Process -FilePath powershell.exe -verb runas
+                $args = @("-NoExit", "-Command", "cd `"$($this.props.home_dir)`"")
+                Start-Process -FilePath powershell.exe -verb runas -ArgumentList $args
             }
             "5" {
                 [Mimikatz]::New($this.props).Run()
