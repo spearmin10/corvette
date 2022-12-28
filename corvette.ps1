@@ -4,7 +4,7 @@ function IsFile ([string]$path) {
 }
 
 function IsDirectory ([string]$path) {
-    return (Test-Path $path) -And ((Get-Item $path) -is [IO.DirectoryInfo])
+    return ![string]::IsNullOrEmpty($save_as) -And (Test-Path $path) -And ((Get-Item $path) -is [IO.DirectoryInfo])
 }
 
 function BuildFullPath ([string]$parent, [string]$child) {
@@ -38,13 +38,18 @@ function DownloadBytes ([string]$url) {
 
 function DownloadFile ([string]$url, [string]$save_as) {
     $cli = New-Object Net.WebClient
-    if ([string]::IsNullOrEmpty($save_as)) {
+    if ([string]::IsNullOrEmpty($save_as) -Or (IsDirectory $save_as)) {
         $uri = New-Object System.Uri($url)
-        $save_as = Split-Path $uri.AbsolutePath -Leaf
-    } elseif ((IsDirectory $save_as)) {
-        $uri = New-Object System.Uri($url)
-        $filename = Split-Path $uri.AbsolutePath -Leaf
-        $save_as = [IO.Path]::GetFullPath((Join-Path $save_as $filename))
+        if (!$uri.AbsolutePath.EndsWith("/")) {
+            $filename = Split-Path $uri.AbsolutePath -Leaf
+        } else {
+            $filename = "temp.dat"
+        }
+        if ((IsDirectory $save_as)) {
+            $save_as = [IO.Path]::GetFullPath((Join-Path $save_as $filename))
+        } else {
+            $save_as = $filename
+        }
     }
     $cli.DownloadFile($url, $save_as)
     return $save_as
