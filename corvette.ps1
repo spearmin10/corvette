@@ -205,10 +205,7 @@ class Menu {
             Write-Host " 6) Run port scan"
             Write-Host " 7) Kerberos Brute Force"
 
-            $cmd = $null
-            do {
-                $cmd = Read-Host "Please choose a menu item to run"
-            } while (!$this.LaunchCommand($cmd))
+            while (!$this.LaunchCommand((Read-Host "Please choose a menu item to run"))) {}
         }
     }
 }
