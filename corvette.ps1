@@ -51,7 +51,7 @@ function DownloadFile ([string]$url, [string]$save_as) {
 }
 
 function DownloadAndExtractArchive ([string]$url, [string]$directory) {
-    $file = DownloadFile $url, ([IO.Path]::GetTempPath())
+    $file = DownloadFile $url ([IO.Path]::GetTempPath())
     Expand-Archive -Force $file $directory
     Remove-Item $file
 }
