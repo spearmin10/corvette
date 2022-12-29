@@ -209,5 +209,5 @@ class Menu {
         }
     }
 }
-
+$MyInvocation.MyCommand.Path
 [Menu]::New().OpenMenu()
