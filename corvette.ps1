@@ -127,7 +127,7 @@ class KerberosBruteForce {
     [string]$rubeus_exe
     [string]$passwords_file
 
-    Mimikatz([Properties]$props) {
+    KerberosBruteForce([Properties]$props) {
         $this.rubeus_dir = BuildFullPath $props.home_dir ".\rubeus"
         $this.rubeus_exe = BuildFullPath $this.rubeus_dir "rubeus.exe"
         $this.passwords_file = BuildFullPath $this.rubeus_dir "passwords.txt"
