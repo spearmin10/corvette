@@ -157,7 +157,7 @@ class KerberosBruteForce {
         }
         if (!(IsFile $this.passwords_file)) {
             $url = "https://github.com/spearmin10/corvette/blob/main/bin/passwords.zip?raw=true"
-            DownloadAndExtractArchive $url $this.rubeus_dir
+            DownloadFile $url $this.rubeus_dir
         }
     }
 
@@ -166,6 +166,33 @@ class KerberosBruteForce {
         Start-Process -FilePath $this.rubeus_exe -ArgumentList $args
     }
 }
+
+class WildFireTestPE {
+    [Properties]$props
+    [string]$wildfire_dir
+    [string]$wildfire_exe
+
+    WildFireTestPE([Properties]$props) {
+        $this.props = $props
+        $this.wildfire_dir = BuildFullPath $props.home_dir ".\wildfire"
+        $this.wildfire_exe = BuildFullPath $this.wildfire_dir "wildfire-test-pe-file.exe"
+        $this.Prepare()
+    }
+
+    hidden [void] Prepare() {
+        if (!(IsFile $this.wildfire_exe)) {
+            New-Item -ItemType Directory -Force -Path $this.wildfire_dir
+
+            $url = "https://wildfire.paloaltonetworks.com/publicapi/test/pe"
+            DownloadFile $url $this.wildfire_exe
+        }
+    }
+
+    [void]Run() {
+        Start-Process -FilePath $this.wildfire_exe -WorkingDirectory $this.props.home_dir
+    }
+}
+
 
 class Menu {
     [Properties]$props
@@ -207,6 +234,9 @@ class Menu {
             "8" {
                 [KerberosBruteForce]::New($this.props).Run()
             }
+            "9" {
+                [WildFireTestPE]::New($this.props).Run()
+            }
             default {
                 return $false
             }
@@ -227,6 +257,7 @@ class Menu {
             Write-Host " 6) Run mimikatz (Run as administrator)"
             Write-Host " 7) Run port scan"
             Write-Host " 8) Run Kerberos Brute Force"
+            Write-Host " 9) Run WildFire Test PE"
 
             while (!$this.LaunchUserModeCommand((Read-Host "Please choose a menu item to run"))) {}
         }
@@ -249,6 +280,9 @@ class Menu {
             "5" {
                 [KerberosBruteForce]::New($this.props).Run()
             }
+            "6" {
+                [WildFireTestPE]::New($this.props).Run()
+            }
             default {
                 return $false
             }
@@ -265,6 +299,7 @@ class Menu {
             Write-Host " 3) Run mimikatz"
             Write-Host " 4) Run port scan"
             Write-Host " 5) Run Kerberos Brute Force"
+            Write-Host " 6) Run WildFire Test PE"
 
             while (!$this.LaunchAdminModeCommand((Read-Host "Please choose a menu item to run"))) {}
         }
