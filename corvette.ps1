@@ -94,7 +94,7 @@ class PortScan {
     [string]$nmap_dir
     [string]$nmap_exe
 
-    Mimikatz([Properties]$props) {
+    PortScan([Properties]$props) {
         $this.nmap_dir = BuildFullPath $props.home_dir ".\nmap"
         $this.nmap_exe = BuildFullPath $this.nmap_dir "nmap.exe"
         $this.Prepare()
