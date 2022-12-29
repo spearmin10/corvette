@@ -203,7 +203,7 @@ class Menu {
             Write-Host " 4) Create a new powershell (Run as administrator)"
             Write-Host " 5) Run mimikatz"
             Write-Host " 6) Run port scan"
-            Write-Host " 7) Kerberos Brute Force"
+            Write-Host " 7) Run Kerberos Brute Force"
 
             while (!$this.LaunchCommand((Read-Host "Please choose a menu item to run"))) {}
         }
