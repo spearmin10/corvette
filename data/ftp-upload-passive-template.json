@@ -20,7 +20,7 @@
         "client": "${client_ip}:24249", 
         "server": "${server_ip}:${pasv_port}",
         "sequence": [
-          ["for", [1,"${upload_filesize}"], "i",
+          ["for", [0,"${upload_filesize}"], "i",
             [
               ["tcp.send", "base64", [
                 "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
