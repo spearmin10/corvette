@@ -8,18 +8,18 @@ class Menu {
     hidden [bool]LaunchCommand($cmd) {
         switch ($cmd) {
             "1" {
-                Start-Process -FilePath cmd.exe -WorkingDirectory $this.home_dir
+                Start-Process -FilePath "cmd.exe" -WorkingDirectory $this.home_dir
             }
             "2" {
-                Start-Process -FilePath powershell.exe -WorkingDirectory $this.home_dir
+                Start-Process -FilePath "powershell.exe" -WorkingDirectory $this.home_dir
             }
             "3" {
                 $args = @("/k cd /d `"$($this.home_dir)`"")
-                Start-Process -FilePath cmd.exe -verb runas -ArgumentList $args
+                Start-Process -FilePath "cmd.exe" -verb runas -ArgumentList $args
             }
             "4" {
                 $args = @("-NoExit", "-Command", "cd `"" + $this.home_dir + "`"")
-                Start-Process -FilePath powershell.exe -verb runas -ArgumentList $args
+                Start-Process -FilePath "powershell.exe" -verb runas -ArgumentList $args
             }
             default {
                 return $false

