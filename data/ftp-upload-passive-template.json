@@ -1,0 +1,57 @@
+{
+  "client": "${client_ip}:35900", 
+  "server": "${server_ip}:21",
+  "sequence": [
+    ["tcp.recv", "text", ["220 FTP Service Ready; xyz FTP."]],
+    ["tcp.send", "text", ["USER xyz"]],
+    ["tcp.recv", "text", ["331 Please specify the password."]],
+    ["tcp.send", "text", ["PASS uk730h1dy!"]],
+    ["tcp.recv", "text", ["230 Login successful. Have fun."]],
+    ["tcp.send", "text", ["CWD /upload"]],
+    ["tcp.recv", "text", ["250 CWD command successful."]],
+    ["tcp.send", "text", ["TYPE I"]],
+    ["tcp.recv", "text", ["200 File Transfer Mode changed to TYPE I."]],
+    ["tcp.send", "text", ["PASV"]],
+    ["tcp.recv", "text", ["227 PORT Entering Passive Mode (${pasv_address})"]],
+    ["tcp.send", "text", ["STOR ${upload_filename}"]],
+    ["tcp.recv", "text", ["150 Go ahead with sending the data."]],
+    ["process",
+      {
+        "client": "${client_ip}:24249", 
+        "server": "${server_ip}:${pasv_port}",
+        "sequence": [
+          ["for", [1,${upload_file_size}], "i",
+            [
+              ["tcp.send", "base64", [
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+                ]
+              ]
+            ]
+          ]
+        ]
+      }
+    ],
+    ["tcp.recv", "text", ["226 File receiving OK (31958 bytes: ${upload_filename})."]],
+    ["tcp.send", "text", ["QUIT"]],
+    ["tcp.recv", "text", ["221 Goodbye"]]
+  ]
+}
+
