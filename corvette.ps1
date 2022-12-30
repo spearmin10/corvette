@@ -240,12 +240,9 @@ class Iptgen {
     Iptgen([Properties]$props) {
         $this.iptgen_dir = BuildFullPath $props.home_dir ".\iptgen"
         $this.iptgen_exe = BuildFullPath $this.iptgen_dir ".\bin\iptgen.exe"
-        $this.Prepare()
-    }
 
-    hidden [void]Prepare() {
         if (!(IsFile $this.iptgen_exe)) {
-            $url = "https://github.com/spearmin10/iptgen/releases/download/0.6.0/iptgen.win32.zip"
+            $url = "https://github.com/spearmin10/iptgen/releases/download/0.7.0/iptgen.win32.zip"
             DownloadAndExtractArchive $url $this.iptgen_dir
         }
         if (!(IsFile $env:WINDIR\system32\Npcap\wpcap.dll)) {
@@ -396,7 +393,6 @@ class FtpFileUpload : Iptgen {
             $Env:server_ip = $server_ip
             $Env:upload_filename = $upload_filename
             $Env:upload_filesize = ((ParseNumber $matches.num) * $unit) / 1024
-            Write-Host $Env:upload_filesize
             $Env:pasv_port = $pasv_port
             $Env:pasv_address = $server_ip.Replace('.', ',') + "," + [string][int][Math]::Floor($pasv_port / 256) + "," + [string]($pasv_port % 256)            
             break
