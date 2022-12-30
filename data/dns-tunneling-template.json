@@ -1,6 +1,6 @@
 {
   "client": "${client_ip}",
-  "server": "${server_addr}",
+  "server": "${server_ip}:53",
   "sequence": [
     ["for.session",[0,10000],"i",
       [
