@@ -59,7 +59,7 @@ function DownloadAndExtractArchive ([string]$url, [string]$directory) {
     Remove-Item $file
 }
 
-function AskYesNo($message) {
+function AskYesNo([string]$message) {
     do {
         $answer = Read-Host "$message [Y/n]"
         $answer = $answer.ToLower()
@@ -77,6 +77,15 @@ function Quote($value) {
         return $value | % { (Quote $_) }
     } else {
         return "`"$value`""
+    }
+}
+
+function ParseNumber([string]$val) {
+    $num = 0
+    if ([int]::TryParse($val, [ref]$num)) { 
+        return $num
+    } else {
+        return $null
     }
 }
 
@@ -224,17 +233,13 @@ class WildFireTestPE {
     }
 }
 
-class DnsTunneling {
-    [Properties]$props
+class Iptgen {
     [string]$iptgen_dir
     [string]$iptgen_exe
-    [string]$iptgen_json
 
-    DnsTunneling([Properties]$props) {
-        $this.props = $props
+    Iptgen([Properties]$props) {
         $this.iptgen_dir = BuildFullPath $props.home_dir ".\iptgen"
         $this.iptgen_exe = BuildFullPath $this.iptgen_dir ".\bin\iptgen.exe"
-        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\dns_tunneling_template.json"
         $this.Prepare()
     }
 
@@ -243,10 +248,6 @@ class DnsTunneling {
             $url = "https://github.com/spearmin10/iptgen/releases/download/0.6.0/iptgen.win32.zip"
             DownloadAndExtractArchive $url $this.iptgen_dir
         }
-        if (!(IsFile $this.iptgen_json)) {
-            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/dns_tunneling_template.json"
-            DownloadFile $url $this.iptgen_json
-        }
         if (!(IsFile $env:WINDIR\system32\Npcap\wpcap.dll)) {
             $url = "https://github.com/spearmin10/corvette/blob/main/bin/npcap-1.72.exe?raw=true"
             $path = DownloadFile $url "npcap-1.72.exe"
@@ -254,7 +255,7 @@ class DnsTunneling {
         }
     }
 
-    hidden [string]SelectInterface() {
+    [string]SelectInterface() {
         $interfaces = Get-NetIPAddress -AddressFamily IPV4 -SuffixOrigin @("Dhcp", "Manual") `
                     | ForEach-Object {$_.InterfaceAlias} `
                     | Sort-Object
@@ -262,6 +263,7 @@ class DnsTunneling {
             Write-Host "No network interfaces were found."
             return $null
         }
+        Write-Host ""
         Write-Host "************************************"
         $i = 1
         foreach ($interface in $interfaces) {
@@ -270,18 +272,42 @@ class DnsTunneling {
         }
         Write-Host " 0) [Exit Menu]"
 
-        $num = -1
-        while ($num -ne 0) {
-            $selected = Read-Host "Select an interface to replay packets"
-            if ([int]::TryParse($selected, [ref]$num) -And $num -gt 0 -And $num -le $interfaces.Length) { 
+        for ($num = -1 ; $num -ne 0 ;){
+            $num = ParseNumber (Read-Host "Select an interface to replay packets")
+            if ($num -gt 0 -And $num -le $interfaces.Length) { 
                 return $interfaces[$num - 1]
             }
         }
         return $null
     }
 
+    [void]Run([string]$interface, [string]$iptgen_json) {
+        $args = Quote @("--in.file", $iptgen_json, "--out.eth", $interface)
+        Start-Process -FilePath $this.iptgen_exe -ArgumentList $args
+    }
+}
+
+class DnsTunneling : Iptgen {
+    [Properties]$props
+    [Iptgen]$base
+    [string]$iptgen_json
+
+    DnsTunneling([Properties]$props) : base ($props) {
+        $this.props = $props
+        $this.base = [Iptgen]$this
+        $this.iptgen_json = BuildFullPath $this.base.iptgen_dir ".\dns-tunneling-template.json"
+        $this.Prepare()
+    }
+
+    hidden [void]Prepare() {
+        if (!(IsFile $this.iptgen_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/dns-tunneling-template.json"
+            DownloadFile $url $this.iptgen_json
+        }
+    }
+
     [void]Run() {
-        $interface = $this.SelectInterface()
+        $interface = $this.base.SelectInterface()
         if ([string]::IsNullOrEmpty($interface)) {
             return
         }
@@ -293,7 +319,7 @@ class DnsTunneling {
             $domain = (Read-Host "DNS tunnel domain").Trim()
             if ($client_ip -And $server_ip -And $domain) {
                 $Env:client_ip = $client_ip
-                $Env:server_addr = $server_ip + ":53"
+                $Env:server_ip = $server_ip
                 $Env:domain = $domain
                 break
             }
@@ -301,12 +327,86 @@ class DnsTunneling {
         } while ($true)
 
         if (AskYesNo "Are you sure you want to run?") {
-            $args = Quote @("--in.file", $this.iptgen_json, "--out.eth", $interface)
-            Start-Process -FilePath $this.iptgen_exe -ArgumentList $args
+            $this.base.Run($interface, $this.iptgen_json)
         }
     }
 }
 
+class FtpFileUpload : Iptgen {
+    [Properties]$props
+    [Iptgen]$base
+    [string]$iptgen_json
+
+    FtpFileUpload([Properties]$props) : base ($props) {
+        $this.props = $props
+        $this.base = [Iptgen]$this
+        $this.iptgen_json = BuildFullPath $this.base.iptgen_dir ".\ftp-upload-passive-template.json"
+        $this.Prepare()
+    }
+
+    hidden [void]Prepare() {
+        if (!(IsFile $this.iptgen_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/ftp-upload-passive-template.json"
+            DownloadFile $url $this.iptgen_json
+        }
+    }
+
+    [void]Run() {
+        $interface = $this.base.SelectInterface()
+        if ([string]::IsNullOrEmpty($interface)) {
+            return
+        }
+        Write-Host ""
+        do {
+            Write-Host "### Enter the FTP file upload configuration"
+            $client_ip = (Read-Host "Client IP").Trim()
+            $server_ip = (Read-Host "Server IP").Trim()
+            $upload_filename = (Read-Host "Upload file name (default: test.dat)").Trim()
+            $upload_filesize = (Read-Host "Upload file size (default: 100MB)").Trim()
+
+            if (!$client_ip -Or !$server_ip) {
+                Write-Host "Please input the client/server IP"
+                continue
+            }
+            if (!$upload_filename) {
+                $upload_filename = "test.dat"
+            }
+            if (!$upload_filesize) {
+                $upload_filesize = "100MB"
+            }
+            if (!($upload_filesize -match "^(?<num>\d+(?:\.\d+)?)\s*(?<unit>[KMGT]?B)?$")) {
+                Write-Host "Invalid file size"
+                continue
+            }
+            $unit = @{
+                ""=1
+                "B"=1
+                "KB"=[Math]::pow(2, 10)
+                "MB"=[Math]::pow(2, 20)
+                "GB"=[Math]::pow(2, 30)
+                "TB"=[Math]::pow(2, 40)
+            }[$matches.unit]
+
+            if (!$unit) {
+                Write-Host "Invalid file size"
+                continue
+            }
+            $pasv_port = 34567
+            $Env:client_ip = $client_ip
+            $Env:server_ip = $server_ip
+            $Env:upload_filename = $upload_filename
+            $Env:upload_filesize = ((ParseNumber $matches.num) * $unit) / 1024
+            Write-Host $Env:upload_filesize
+            $Env:pasv_port = $pasv_port
+            $Env:pasv_address = $server_ip.Replace('.', ',') + "," + [string][int][Math]::Floor($pasv_port / 256) + "," + [string]($pasv_port % 256)            
+            break
+        } while ($true)
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $this.base.Run($interface, $this.iptgen_json)
+        }
+    }
+}
 
 class Menu {
     [Properties]$props
@@ -409,6 +509,9 @@ class Menu {
             "7" {
                 [DnsTunneling]::New($this.props).Run()
             }
+            "8" {
+                [FtpFileUpload]::New($this.props).Run()
+            }
             default {
                 return $false
             }
@@ -427,6 +530,7 @@ class Menu {
             Write-Host " 5) Run Kerberos Brute Force"
             Write-Host " 6) Run WildFire Test PE"
             Write-Host " 7) Generate DNS tunneling packets"
+            Write-Host " 8) Generate FTP file upload packets"
             try {
                 while (!$this.LaunchAdminModeCommand((Read-Host "Please choose a menu item to run"))) {}
             } catch {
