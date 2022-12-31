@@ -76,6 +76,7 @@ function Quote($value) {
     if ($value -is [array]) {
         return $value | % { (Quote $_) }
     } else {
+        $value = $value.Replace('"', '""')
         return "`"$value`""
     }
 }
@@ -170,6 +171,7 @@ class PortScan {
                      | select IPAddress, PrefixLength `
                      | % { $_.IPAddress + '/' + $_.PrefixLength }
         foreach ($subnet in $subnet_list) {
+            Write-Host ""
             Write-Host "Starting a port scan: $subnet"
 
             $args = Quote @("-p", "1-65535", $subnet)
@@ -197,13 +199,14 @@ class KerberosBruteForce {
         }
         if (!(IsFile $this.passwords_file)) {
             $url = "https://github.com/spearmin10/corvette/blob/main/bin/passwords.zip?raw=true"
-            DownloadFile $url $this.rubeus_dir
+            DownloadAndExtractArchive $url $this.rubeus_dir
         }
     }
 
     [void]Run() {
-        $args = Quote @("brute", "/passwords:$($this.passwords_file)", "/noticket")
-        Start-Process -FilePath $this.rubeus_exe -ArgumentList $args
+        $cargs = @($this.rubeus_exe, "brute", "/passwords:$($this.passwords_file)", "/noticket")
+        $args = @("/K,") + (Quote $cargs)
+        Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
     }
 }
 
@@ -279,8 +282,9 @@ class Iptgen {
     }
 
     [void]Run([string]$interface, [string]$iptgen_json) {
-        $args = Quote @("--in.file", $iptgen_json, "--out.eth", $interface)
-        Start-Process -FilePath $this.iptgen_exe -ArgumentList $args
+        $cargs = @($this.iptgen_exe, "--in.file", $iptgen_json, "--out.eth", $interface)
+        $args = @("/K,") + (Quote $cargs)
+        Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
     }
 }
 
@@ -430,7 +434,8 @@ class Menu {
                 Start-Process -FilePath "powershell.exe" -WorkingDirectory $this.props.home_dir
             }
             "3" {
-                $args = @("/k cd /d `"$($this.props.home_dir)`"")
+                $cargs = @("/d", $this.props.home_dir)
+                $args = @("/K,", "cd") + (Quote $cargs)
                 Start-Process -FilePath "cmd.exe" -verb runas -ArgumentList $args
             }
             "4" {
