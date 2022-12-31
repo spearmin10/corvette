@@ -167,9 +167,9 @@ class PortScan {
     }
 
     [void]Run() {
-        $subnet_list = Get-NetIPAddress -AddressFamily IPV4 -SuffixOrigin @("Dhcp", "Manual") `
-                     | select IPAddress, PrefixLength `
-                     | % { $_.IPAddress + '/' + $_.PrefixLength }
+        [array]$subnet_list = Get-NetIPAddress -AddressFamily IPV4 -SuffixOrigin @("Dhcp", "Manual") `
+                            | select IPAddress, PrefixLength `
+                            | % { $_.IPAddress + '/' + $_.PrefixLength }
         foreach ($subnet in $subnet_list) {
             Write-Host ""
             Write-Host "Starting a port scan: $subnet"
@@ -260,19 +260,17 @@ class Iptgen {
     }
 
     [string]SelectInterface() {
-        $interfaces = Get-NetIPAddress -AddressFamily IPV4 -SuffixOrigin @("Dhcp", "Manual") `
-                    | ForEach-Object {$_.InterfaceAlias} `
-                    | Sort-Object
+        [array]$interfaces = Get-NetIPAddress -AddressFamily IPV4 -SuffixOrigin @("Dhcp", "Manual") `
+                           | ForEach-Object {$_.InterfaceAlias} `
+                           | Sort-Object
         if ($interfaces.Length -eq 0) {
             Write-Host "No network interfaces were found."
             return $null
         }
         Write-Host ""
         Write-Host "************************************"
-        $i = 1
-        foreach ($interface in $interfaces) {
-            Write-Host " $i) $interface"
-            $i++
+        for ($i = 0; $i -lt $interfaces.Length; $i++) {
+            Write-Host " $($i+1)) $interfaces[$i]"
         }
         Write-Host " 0) [Exit Menu]"
 
