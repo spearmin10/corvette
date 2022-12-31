@@ -2,6 +2,7 @@
   "client": "${client_ip}:35900", 
   "server": "${server_ip}:21",
   "sequence": [
+    ["sys.print", "ftp: ${client_ip} -> ${server_ip}:21"],
     ["tcp.recv", "text", ["220 FTP Service Ready; xyz FTP."]],
     ["tcp.send", "text", ["USER xyz"]],
     ["tcp.recv", "text", ["331 Please specify the password."]],
@@ -20,6 +21,7 @@
         "client": "${client_ip}:24249", 
         "server": "${server_ip}:${pasv_port}",
         "sequence": [
+          ["sys.print", "ftp.data: ${client_ip} -> ${server_ip}:${pasv_port}"],
           ["for", [0,"${upload_filesize}"], "i",
             [
               ["tcp.send", "base64", [
