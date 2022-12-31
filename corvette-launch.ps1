@@ -1,4 +1,4 @@
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 
 $home_dir = [IO.Path]::GetFullPath((Join-Path ([IO.Path]::GetTempPath()) ".\corvette"))
 New-Item -ItemType Directory -Force -Path $home_dir > $null
