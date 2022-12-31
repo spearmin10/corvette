@@ -181,11 +181,13 @@ class PortScan {
 }
 
 class KerberosBruteForce {
+    [Properties]$props
     [string]$rubeus_dir
     [string]$rubeus_exe
     [string]$passwords_file
 
     KerberosBruteForce([Properties]$props) {
+        $this.props = $props
         $this.rubeus_dir = BuildFullPath $props.home_dir ".\rubeus"
         $this.rubeus_exe = BuildFullPath $this.rubeus_dir "rubeus.exe"
         $this.passwords_file = BuildFullPath $this.rubeus_dir "passwords.txt"
@@ -237,10 +239,12 @@ class WildFireTestPE {
 }
 
 class Iptgen {
+    [Properties]$props
     [string]$iptgen_dir
     [string]$iptgen_exe
 
     Iptgen([Properties]$props) {
+        $this.props = $props
         $this.iptgen_dir = BuildFullPath $props.home_dir ".\iptgen"
         $this.iptgen_exe = BuildFullPath $this.iptgen_dir ".\bin\iptgen.exe"
 
