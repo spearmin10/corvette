@@ -402,7 +402,7 @@ class FtpFileUpload : Iptgen {
             $Env:client_ip = $client_ip
             $Env:server_ip = $server_ip
             $Env:upload_filename = $upload_filename
-            $Env:upload_filesize = ((ParseNumber $matches.num) * $unit) / 1024
+            $Env:upload_filesize = ((ParseNumber $matches.num) * $unit) / (1024 * 1024)
             $Env:pasv_port = $pasv_port
             $Env:pasv_address = $server_ip.Replace('.', ',') + "," + [string][int][Math]::Floor($pasv_port / 256) + "," + [string]($pasv_port % 256)            
             break
