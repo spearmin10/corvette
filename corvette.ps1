@@ -270,7 +270,7 @@ class Iptgen {
         Write-Host ""
         Write-Host "************************************"
         for ($i = 0; $i -lt $interfaces.Length; $i++) {
-            Write-Host " $($i+1)) $interfaces[$i]"
+            Write-Host " $($i+1)) $($interfaces[$i])"
         }
         Write-Host " 0) [Exit Menu]"
 
