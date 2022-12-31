@@ -288,7 +288,7 @@ class Iptgen {
     }
 
     [void]Run([string]$interface, [string]$iptgen_json) {
-        $cargs = @($this.iptgen_exe, "--in.file", $iptgen_json, "--out.eth", $interface, "--response.interval", "100")
+        $cargs = @($this.iptgen_exe, "--in.file", $iptgen_json, "--out.eth", $interface, "--response.interval", "10")
         $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
         Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
     }
