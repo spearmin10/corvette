@@ -121,13 +121,19 @@ class Properties {
     }
 }
 
-class Mimikatz {
+class CommandBase {
     [Properties]$props
+
+    CommandBase([Properties]$props) {
+        $this.props = $props
+    }
+}
+
+class Mimikatz : CommandBase {
     [string]$mimikatz_dir
     [string]$mimikatz_exe
 
-    Mimikatz([Properties]$props) {
-        $this.props = $props
+    Mimikatz([Properties]$props) : base($props) {
         $this.mimikatz_dir = BuildFullPath $props.home_dir ".\mimikatz"
         $this.mimikatz_exe = BuildFullPath $this.mimikatz_dir "mimikatz.exe"
         $this.Prepare()
@@ -149,13 +155,11 @@ class Mimikatz {
     }
 }
 
-class PortScan {
-    [Properties]$props
+class PortScan : CommandBase {
     [string]$nmap_dir
     [string]$nmap_exe
 
-    PortScan([Properties]$props) {
-        $this.props = $props
+    PortScan([Properties]$props) : base($props) {
         $this.nmap_dir = BuildFullPath $props.home_dir ".\nmap"
         $this.nmap_exe = BuildFullPath $this.nmap_dir "nmap.exe"
         $this.Prepare()
@@ -183,14 +187,12 @@ class PortScan {
     }
 }
 
-class KerberosBruteForce {
-    [Properties]$props
+class KerberosBruteForce : CommandBase {
     [string]$rubeus_dir
     [string]$rubeus_exe
     [string]$passwords_file
 
-    KerberosBruteForce([Properties]$props) {
-        $this.props = $props
+    KerberosBruteForce([Properties]$props) : base($props) {
         $this.rubeus_dir = BuildFullPath $props.home_dir ".\rubeus"
         $this.rubeus_exe = BuildFullPath $this.rubeus_dir "rubeus.exe"
         $this.passwords_file = BuildFullPath $this.rubeus_dir "passwords.txt"
@@ -215,12 +217,11 @@ class KerberosBruteForce {
     }
 }
 
-class WildFireTestPE {
-    [Properties]$props
+class WildFireTestPE : CommandBase {
     [string]$wildfire_dir
     [string]$wildfire_exe
 
-    WildFireTestPE([Properties]$props) {
+    WildFireTestPE([Properties]$props) : base($props) {
         $this.props = $props
         $this.wildfire_dir = BuildFullPath $props.home_dir ".\wildfire"
         $this.wildfire_exe = BuildFullPath $this.wildfire_dir "wildfire-test-pe-file.exe"
@@ -242,13 +243,11 @@ class WildFireTestPE {
     }
 }
 
-class Iptgen {
-    [Properties]$props
+class IptgenBase : CommandBase {
     [string]$iptgen_dir
     [string]$iptgen_exe
 
-    Iptgen([Properties]$props) {
-        $this.props = $props
+    IptgenBase([Properties]$props) : base($props) {
         $this.iptgen_dir = BuildFullPath $props.home_dir ".\iptgen"
         $this.iptgen_exe = BuildFullPath $this.iptgen_dir ".\bin\iptgen.exe"
 
@@ -294,15 +293,11 @@ class Iptgen {
     }
 }
 
-class DnsTunneling : Iptgen {
-    [Properties]$props
-    [Iptgen]$base
+class DnsTunneling : IptgenBase {
     [string]$iptgen_json
 
     DnsTunneling([Properties]$props) : base ($props) {
-        $this.props = $props
-        $this.base = [Iptgen]$this
-        $this.iptgen_json = BuildFullPath $this.base.iptgen_dir ".\dns-tunneling-template.json"
+        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\dns-tunneling-template.json"
         $this.Prepare()
     }
 
@@ -314,7 +309,7 @@ class DnsTunneling : Iptgen {
     }
 
     [void]Run() {
-        $interface = $this.base.SelectInterface()
+        $interface = $this.SelectInterface()
         if ([string]::IsNullOrEmpty($interface)) {
             return
         }
@@ -334,20 +329,16 @@ class DnsTunneling : Iptgen {
         } while ($true)
 
         if (AskYesNo "Are you sure you want to run?") {
-            $this.base.Run($interface, $this.iptgen_json)
+            $this.Run($interface, $this.iptgen_json)
         }
     }
 }
 
-class FtpFileUpload : Iptgen {
-    [Properties]$props
-    [Iptgen]$base
+class FtpFileUpload : IptgenBase {
     [string]$iptgen_json
 
     FtpFileUpload([Properties]$props) : base ($props) {
-        $this.props = $props
-        $this.base = [Iptgen]$this
-        $this.iptgen_json = BuildFullPath $this.base.iptgen_dir ".\ftp-upload-passive-template.json"
+        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\ftp-upload-passive-template.json"
         $this.Prepare()
     }
 
@@ -359,7 +350,7 @@ class FtpFileUpload : Iptgen {
     }
 
     [void]Run() {
-        $interface = $this.base.SelectInterface()
+        $interface = $this.SelectInterface()
         if ([string]::IsNullOrEmpty($interface)) {
             return
         }
@@ -409,7 +400,7 @@ class FtpFileUpload : Iptgen {
         } while ($true)
 
         if (AskYesNo "Are you sure you want to run?") {
-            $this.base.Run($interface, $this.iptgen_json)
+            $this.Run($interface, $this.iptgen_json)
         }
     }
 }
