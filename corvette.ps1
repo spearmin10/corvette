@@ -150,10 +150,12 @@ class Mimikatz {
 }
 
 class PortScan {
+    [Properties]$props
     [string]$nmap_dir
     [string]$nmap_exe
 
     PortScan([Properties]$props) {
+        $this.props = $props
         $this.nmap_dir = BuildFullPath $props.home_dir ".\nmap"
         $this.nmap_exe = BuildFullPath $this.nmap_dir "nmap.exe"
         $this.Prepare()
@@ -174,8 +176,9 @@ class PortScan {
             Write-Host ""
             Write-Host "Starting a port scan: $subnet"
 
-            $args = Quote @("-p", "1-65535", $subnet)
-            Start-Process -FilePath $this.nmap_exe -ArgumentList $args
+            $cargs = @($this.nmap_exe, "-p", "1-65535", $subnet)
+            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
+            Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
         }
     }
 }
@@ -207,7 +210,7 @@ class KerberosBruteForce {
 
     [void]Run() {
         $cargs = @($this.rubeus_exe, "brute", "/passwords:$($this.passwords_file)", "/noticket")
-        $args = @("/K,") + (Quote $cargs)
+        $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
         Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
     }
 }
@@ -234,7 +237,8 @@ class WildFireTestPE {
     }
 
     [void]Run() {
-        Start-Process -FilePath $this.wildfire_exe -WorkingDirectory $this.props.home_dir
+        $args = @("/C,", (Quote $this.wildfire_exe), "& echo Done. & pause")
+        Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
     }
 }
 
@@ -284,8 +288,8 @@ class Iptgen {
     }
 
     [void]Run([string]$interface, [string]$iptgen_json) {
-        $cargs = @($this.iptgen_exe, "--in.file", $iptgen_json, "--out.eth", $interface)
-        $args = @("/K,") + (Quote $cargs)
+        $cargs = @($this.iptgen_exe, "--in.file", $iptgen_json, "--out.eth", $interface, "--response.interval", "100")
+        $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
         Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
     }
 }
