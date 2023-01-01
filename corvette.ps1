@@ -345,6 +345,9 @@ class DnsTunneling : IptgenBase {
                                "Please retype a valid IPv4 address"
         $domain = ReadInput "DNS tunnel domain" $null ".+"
 
+        $Env:client_ip = $client_ip
+        $Env:server_ip = $server_ip
+        $Env:domain = $domain
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($interface.InterfaceAlias, $this.iptgen_json)
         }
