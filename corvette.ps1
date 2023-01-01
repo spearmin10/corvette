@@ -1,3 +1,6 @@
+
+Set-Variable -Scope script -Name PATTERN_IPV4_ADDR -Option Constant -Value "^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$"
+
 function IsFile ([string]$path) {
     return [IO.File]::Exists($path)
 }
@@ -57,6 +60,24 @@ function DownloadAndExtractArchive ([string]$url, [string]$directory) {
     $file = DownloadFile $url ([IO.Path]::GetTempPath())
     Expand-Archive -Force $file $directory
     Remove-Item $file
+}
+
+function ReadInput([string]$message, [string]$default, [string]$pattern, [string]$retry_message) {
+    if (![string]::IsNullOrEmpty($default)) {
+        $message += " (default: $default)"
+    }
+    do {
+        $input = (Read-Host $message).Trim()
+        if ([string]::IsNullOrEmpty($input) -And ![string]::IsNullOrEmpty($default)) {
+            return $default
+        }
+        if ([string]::IsNullOrEmpty($pattern) -Or ($input -match $pattern)) {
+            return $input
+        }
+        if (![string]::IsNullOrEmpty($input) -And ![string]::IsNullOrEmpty($retry_message)) {
+            Write-Host $retry_message
+        }
+    } while ($true)
 }
 
 function AskYesNo([string]$message) {
@@ -262,10 +283,9 @@ class IptgenBase : CommandBase {
         }
     }
 
-    [string]SelectInterface() {
+    [Microsoft.Management.Infrastructure.CimInstance]SelectInterface() {
         [array]$interfaces = Get-NetIPAddress -AddressFamily IPV4 -SuffixOrigin @("Dhcp", "Manual") `
-                           | ForEach-Object {$_.InterfaceAlias} `
-                           | Sort-Object
+                           | Sort-Object -Property InterfaceAlias
         if ($interfaces.Length -eq 0) {
             Write-Host "No network interfaces were found."
             return $null
@@ -273,12 +293,12 @@ class IptgenBase : CommandBase {
         Write-Host ""
         Write-Host "************************************"
         for ($i = 0; $i -lt $interfaces.Length; $i++) {
-            Write-Host " $($i+1)) $($interfaces[$i])"
+            Write-Host " $($i+1)) $($interfaces[$i].InterfaceAlias)"
         }
         Write-Host " 0) [Exit Menu]"
 
         for ($num = -1 ; $num -ne 0 ;){
-            $num = ParseNumber (Read-Host "Select an interface to replay packets")
+            $num = ParseNumber (ReadInput "Select an interface to replay packets")
             if ($num -gt 0 -And $num -le $interfaces.Length) { 
                 return $interfaces[$num - 1]
             }
@@ -314,22 +334,19 @@ class DnsTunneling : IptgenBase {
             return
         }
         Write-Host ""
-        do {
-            Write-Host "### Enter the DNS tunneling configuration"
-            $client_ip = (Read-Host "DNS client IP").Trim()
-            $server_ip = (Read-Host "DNS server IP").Trim()
-            $domain = (Read-Host "DNS tunnel domain").Trim()
-            if ($client_ip -And $server_ip -And $domain) {
-                $Env:client_ip = $client_ip
-                $Env:server_ip = $server_ip
-                $Env:domain = $domain
-                break
-            }
-            Write-Host "Please enter all the parameters."
-        } while ($true)
+        Write-Host "### Enter the DNS tunneling configuration"
+        $client_ip = ReadInput "DNS client IP" `
+                               $interface.IPAddress `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $server_ip = ReadInput "DNS server IP" `
+                               "" `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $domain = ReadInput "DNS tunnel domain" $null ".+"
 
         if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($interface, $this.iptgen_json)
+            $this.Run($interface.InterfaceAlias, $this.iptgen_json)
         }
     }
 }
@@ -355,28 +372,24 @@ class FtpFileUpload : IptgenBase {
             return
         }
         Write-Host ""
-        do {
-            Write-Host "### Enter the FTP file upload configuration"
-            $client_ip = (Read-Host "Client IP").Trim()
-            $server_ip = (Read-Host "Server IP").Trim()
-            $upload_filename = (Read-Host "Upload file name (default: test.dat)").Trim()
-            $upload_filesize = (Read-Host "Upload file size (default: 100MB)").Trim()
+        Write-Host "### Enter the FTP file upload configuration"
+        $client_ip = ReadInput "Client IP" `
+                               $interface.IPAddress `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $server_ip = ReadInput "Server IP" `
+                               "" `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $upload_filename = ReadInput "Upload file name" "test.dat" ".+"
 
-            if (!$client_ip -Or !$server_ip) {
-                Write-Host "Please input the client/server IP"
-                continue
-            }
-            if (!$upload_filename) {
-                $upload_filename = "test.dat"
-            }
-            if (!$upload_filesize) {
-                $upload_filesize = "100MB"
-            }
-            if (!($upload_filesize -match "^(?<num>\d+(?:\.\d+)?)\s*(?<unit>[KMGT]?B)?$")) {
-                Write-Host "Invalid file size"
-                continue
-            }
-            $unit = @{
+        $pattern = "^(?<num>\d+(?:\.\d+)?)\s*(?<unit>[KMGT]?B)?$"
+        $message = "Invalid file size. Please retype the size."
+        $upload_filesize_unit = $null
+        do {
+            $upload_filesize = ReadInput "Upload file size" "100MB" $pattern $message
+            $upload_filesize -match $pattern
+            $upload_filesize_unit = @{
                 ""=1
                 "B"=1
                 "KB"=[Math]::pow(2, 10)
@@ -385,22 +398,22 @@ class FtpFileUpload : IptgenBase {
                 "TB"=[Math]::pow(2, 40)
             }[$matches.unit]
 
-            if (!$unit) {
-                Write-Host "Invalid file size"
-                continue
+            if ($upload_filesize_unit) {
+                break
             }
-            $pasv_port = 34567
-            $Env:client_ip = $client_ip
-            $Env:server_ip = $server_ip
-            $Env:upload_filename = $upload_filename
-            $Env:upload_filesize = ((ParseNumber $matches.num) * $unit) / (1024 * 1024)
-            $Env:pasv_port = $pasv_port
-            $Env:pasv_address = $server_ip.Replace('.', ',') + "," + [string][int][Math]::Floor($pasv_port / 256) + "," + [string]($pasv_port % 256)            
-            break
+            Write-Host $message
         } while ($true)
 
+        $pasv_port = 34567
+        $Env:client_ip = $client_ip
+        $Env:server_ip = $server_ip
+        $Env:upload_filename = $upload_filename
+        $Env:upload_filesize = ((ParseNumber $matches.num) * $upload_filesize_unit) / (1024 * 1024)
+        $Env:pasv_port = $pasv_port
+        $Env:pasv_address = $server_ip.Replace('.', ',') + "," + [string][int][Math]::Floor($pasv_port / 256) + "," + [string]($pasv_port % 256)            
+
         if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($interface, $this.iptgen_json)
+            $this.Run($interface.InterfaceAlias, $this.iptgen_json)
         }
     }
 }
