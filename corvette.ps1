@@ -157,10 +157,7 @@ class Mimikatz : CommandBase {
     Mimikatz([Properties]$props) : base($props) {
         $this.mimikatz_dir = BuildFullPath $props.home_dir ".\mimikatz"
         $this.mimikatz_exe = BuildFullPath $this.mimikatz_dir "mimikatz.exe"
-        $this.Prepare()
-    }
 
-    hidden [void]Prepare() {
         if (!(IsFile $this.mimikatz_exe)) {
             $url = "https://github.com/spearmin10/corvette/blob/main/bin/mimikatz.zip?raw=true"
             DownloadAndExtractArchive $url $this.mimikatz_dir
@@ -183,10 +180,7 @@ class PortScan : CommandBase {
     PortScan([Properties]$props) : base($props) {
         $this.nmap_dir = BuildFullPath $props.home_dir ".\nmap"
         $this.nmap_exe = BuildFullPath $this.nmap_dir "nmap.exe"
-        $this.Prepare()
-    }
 
-    hidden [void]Prepare() {
         if (!(IsFile $this.nmap_exe)) {
             $url = "https://github.com/spearmin10/corvette/blob/main/bin/nmap-7.92.zip?raw=true"
             DownloadAndExtractArchive $url $this.nmap_dir
@@ -217,10 +211,7 @@ class KerberosBruteForce : CommandBase {
         $this.rubeus_dir = BuildFullPath $props.home_dir ".\rubeus"
         $this.rubeus_exe = BuildFullPath $this.rubeus_dir "rubeus.exe"
         $this.passwords_file = BuildFullPath $this.rubeus_dir "passwords.txt"
-        $this.Prepare()
-    }
 
-    hidden [void]Prepare() {
         if (!(IsFile $this.rubeus_exe)) {
             $url = "https://github.com/spearmin10/corvette/blob/main/bin/rubeus.zip?raw=true"
             DownloadAndExtractArchive $url $this.rubeus_dir
@@ -246,10 +237,7 @@ class WildFireTestPE : CommandBase {
         $this.props = $props
         $this.wildfire_dir = BuildFullPath $props.home_dir ".\wildfire"
         $this.wildfire_exe = BuildFullPath $this.wildfire_dir "wildfire-test-pe-file.exe"
-        $this.Prepare()
-    }
 
-    hidden [void]Prepare() {
         if (!(IsFile $this.wildfire_exe)) {
             New-Item -ItemType Directory -Force -Path $this.wildfire_dir
 
@@ -273,7 +261,7 @@ class IptgenBase : CommandBase {
         $this.iptgen_exe = BuildFullPath $this.iptgen_dir ".\bin\iptgen.exe"
 
         if (!(IsFile $this.iptgen_exe)) {
-            $url = "https://github.com/spearmin10/iptgen/releases/download/0.7.0/iptgen.win32.zip"
+            $url = "https://github.com/spearmin10/iptgen/releases/download/0.8.0/iptgen.win32.zip"
             DownloadAndExtractArchive $url $this.iptgen_dir
         }
         if (!(IsFile $env:WINDIR\system32\Npcap\wpcap.dll)) {
@@ -289,6 +277,8 @@ class IptgenBase : CommandBase {
         if ($interfaces.Length -eq 0) {
             Write-Host "No network interfaces were found."
             return $null
+        } elseif ($interfaces.Length -eq 1) {
+            return $interfaces[0]
         }
         Write-Host ""
         Write-Host "************************************"
@@ -318,10 +308,6 @@ class DnsTunneling : IptgenBase {
 
     DnsTunneling([Properties]$props) : base ($props) {
         $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\dns-tunneling-template.json"
-        $this.Prepare()
-    }
-
-    hidden [void]Prepare() {
         if (!(IsFile $this.iptgen_json)) {
             $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/dns-tunneling-template.json"
             DownloadFile $url $this.iptgen_json
@@ -359,10 +345,6 @@ class FtpFileUpload : IptgenBase {
 
     FtpFileUpload([Properties]$props) : base ($props) {
         $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\ftp-upload-passive-template.json"
-        $this.Prepare()
-    }
-
-    hidden [void]Prepare() {
         if (!(IsFile $this.iptgen_json)) {
             $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/ftp-upload-passive-template.json"
             DownloadFile $url $this.iptgen_json
@@ -411,9 +393,74 @@ class FtpFileUpload : IptgenBase {
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
         $Env:upload_filename = $upload_filename
-        $Env:upload_filesize = ((ParseNumber $matches.num) * $upload_filesize_unit) / (1024 * 1024)
+        $Env:upload_filesize = ((ParseNumber $matches.num) * $upload_filesize_unit)
         $Env:pasv_port = $pasv_port
         $Env:pasv_address = $server_ip.Replace('.', ',') + "," + [string][int][Math]::Floor($pasv_port / 256) + "," + [string]($pasv_port % 256)            
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $this.Run($interface.InterfaceAlias, $this.iptgen_json)
+        }
+    }
+}
+
+class HttpFileUpload : IptgenBase {
+    [string]$iptgen_json
+
+    HttpFileUpload([Properties]$props, [bool]$https) : base ($props) {
+        $file_name = $null
+        if ($https) {
+          $file_name = "https-upload-template.json"
+        } else {
+          $file_name = "http-upload-template.json"
+        }
+        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
+
+        if (!(IsFile $this.iptgen_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
+            DownloadFile $url $this.iptgen_json
+        }
+    }
+
+    [void]Run() {
+        $interface = $this.SelectInterface()
+        if ([string]::IsNullOrEmpty($interface)) {
+            return
+        }
+        Write-Host ""
+        Write-Host "### Enter the HTTP file upload configuration"
+        $client_ip = ReadInput "Client IP" `
+                               $interface.IPAddress `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $server_ip = ReadInput "Server IP" `
+                               "" `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+
+        $pattern = "^(?<num>\d+(?:\.\d+)?)\s*(?<unit>[KMGT]?B)?$"
+        $message = "Invalid file size. Please retype the size."
+        $upload_filesize_unit = $null
+        do {
+            $upload_filesize = ReadInput "Upload file size" "100MB" $pattern $message
+            $upload_filesize -match $pattern
+            $upload_filesize_unit = @{
+                ""=1
+                "B"=1
+                "KB"=[Math]::pow(2, 10)
+                "MB"=[Math]::pow(2, 20)
+                "GB"=[Math]::pow(2, 30)
+                "TB"=[Math]::pow(2, 40)
+            }[$matches.unit]
+
+            if ($upload_filesize_unit) {
+                break
+            }
+            Write-Host $message
+        } while ($true)
+
+        $Env:client_ip = $client_ip
+        $Env:server_ip = $server_ip
+        $Env:upload_filesize = ((ParseNumber $matches.num) * $upload_filesize_unit)
 
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($interface.InterfaceAlias, $this.iptgen_json)
@@ -526,6 +573,12 @@ class Menu {
             "8" {
                 [FtpFileUpload]::New($this.props).Run()
             }
+            "9" {
+                [HttpFileUpload]::New($this.props, $false).Run()
+            }
+            "10" {
+                [HttpFileUpload]::New($this.props, $true).Run()
+            }
             default {
                 return $false
             }
@@ -545,6 +598,8 @@ class Menu {
             Write-Host " 6) Run WildFire Test PE"
             Write-Host " 7) Generate DNS tunneling packets"
             Write-Host " 8) Generate FTP file upload packets"
+            Write-Host " 9) Generate HTTP file upload packets"
+            Write-Host "10) Generate HTTPS file upload packets"
             try {
                 while (!$this.LaunchAdminModeCommand((Read-Host "Please choose a menu item to run"))) {}
             } catch {
