@@ -22,9 +22,8 @@
         "server": "${server_ip}:${pasv_port}",
         "sequence": [
           ["sys.print", "ftp.data: ${client_ip} -> ${server_ip}:${pasv_port}"],
-          ["for", [0,"${upload_filesize}"], "i",
+          ["for", [0,"${upload_filesize=val/(1024*1024)}"], "i",
             [
-              ["sys.print", "${i} MB done."],
               ["for", [0,1024], "j",
                 [
                   ["tcp.send", "base64", [
@@ -50,14 +49,14 @@
                     ]
                   ]
                 ]
-              ]
+              ],
+              ["sys.print", "${i=val+1} MB done."]
             ]
-          ],
-          ["sys.print", "${upload_filesize} MB done."]
+          ]
         ]
       }
     ],
-    ["tcp.recv", "text", ["226 File receiving OK (xxx bytes: ${upload_filename})."]],
+    ["tcp.recv", "text", ["226 File receiving OK (${upload_filesize} bytes: ${upload_filename})."]],
     ["tcp.send", "text", ["QUIT"]],
     ["tcp.recv", "text", ["221 Goodbye"]]
   ]
