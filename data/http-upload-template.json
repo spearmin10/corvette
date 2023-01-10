@@ -1,11 +1,11 @@
 {
   "client": "${client_ip}", 
-  "server": "${server_ip}:443",
+  "server": "${server_ip}:80",
   "sequence": [
     ["sys.print", "http.request: ${client_ip} -> ${server_ip}:443"],
     ["tcp.send", "text", [
         "POST / HTTP/1.1",
-        "Host: ${server_ip}:443",
+        "Host: ${server_ip}:80",
         "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:83.0) Gecko/20100101 Firefox/83.0",
         "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language: en-US,en;q=0.5",
