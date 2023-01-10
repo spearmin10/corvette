@@ -325,7 +325,7 @@ class IptgenBase : CommandBase {
     [void]Run([string]$interface, [string]$iptgen_json, [int]$response_interval) {
         $cargs = @($this.iptgen_exe, "--in.file", $iptgen_json, "--out.eth", $interface)
         if ($response_interval -ne 0) {
-            $cargs += @("--response.interval", $response_interval)
+            $cargs += @("--response.interval", [string]$response_interval)
         }
         $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
         Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
