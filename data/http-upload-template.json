@@ -2,7 +2,7 @@
   "client": "${client_ip}", 
   "server": "${server_ip}:80",
   "sequence": [
-    ["sys.print", "http.request: ${client_ip} -> ${server_ip}:443"],
+    ["sys.print", "http.request: ${client_ip} -> ${server_ip}:80"],
     ["tcp.send", "text", [
         "POST / HTTP/1.1",
         "Host: ${server_ip}:80",
