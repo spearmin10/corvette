@@ -86,6 +86,7 @@
         "-----------------------------708960429131151983491114524--"
       ]
     ],
+    ["sys.print", "${upload_filesize} bytes done."],
     ["tcp.recv", "text", [
         "HTTP/1.1 200 OK",
         "Connection: Keep-Alive",
