@@ -426,7 +426,7 @@ class HttpFileUpload : IptgenBase {
         } else {
           $file_name = "http-upload-template.json"
         }
-        $this.$https = $https
+        $this.https = $https
         $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
 
         if (!(IsFile $this.iptgen_json)) {
@@ -458,7 +458,7 @@ class HttpFileUpload : IptgenBase {
 
         if (AskYesNo "Are you sure you want to run?") {
             $response_interval = 10
-            if ($this.$https) {
+            if ($this.https) {
                 $response_interval = 0
             }
             $this.Run($interface.InterfaceAlias, $this.iptgen_json, $response_interval)
