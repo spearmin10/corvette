@@ -322,7 +322,12 @@ class IptgenBase : CommandBase {
         return $null
     }
 
-    [void]Run([string]$interface, [string]$iptgen_json) {
+    [void]Run([string]$interface, [string]$iptgen_json, [int]$response_interval) {
+        if ($response_interval -eq 0) {
+            $cargs = @($this.iptgen_exe, "--in.file", $iptgen_json, "--out.eth", $interface)
+        } else {
+            $cargs = @($this.iptgen_exe, "--in.file", $iptgen_json, "--out.eth", $interface, "--response.interval", $response_interval)
+        }
         $cargs = @($this.iptgen_exe, "--in.file", $iptgen_json, "--out.eth", $interface, "--response.interval", "10")
         $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
         Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
@@ -361,7 +366,7 @@ class DnsTunneling : IptgenBase {
         $Env:server_ip = $server_ip
         $Env:domain = $domain
         if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($interface.InterfaceAlias, $this.iptgen_json)
+            $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
         }
     }
 }
@@ -404,21 +409,24 @@ class FtpFileUpload : IptgenBase {
         $Env:pasv_address = $server_ip.Replace('.', ',') + "," + [string][int][Math]::Floor($pasv_port / 256) + "," + [string]($pasv_port % 256)            
 
         if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($interface.InterfaceAlias, $this.iptgen_json)
+            $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
         }
     }
 }
 
 class HttpFileUpload : IptgenBase {
     [string]$iptgen_json
+    [bool]$https
 
     HttpFileUpload([Properties]$props, [bool]$https) : base ($props) {
         $file_name = $null
+        
         if ($https) {
           $file_name = "https-upload-template.json"
         } else {
           $file_name = "http-upload-template.json"
         }
+        $this.$https = $https
         $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
 
         if (!(IsFile $this.iptgen_json)) {
@@ -449,7 +457,11 @@ class HttpFileUpload : IptgenBase {
         $Env:upload_filesize = $upload_filesize
 
         if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($interface.InterfaceAlias, $this.iptgen_json)
+            $response_interval = 10
+            if ($this.$https) {
+                $response_interval = 0
+            }
+            $this.Run($interface.InterfaceAlias, $this.iptgen_json, $response_interval)
         }
     }
 }
