@@ -407,7 +407,6 @@ class FtpFileUpload : IptgenBase {
         $Env:upload_filesize = $upload_filesize
         $Env:pasv_port = $pasv_port
         $Env:pasv_address = $server_ip.Replace('.', ',') + "," + [string][int][Math]::Floor($pasv_port / 256) + "," + [string]($pasv_port % 256)            
-
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
         }
