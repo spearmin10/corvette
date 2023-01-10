@@ -80,6 +80,32 @@ function ReadInput([string]$message, [string]$default, [string]$pattern, [string
     } while ($true)
 }
 
+function ReadInputSize([string]$message, [string]$default, [string]$retry_message) {
+
+    $pattern = "^(?<num>\d+(?:\.\d+)?)\s*(?<unit>[KMGT]?B)?$"
+    $size_unit = $null
+    do {
+        $size = ReadInput $message $default $pattern $retry_message
+        if ($size -match $pattern) {
+            if ($matches.unit -eq $null){
+                return $size
+            }
+            $size_unit = @{
+                ""=1
+                "B"=1
+                "KB"=[Math]::pow(2, 10)
+                "MB"=[Math]::pow(2, 20)
+                "GB"=[Math]::pow(2, 30)
+                "TB"=[Math]::pow(2, 40)
+            }[$matches.unit]
+            if ($size_unit) {
+                return ((ParseNumber $matches.num) * $size_unit)
+            }
+        }
+        Write-Host $retry_message
+    } while ($true)
+}
+
 function AskYesNo([string]$message) {
     do {
         $answer = Read-Host "$message [Y/n]"
@@ -367,33 +393,13 @@ class FtpFileUpload : IptgenBase {
                                $script:PATTERN_IPV4_ADDR `
                                "Please retype a valid IPv4 address"
         $upload_filename = ReadInput "Upload file name" "test.dat" ".+"
-
-        $pattern = "^(?<num>\d+(?:\.\d+)?)\s*(?<unit>[KMGT]?B)?$"
-        $message = "Invalid file size. Please retype the size."
-        $upload_filesize_unit = $null
-        do {
-            $upload_filesize = ReadInput "Upload file size" "100MB" $pattern $message
-            $upload_filesize -match $pattern
-            $upload_filesize_unit = @{
-                ""=1
-                "B"=1
-                "KB"=[Math]::pow(2, 10)
-                "MB"=[Math]::pow(2, 20)
-                "GB"=[Math]::pow(2, 30)
-                "TB"=[Math]::pow(2, 40)
-            }[$matches.unit]
-
-            if ($upload_filesize_unit) {
-                break
-            }
-            Write-Host $message
-        } while ($true)
+        $upload_filesize = ReadInputSize "Upload file size" "100MB" "Invalid file size. Please retype the size."
 
         $pasv_port = 34567
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
         $Env:upload_filename = $upload_filename
-        $Env:upload_filesize = ((ParseNumber $matches.num) * $upload_filesize_unit)
+        $Env:upload_filesize = $upload_filesize
         $Env:pasv_port = $pasv_port
         $Env:pasv_address = $server_ip.Replace('.', ',') + "," + [string][int][Math]::Floor($pasv_port / 256) + "," + [string]($pasv_port % 256)            
 
@@ -436,31 +442,11 @@ class HttpFileUpload : IptgenBase {
                                "" `
                                $script:PATTERN_IPV4_ADDR `
                                "Please retype a valid IPv4 address"
-
-        $pattern = "^(?<num>\d+(?:\.\d+)?)\s*(?<unit>[KMGT]?B)?$"
-        $message = "Invalid file size. Please retype the size."
-        $upload_filesize_unit = $null
-        do {
-            $upload_filesize = ReadInput "Upload file size" "100MB" $pattern $message
-            $upload_filesize -match $pattern
-            $upload_filesize_unit = @{
-                ""=1
-                "B"=1
-                "KB"=[Math]::pow(2, 10)
-                "MB"=[Math]::pow(2, 20)
-                "GB"=[Math]::pow(2, 30)
-                "TB"=[Math]::pow(2, 40)
-            }[$matches.unit]
-
-            if ($upload_filesize_unit) {
-                break
-            }
-            Write-Host $message
-        } while ($true)
+        $upload_filesize = ReadInputSize "Upload file size" "100MB" "Invalid file size. Please retype the size."
 
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
-        $Env:upload_filesize = ((ParseNumber $matches.num) * $upload_filesize_unit)
+        $Env:upload_filesize = $upload_filesize
 
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($interface.InterfaceAlias, $this.iptgen_json)
