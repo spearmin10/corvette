@@ -292,7 +292,7 @@ class IptgenBase : CommandBase {
         }
         if (!(IsFile $env:WINDIR\system32\Npcap\wpcap.dll)) {
             $url = "https://github.com/spearmin10/corvette/blob/main/bin/npcap-1.72.exe?raw=true"
-            $path = DownloadFile $url "npcap-1.72.exe"
+            $path = DownloadFile $url (BuildFullPath $props.home_dir ".\npcap-1.72.exe")
             Start-Process -FilePath $path -Wait
         }
     }
