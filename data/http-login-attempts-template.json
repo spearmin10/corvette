@@ -3,6 +3,7 @@
   "server": "${server_ip}:80",
   "sequence": [
     ["for.session", [0, "${attempt_count}"], "i", [
+        ["sys.print", "http: ${client_ip} -> ${server_ip}:80"],
         ["tcp.send", "text.raw", [
             "GET / HTTP/1.1",
             "Host: ${server_ip}:80",

@@ -3,6 +3,7 @@
   "server": "${server_ip}:445",
   "sequence": [
     ["for.session", [0, "${attempt_count}"], "i", [
+        ["sys.print", "smb: ${client_ip} -> ${server_ip}:445"],
         ["tcp.send", "hex.raw", [
             "00 00 00 45 ff 53 4d 42  72 00 00 00 00 18 53 c8",
             "00 00 00 00 00 00 00 00  00 00 00 00 ff ff ff fe",
