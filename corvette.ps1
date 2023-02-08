@@ -176,6 +176,97 @@ class CommandBase {
     }
 }
 
+class SetupTools : CommandBase {
+
+    SetupTools([Properties]$props) : base($props) {
+    }
+
+    hidden [void]DownloadMimikatz() {
+        $mimikatz_dir = BuildFullPath $this.props.home_dir ".\mimikatz"
+        $mimikatz_exe = BuildFullPath $mimikatz_dir "mimikatz.exe"
+
+        if (!(IsFile $mimikatz_exe)) {
+            $url = "https://github.com/spearmin10/corvette/blob/main/bin/mimikatz.zip?raw=true"
+            DownloadAndExtractArchive $url $mimikatz_dir
+        }
+        Write-Host "mimikatz has been installed to" $mimikatz_dir
+    }
+
+    hidden [void]DownloadWildFireTestPE() {
+        $wildfire_dir = BuildFullPath $this.props.home_dir ".\wildfire"
+        $wildfire_exe = BuildFullPath $wildfire_dir "wildfire-test-pe-file.exe"
+
+        if (!(IsFile $wildfire_exe)) {
+            New-Item -ItemType Directory -Force -Path $wildfire_dir
+
+            $url = "https://wildfire.paloaltonetworks.com/publicapi/test/pe"
+            DownloadFile $url $wildfire_exe
+        }
+        Write-Host "WildFire Test PE file has been installed to" $wildfire_exe
+    }
+
+    hidden [void]DownloadEmbeddablePython() {
+        $python_dir = BuildFullPath $this.props.home_dir ".\python-3.11.1"
+        $python_exe = BuildFullPath $python_dir "python.exe"
+
+        if (!(IsFile $this.python_exe)) {
+            $url = "https://github.com/spearmin10/corvette/blob/main/bin/python-3.11.1-embed-win32.zip?raw=true"
+            DownloadAndExtractArchive $url $python_dir
+        }
+        Write-Host "python has been installed to" $python_dir
+    }
+
+    hidden [void]InstallPython() {
+        $installer_exe = BuildFullPath $this.props.home_dir "python-3.11.1.exe"
+
+        if (!(IsFile $this.python_exe)) {
+            $url = "https://github.com/spearmin10/corvette/blob/main/bin/python-3.11.1.exe?raw=true"
+            DownloadFile $url $installer_exe
+        }
+        Start-Process -FilePath $installer_exe
+    }
+
+    [void]Run() {
+        Write-Host "Download/Install tools"
+        while ($true) {
+            Write-Host "************************************"
+            Write-Host " 1) Download Mimikatz"
+            Write-Host " 2) Download WildFire Test PE"
+            Write-Host " 3) Download python (embeddable)"
+            Write-Host " 4) Download/Install python"
+            Write-Host " q) Exit"
+            try {
+                do {
+                    $cmd = Read-Host "Please choose a menu item"
+                    switch ($cmd) {
+                        "q" {
+                            return
+                        }
+                        "1" {
+                            $this.DownloadMimikatz()
+                        }
+                        "2" {
+                            $this.DownloadWildFireTestPE()
+                        }
+                        "3" {
+                            $this.DownloadEmbeddablePython()
+                        }
+                        "4" {
+                            $this.InstallPython()
+                        }
+                        default {
+                            continue
+                        }
+                    }
+                    break
+                } while($true)
+            } catch {
+                Write-Host $_
+            }
+        }
+    }
+}
+
 class Mimikatz : CommandBase {
     [string]$mimikatz_dir
     [string]$mimikatz_exe
@@ -260,7 +351,6 @@ class WildFireTestPE : CommandBase {
     [string]$wildfire_exe
 
     WildFireTestPE([Properties]$props) : base($props) {
-        $this.props = $props
         $this.wildfire_dir = BuildFullPath $props.home_dir ".\wildfire"
         $this.wildfire_exe = BuildFullPath $this.wildfire_dir "wildfire-test-pe-file.exe"
 
@@ -561,34 +651,37 @@ class Menu {
                 Start-Process -FilePath "powershell.exe" -verb runas -ArgumentList $args
             }
             "1" {
-                Start-Process -FilePath "cmd.exe" -WorkingDirectory $this.props.home_dir
+                [SetupTools]::New($this.props).Run()
             }
             "2" {
-                Start-Process -FilePath "powershell.exe" -WorkingDirectory $this.props.home_dir
+                Start-Process -FilePath "cmd.exe" -WorkingDirectory $this.props.home_dir
             }
             "3" {
+                Start-Process -FilePath "powershell.exe" -WorkingDirectory $this.props.home_dir
+            }
+            "4" {
                 $cargs = @("/d", $this.props.home_dir)
                 $args = @("/K,", "cd") + (Quote $cargs)
                 Start-Process -FilePath "cmd.exe" -verb runas -ArgumentList $args
             }
-            "4" {
+            "5" {
                 $script = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes("cd " + (Quote $this.props.home_dir)))
                 $args = @("-NoExit", "-e", $script)
                 Start-Process -FilePath "powershell.exe" -verb runas -ArgumentList $args
             }
-            "5" {
+            "6" {
                 [Mimikatz]::New($this.props).Run($false)
             }
-            "6" {
+            "7" {
                 [Mimikatz]::New($this.props).Run($true)
             }
-            "7" {
+            "8" {
                 [PortScan]::New($this.props).Run()
             }
-            "8" {
+            "9" {
                 [KerberosBruteForce]::New($this.props).Run()
             }
-            "9" {
+            "10" {
                 [WildFireTestPE]::New($this.props).Run()
             }
             default {
@@ -603,15 +696,16 @@ class Menu {
         while ($true) {
             Write-Host "************************************"
             Write-Host " 0) Run as administrator"
-            Write-Host " 1) Create a new command shell"
-            Write-Host " 2) Create a new powershell"
-            Write-Host " 3) Create a new command shell (Run as administrator)"
-            Write-Host " 4) Create a new powershell (Run as administrator)"
-            Write-Host " 5) Run mimikatz"
-            Write-Host " 6) Run mimikatz (Run as administrator)"
-            Write-Host " 7) Run port scan"
-            Write-Host " 8) Run Kerberos Brute Force"
-            Write-Host " 9) Run WildFire Test PE"
+            Write-Host " 1) Download/Install tools"
+            Write-Host " 2) Create a new command shell"
+            Write-Host " 3) Create a new powershell"
+            Write-Host " 4) Create a new command shell (Run as administrator)"
+            Write-Host " 5) Create a new powershell (Run as administrator)"
+            Write-Host " 6) Run mimikatz"
+            Write-Host " 7) Run mimikatz (Run as administrator)"
+            Write-Host " 8) Run port scan"
+            Write-Host " 9) Run Kerberos Brute Force"
+            Write-Host "10) Run WildFire Test PE"
             try {
                 while (!$this.LaunchUserModeCommand((Read-Host "Please choose a menu item to run"))) {}
             } catch {
@@ -622,6 +716,9 @@ class Menu {
 
     hidden [bool]LaunchAdminModeCommand($cmd) {
         switch ($cmd) {
+            "0" {
+                [SetupTools]::New($this.props).Run()
+            }
             "1" {
                 Start-Process -FilePath "cmd.exe" -WorkingDirectory $this.props.home_dir
             }
@@ -669,6 +766,7 @@ class Menu {
         Write-Host "Corvette"
         while ($true) {
             Write-Host "************************************"
+            Write-Host " 0) Download/Install tools"
             Write-Host " 1) Create a new command shell"
             Write-Host " 2) Create a new powershell"
             Write-Host " 3) Run mimikatz"
