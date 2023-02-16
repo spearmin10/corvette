@@ -646,20 +646,7 @@ class SmbUnauthorizedLoginAttempts : IptgenBase {
 }
 
 class FortigateLogs : CommandBase {
-    [string]$scripts_dir
-    [string]$script_file
-
     FortigateLogs([Properties]$props) : base($props) {
-        $file_name = "syslog-fortigate-portscan.ps1"
-        $this.scripts_dir = BuildFullPath $props.home_dir ".\scripts"
-        $this.script_file = BuildFullPath $this.scripts_dir $file_name
-
-        if (!(IsDirectory $this.scripts_dir)) {
-            New-Item -ItemType Directory -Force -Path $this.scripts_dir
-        }
-
-        $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/bin/$($file_name)"
-        DownloadFile $url $this.script_file
     }
 
     [void]Run() {
@@ -685,6 +672,17 @@ class FortigateLogs : CommandBase {
     }
   
     [void]RunPortScan() {
+        $file_name = "syslog-fortigate-portscan.ps1"
+        $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
+        $script_file = BuildFullPath $scripts_dir $file_name
+
+        if (!(IsDirectory $scripts_dir)) {
+            New-Item -ItemType Directory -Force -Path $scripts_dir
+        }
+
+        $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/bin/$($file_name)"
+        DownloadFile $url $script_file
+
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
         $syslog_host = ReadInput "Syslog Host"
