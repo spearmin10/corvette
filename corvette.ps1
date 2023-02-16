@@ -650,7 +650,7 @@ class FortigateLogs : CommandBase {
     [string]$script_file
 
     FortigateLogs([Properties]$props) : base($props) {
-        $file_name = "syslog_fortigate_port_scan.ps1"
+        $file_name = "syslog-fortigate-portscan.ps1"
         $this.scripts_dir = BuildFullPath $props.home_dir ".\scripts"
         $this.script_file = BuildFullPath $this.scripts_dir $file_name
 
