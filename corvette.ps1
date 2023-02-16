@@ -663,6 +663,28 @@ class FortigateLogs : CommandBase {
     }
 
     [void]Run() {
+        Write-Host "************************************"
+        Write-Host " 1) Simulate port scan"
+        Write-Host " q) Exit"
+
+        while ($true) {
+            $cmd = Read-Host "Please choose a menu item to run"
+            switch($cmd) {
+                "1" {
+                    $this.RunPortScan()
+                    return
+                }
+                "q" {
+                    return
+                }
+                default {
+                    continue
+                }
+            }
+        }
+    }
+  
+    [void]RunPortScan() {
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
         $syslog_host = ReadInput "Syslog Host"
