@@ -645,6 +645,56 @@ class SmbUnauthorizedLoginAttempts : IptgenBase {
     }
 }
 
+class FortigateLogs : CommandBase {
+    [string]$scripts_dir
+    [string]$script_file
+
+    FortigateLogs([Properties]$props) : base($props) {
+        $file_name = "syslog_fortigate_port_scan.ps1"
+        $this.scripts_dir = BuildFullPath $props.home_dir ".\scripts"
+        $this.script_file = BuildFullPath $this.scripts_dir $file_name
+
+        if (!(IsDirectory $this.scripts_dir)) {
+            New-Item -ItemType Directory -Force -Path $this.scripts_dir
+        }
+
+        $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/bin/$($file_name)"
+        DownloadFile $url $this.script_file
+    }
+
+    [void]Run() {
+        Write-Host ""
+        Write-Host "### Enter the syslog configuration"
+        $syslog_host = ReadInput "Syslog Host"
+        $syslog_port = ReadInput "Syslog Port" `
+                                 "514" `
+                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                  "Please retype a valid port number"
+        $syslog_protocol = ReadInput "Syslog Protocol" `
+                                     "UDP" `
+                                     "^UDP|TCP|udp|tcp$" `
+                                     "Please retype a valid protocol"
+        $source_ip = ReadInput "Source IP" `
+                               "" `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $destination_ip = ReadInput "Destination IP" `
+                                    "" `
+                                    $script:PATTERN_IPV4_ADDR `
+                                    "Please retype a valid IPv4 address"
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $args = Quote @("-ExecutionPolicy", "Bypass", $this.script_file,
+                            "-SyslogHost", $syslog_host,
+                            "-SyslogPort", $syslog_port,
+                            "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                            "-SourceIP", $source_ip,
+                            "-DestinationIP", $destination_ip)
+            Start-Process -FilePath "powershell.exe" -ArgumentList $args
+        }
+    }
+}
+
 class Menu {
     [Properties]$props
     
@@ -701,6 +751,9 @@ class Menu {
             "11" {
                 [WildFireTestPE]::New($this.props).Run()
             }
+            "12" {
+                [FortigateLogs]::New($this.props).Run()
+            }
             default {
                 return $false
             }
@@ -724,6 +777,7 @@ class Menu {
             Write-Host " 9) Run port scan"
             Write-Host "10) Run Kerberos Brute Force"
             Write-Host "11) Run WildFire Test PE"
+            Write-Host "12) Send Fortigate Logs"
             try {
                 while (!$this.LaunchUserModeCommand((Read-Host "Please choose a menu item to run"))) {}
             } catch {
