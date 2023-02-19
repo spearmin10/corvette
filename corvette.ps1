@@ -704,7 +704,7 @@ class FortigateLogs : CommandBase {
                                     "Please retype a valid IPv4 address"
 
         if (AskYesNo "Are you sure you want to run?") {
-            $args = Quote @("-ExecutionPolicy", "Bypass", $this.script_file,
+            $args = Quote @("-ExecutionPolicy", "Bypass", $script_file,
                             "-SyslogHost", $syslog_host,
                             "-SyslogPort", $syslog_port,
                             "-SyslogProtocol", $syslog_protocol.ToUpper(),
