@@ -1,6 +1,15 @@
+@echo off
 set TMP_DIR=%TEMP%\%random:~-2%%random:~-2%%random:~-2%%random:~-2%.tmp
+set SRC_ARCHIVE=corvette-office-files.zip
+set DST_ARCHIVE=corvette-office-files-jp.zip
 
-call powershell Expand-Archive corvette-office-files.zip -DestinationPath "%TMP_DIR%" -Force
+if not exist "%SRC_ARCHIVE%" (
+  echo %SRC_ARCHIVE% was not found.
+  pause
+  exit /b 1
+)
+
+call powershell Expand-Archive "%SRC_ARCHIVE%" -DestinationPath "%TMP_DIR%" -Force
 
 pushd "%TMP_DIR%"
 rename "corvette wmi.doc" "‚²ˆÄ“à wmi.doc"
@@ -13,7 +22,7 @@ rename "corvette-mini wmi (offline).xls" "OFF‰ïŽQ‰Á“o˜^ wmi.xls"
 rename "corvette-mini (offline).xls" "OFF‰ïŽQ‰Á“o˜^.xls"
 popd
 
-call powershell Compress-Archive "%TMP_DIR%\*" corvette-office-files-jp.zip
-del /S /Q "%TMP_DIR%"
+call powershell Compress-Archive "%TMP_DIR%\*" "%DST_ARCHIVE%" -Force
+del /S /Q "%TMP_DIR%" > NUL
 
 pause
