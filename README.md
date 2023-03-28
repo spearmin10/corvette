@@ -21,7 +21,7 @@ Get Started
 
 1. Download [corvette-office-files.zip](https://github.com/spearmin10/corvette/raw/main/corvette-office-files.zip "corvette-office-files.zip"), and extract it
 2. Enable macro settings in your Microsoft Word or Excel
-3. Open a .doc/.xls file extracted from the archive, then you will see the corvette menu console launched by the file
+3. Open a .doc/.xls file extracted from the archive and accept to run macros, then you will see the corvette menu console launched by the file
 
   - Files which to execute risky modules (e.g. mimikatz)
     * corvette.doc
