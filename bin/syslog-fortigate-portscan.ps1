@@ -23,7 +23,7 @@ class Syslog {
     }
 
     [string]Build([string]$message) {
-        return "<" + $this.pri +">1 " + $(Get-Date -Format "yyyy-MM-ddTHH:mm:ssK") + " - - - - - " + $message
+        return "<" + $this.pri +">1 " + $(Get-Date $(Get-Date).ToUniversalTime() -Format "yyyy-MM-ddTHH:mm:ssK") + " - - - - - " + $message
     }
 }
 
