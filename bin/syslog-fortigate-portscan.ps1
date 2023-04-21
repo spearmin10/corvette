@@ -85,8 +85,8 @@ class Main {
     }
 
     [void]Run([string]$client_ip, [string]$target_ip, [bool]$verbose){
-        [int]$timestamp = $(Get-Date $(Get-Date).ToUniversalTime() -UFormat "%s")
         for ($target_port = 1; $target_port -lt 65536; $target_port++){
+          [int]$timestamp = $(Get-Date $(Get-Date).ToUniversalTime() -UFormat "%s")
           $log = @"
 CEF:0|Fortinet|Fortigate|v6.0.3|00013|traffic:forward server-rst|3|deviceExternalId=FGT5HD0000000000 FTNTFGTlogid=0000000013 cat=traffic:forward FTNTFGTsubtype=forward FTNTFGTlevel=notice FTNTFGTvd=vdom1 FTNTFGTeventtime=$($timestamp)000000000 src=$client_ip spt=54190 deviceInboundInterface=port12 FTNTFGTsrcintfrole=undefined dst=$target_ip dpt=$target_port deviceOutboundInterface=port11 FTNTFGTdstintfrole=undefined FTNTFGTpoluuid=c2d460aa-fe6f-51e8-9505-41b5117dfdd4 externalId=402 proto=6 act=server-rst FTNTFGTpolicyid=1 FTNTFGTpolicytype=policy app=tcp/$target_port FTNTFGTdstcountry=United States FTNTFGTsrccountry=Reserved FTNTFGTappid=40568 FTNTFGTapp=tcp/$target_port FTNTFGTappcat=Web.Client FTNTFGTapprisk=medium FTNTFGTapplist=g-default FTNTFGTduration=2 out=1024 in=1024 FTNTFGTsentpkt=58 FTNTFGTrcvdpkt=105 FTNTFGTcountapp=2
 "@
