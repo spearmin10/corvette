@@ -7,6 +7,10 @@ class Menu {
 
     hidden [bool]LaunchCommand($cmd) {
         switch ($cmd) {
+            "c" {
+                Remove-Item -Path $this.props.home_dir -Recurse -Force -ErrorAction SilentlyContinue
+                New-Item -ItemType Directory -Force -Path $this.props.home_dir
+            }
             "1" {
                 Start-Process -FilePath "explorer.exe" -ArgumentList @($this.home_dir)
             }
@@ -35,6 +39,7 @@ class Menu {
         Write-Host "Corvette"
         while ($true) {
             Write-Host "************************************"
+            Write-Host " c) Cleanup the working directory"
             Write-Host " 1) Open an explorer"
             Write-Host " 2) Create a new command shell"
             Write-Host " 3) Create a new powershell"

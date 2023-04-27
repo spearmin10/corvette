@@ -724,6 +724,10 @@ class Menu {
 
     hidden [bool]LaunchUserModeCommand($cmd) {
         switch ($cmd) {
+            "c" {
+                Remove-Item -Path $this.props.home_dir -Recurse -Force -ErrorAction SilentlyContinue
+                New-Item -ItemType Directory -Force -Path $this.props.home_dir
+            }
             "0" {
                 <#
                 $script = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($this.props.my_script))
@@ -785,6 +789,7 @@ class Menu {
         Write-Host "Corvette"
         while ($true) {
             Write-Host "************************************"
+            Write-Host " c) Cleanup the working directory"
             Write-Host " 0) Run as administrator"
             Write-Host " 1) Download/Install tools"
             Write-Host " 2) Open an explorer"
@@ -808,6 +813,10 @@ class Menu {
 
     hidden [bool]LaunchAdminModeCommand($cmd) {
         switch ($cmd) {
+            "c" {
+                Remove-Item -Path $this.props.home_dir -Recurse -Force -ErrorAction SilentlyContinue
+                New-Item -ItemType Directory -Force -Path $this.props.home_dir
+            }
             "0" {
                 [SetupTools]::New($this.props).Run()
             }
@@ -861,6 +870,7 @@ class Menu {
         Write-Host "Corvette"
         while ($true) {
             Write-Host "************************************"
+            Write-Host " c) Cleanup the working directory"
             Write-Host " 0) Download/Install tools"
             Write-Host " 1) Open an explorer"
             Write-Host " 2) Create a new command shell"
