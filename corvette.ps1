@@ -769,7 +769,7 @@ class FortigateLogs : CommandBase {
                             "-SourceIP", $source_ip,
                             "-DestinationIP", $destination_ip,
                             "-Domain", $domain,
-                            "-Count", $numof_logs,
+                            "-Count", [string]$numof_logs,
                             "-LogType", "NTLM-auth:success")
             Start-Process -FilePath "powershell.exe" -ArgumentList $args
         }
