@@ -900,7 +900,8 @@ class CiscoLogs : CommandBase {
             if (![string]::IsNullOrEmpty($user_id)) {
                 $args += @("-UserID", $user_id)
             }
-            Start-Process -FilePath "powershell.exe" -ArgumentList Quote($args)
+            $args = Quote $args
+            Start-Process -FilePath "powershell.exe" -ArgumentList $args
         }
     }
 }
