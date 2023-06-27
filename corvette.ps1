@@ -880,7 +880,7 @@ class CiscoLogs : CommandBase {
                              "" `
                              $script:PATTERN_IPV4_ADDR `
                              "Please retype a valid IPv4 address"
-        $user_id = ReadInput "Authentication User ID" ""
+        $user_id = ReadInput "Authentication User ID (Optional)" ""
         $log_type = ReadInput "Log Type" "all" ".+"
         $numof_logs = ParseNumber(ReadInput "Number of log records" `
                                             "100" `
