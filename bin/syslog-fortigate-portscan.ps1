@@ -71,17 +71,17 @@ class Main {
     
     Main([string]$syslog_protocol, [string]$sylog_host,
          [int]$syslog_port, [int]$facility, [int]$severity) {
-      switch ($syslog_protocol) {
-          "UDP" {
-              $this.syslog = [UdpSyslog]::New($sylog_host, $syslog_port, $facility, $severity)
-          }
-          "TCP" {
-              $this.syslog = [TcpSyslog]::New($sylog_host, $syslog_port, $facility, $severity)
-          }
-          default {
-              throw "Unknown syslog protocol: " + $syslog_protocol
-          }
-      }
+        switch ($syslog_protocol) {
+            "UDP" {
+                $this.syslog = [UdpSyslog]::New($sylog_host, $syslog_port, $facility, $severity)
+            }
+            "TCP" {
+                $this.syslog = [TcpSyslog]::New($sylog_host, $syslog_port, $facility, $severity)
+            }
+            default {
+                throw "Unknown syslog protocol: " + $syslog_protocol
+            }
+        }
     }
 
     [void]Run([string]$client_ip, [string]$target_ip, [bool]$verbose){
