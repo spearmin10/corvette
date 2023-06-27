@@ -724,6 +724,57 @@ class FortigateLogs : CommandBase {
         }
     }
     
+    [void]RunNTLMAuthFailure() {
+        $file_name = "syslog-fortigate-authlogs.ps1"
+        $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
+        $script_file = BuildFullPath $scripts_dir $file_name
+
+        if (!(IsDirectory $scripts_dir)) {
+            New-Item -ItemType Directory -Force -Path $scripts_dir
+        }
+
+        $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/bin/$($file_name)"
+        DownloadFile $url $script_file
+
+        Write-Host ""
+        Write-Host "### Enter the syslog configuration"
+        $syslog_host = ReadInput "Syslog Host"
+        $syslog_port = ReadInput "Syslog Port" `
+                                 "514" `
+                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                  "Please retype a valid port number"
+        $syslog_protocol = ReadInput "Syslog Protocol" `
+                                     "UDP" `
+                                     "^UDP|TCP|udp|tcp$" `
+                                     "Please retype a valid protocol"
+        $source_ip = ReadInput "Authentication Client IP" `
+                               "" `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $destination_ip = ReadInput "Active Directory Server IP" `
+                                    "" `
+                                    $script:PATTERN_IPV4_ADDR `
+                                    "Please retype a valid IPv4 address"
+        $domain = ReadInput "Domain Name" "domain" ".+"
+        $numof_logs = ParseNumber(ReadInput "Number of log records" `
+                                            "100" `
+                                            "^[0-9]+$" `
+                                            "Please retype a valid number")
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $args = Quote @("-ExecutionPolicy", "Bypass", $script_file,
+                            "-SyslogHost", $syslog_host,
+                            "-SyslogPort", $syslog_port,
+                            "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                            "-SourceIP", $source_ip,
+                            "-DestinationIP", $destination_ip,
+                            "-Domain", $domain,
+                            "-Count", [string]$numof_logs,
+                            "-LogType", "NTLM-auth:failure")
+            Start-Process -FilePath "powershell.exe" -ArgumentList $args
+        }
+    }
+    
     [void]RunNTLMAuthSuccess() {
         $file_name = "syslog-fortigate-authlogs.ps1"
         $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
