@@ -880,7 +880,7 @@ class CiscoLogs : CommandBase {
                              "" `
                              $script:PATTERN_IPV4_ADDR `
                              "Please retype a valid IPv4 address"
-        $user_id = ReadInput "Authentication User ID" $null
+        $user_id = ReadInput "Authentication User ID" ""
         $log_type = ReadInput "Log Type" "all" ".+"
         $numof_logs = ParseNumber(ReadInput "Number of log records" `
                                             "100" `
@@ -889,16 +889,18 @@ class CiscoLogs : CommandBase {
         $user_group = "group"
 
         if (AskYesNo "Are you sure you want to run?") {
-            $args = Quote @("-ExecutionPolicy", "Bypass", $script_file,
-                            "-SyslogHost", $syslog_host,
-                            "-SyslogPort", $syslog_port,
-                            "-SyslogProtocol", $syslog_protocol.ToUpper(),
-                            "-UserIP", $user_ip,
-                            "-UserID", $user_id,
-                            "-UserGroup", $user_group,
-                            "-Count", [string]$numof_logs,
-                            "-LogType", $log_type)
-            Start-Process -FilePath "powershell.exe" -ArgumentList $args
+            $args = @("-ExecutionPolicy", "Bypass", $script_file,
+                      "-SyslogHost", $syslog_host,
+                      "-SyslogPort", $syslog_port,
+                      "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                      "-UserIP", $user_ip,
+                      "-UserGroup", $user_group,
+                      "-Count", [string]$numof_logs,
+                      "-LogType", $log_type)
+            if (![string]::IsNullOrEmpty($user_id)) {
+                $args += @("-UserID", $user_id)
+            }
+            Start-Process -FilePath "powershell.exe" -ArgumentList Quote($args)
         }
     }
 }
