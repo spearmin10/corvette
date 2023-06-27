@@ -112,6 +112,7 @@ CEF:0|Fortinet|Fortigate|v6.0.3|43017|event:user NTLM-auth success|7|deviceExter
                     $log = @"
 CEF:0|Fortinet|Fortigate|v6.0.3|43017|event:user NTLM-auth failure|7|deviceExternalId=FGT5HD0000000000 FTNTFGTlogid=0102043017 cat=event:user FTNTFGTsubtype=user FTNTFGTlevel=alert FTNTFGTvd=vdom1 FTNTFGTeventtime=$($timestamp)000000000 FTNTFGTlogdesc=NTLM authentication failed duser=$new_user_id FTNTFGTgroup=N/A FTNTFGTauthproto=https($client_ip) src=$client_ip dst=$target_ip FTNTFGTpolicyid=3 FTNTFGTadgroup=$domain act=NTLM-auth outcome=failure reason=reason msg=AD group user failed in authentication
 "@
+                }
                 default {
                     throw "Unknown log type: " + $log_type
                 }
