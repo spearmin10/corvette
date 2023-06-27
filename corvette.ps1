@@ -827,6 +827,82 @@ class FortigateLogs : CommandBase {
     }
 }
 
+class CiscoLogs : CommandBase {
+    CiscoLogs([Properties]$props) : base($props) {
+    }
+
+    [void]Run() {
+        Write-Host "************************************"
+        Write-Host " 1) Send AnyConnect auth logs"
+        Write-Host " q) Exit"
+
+        while ($true) {
+            $cmd = Read-Host "Please choose a menu item to run"
+            switch($cmd) {
+                "1" {
+                    $this.RunAnyConnectAuth()
+                    return
+                }
+                "q" {
+                    return
+                }
+                default {
+                    continue
+                }
+            }
+        }
+    }
+  
+    [void]RunAnyConnectAuth() {
+        $file_name = "syslog-cisco-any-connect-authlogs.ps1"
+        $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
+        $script_file = BuildFullPath $scripts_dir $file_name
+
+        if (!(IsDirectory $scripts_dir)) {
+            New-Item -ItemType Directory -Force -Path $scripts_dir
+        }
+
+        $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/bin/$($file_name)"
+        DownloadFile $url $script_file
+
+        Write-Host ""
+        Write-Host "### Enter the syslog configuration"
+        $syslog_host = ReadInput "Syslog Host"
+        $syslog_port = ReadInput "Syslog Port" `
+                                 "514" `
+                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                  "Please retype a valid port number"
+        $syslog_protocol = ReadInput "Syslog Protocol" `
+                                     "UDP" `
+                                     "^UDP|TCP|udp|tcp$" `
+                                     "Please retype a valid protocol"
+        $user_ip = ReadInput "Authentication User IP" `
+                             "" `
+                             $script:PATTERN_IPV4_ADDR `
+                             "Please retype a valid IPv4 address"
+        $user_id = ReadInput "Authentication User ID" $null
+        $log_type = ReadInput "Log Type" "all" ".+"
+        $numof_logs = ParseNumber(ReadInput "Number of log records" `
+                                            "100" `
+                                            "^[0-9]+$" `
+                                            "Please retype a valid number")
+        $user_group = "group"
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $args = Quote @("-ExecutionPolicy", "Bypass", $script_file,
+                            "-SyslogHost", $syslog_host,
+                            "-SyslogPort", $syslog_port,
+                            "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                            "-UserIP", $user_ip,
+                            "-UserID", $user_id,
+                            "-UserGroup", $user_group,
+                            "-Count", [string]$numof_logs,
+                            "-LogType", $log_type)
+            Start-Process -FilePath "powershell.exe" -ArgumentList $args
+        }
+    }
+}
+
 class Menu {
     [Properties]$props
     
@@ -890,6 +966,9 @@ class Menu {
             "12" {
                 [FortigateLogs]::New($this.props).Run()
             }
+            "13" {
+                [CiscoLogs]::New($this.props).Run()
+            }
             default {
                 return $false
             }
@@ -915,6 +994,7 @@ class Menu {
             Write-Host "10) Run Kerberos Brute Force"
             Write-Host "11) Run WildFire Test PE"
             Write-Host "12) Send Fortigate Logs"
+            Write-Host "13) Send Cisco Logs"
             try {
                 while (!$this.LaunchUserModeCommand((Read-Host "Please choose a menu item to run"))) {}
             } catch {
