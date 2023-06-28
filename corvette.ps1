@@ -730,7 +730,7 @@ class FortigateLogs : CommandBase {
     [void]Run() {
         Write-Host "************************************"
         Write-Host " 1) Simulate port scan"
-        Write-Host " 2) Simulate large upload"
+        Write-Host " 2) Simulate large upload (HTTPS)"
         Write-Host " 3) Send NTLM-auth logs (auth-success)"
         Write-Host " 4) Send NTLM-auth logs (auth-failure)"
         Write-Host " q) Exit"
@@ -743,7 +743,7 @@ class FortigateLogs : CommandBase {
                     return
                 }
                 "2" {
-                    $this.RunLargeUpload()
+                    $this.RunLargeUploadHTTPS()
                     return
                 }
                 "3" {
@@ -809,7 +809,7 @@ class FortigateLogs : CommandBase {
         }
     }
     
-    [void]RunLargeUpload() {
+    [void]RunLargeUploadHTTPS() {
         $file_name = "syslog-fortigate-large-upload.ps1"
         $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
         $script_file = BuildFullPath $scripts_dir $file_name
@@ -842,10 +842,6 @@ class FortigateLogs : CommandBase {
                                     "" `
                                     $script:PATTERN_IPV4_ADDR `
                                     "Please retype a valid IPv4 address"
-        $destination_port = ReadInput "Destination Port" `
-                                      $null `
-                                      "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
-                                      "Please retype a valid port number"
 
         if (AskYesNo "Are you sure you want to run?") {
             $args = Quote @("-ExecutionPolicy", "Bypass", $script_file,
@@ -853,8 +849,7 @@ class FortigateLogs : CommandBase {
                             "-SyslogPort", $syslog_port,
                             "-SyslogProtocol", $syslog_protocol.ToUpper(),
                             "-SourceIP", $source_ip,
-                            "-DestinationIP", $destination_ip,
-                            "-DestinationPort", $destination_port)
+                            "-DestinationIP", $destination_ip)
             Start-Process -FilePath "powershell.exe" -ArgumentList $args
         }
     }
