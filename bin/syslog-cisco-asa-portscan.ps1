@@ -86,8 +86,8 @@ class Main {
 
     [void]Run([string]$client_ip, [string]$target_ip, [bool]$verbose){
         for ($target_port = 1; $target_port -lt 65536; $target_port++){
-          [int]$timestamp = $(Get-Date $(Get-Date).ToUniversalTime() -UFormat "%s")
           [int]$sess_id = $(Get-Random)
+          [int]$client_port = $(Get-Random -Minimum 1025 -Maximum 65534)
           $log = @"
 %ASA-6-302013: Built outbound TCP connection $sess_id for outside:${target_ip}/${target_port} (${target_ip}/${target_port}) to inside:${client_ip}/${client_port} (${client_ip}/${client_port})
 "@
