@@ -94,8 +94,8 @@ class Main {
             [int]$sess_id = $(Get-Random)
             [int]$client_port = $(Get-Random -Minimum 1025 -Maximum 65534)
             [int]$session_kb = $(Get-Random -Minimum 1024000 -Maximum 1024000000)
-            [string]$duration_mins = "{0:00}" -f [int]($session_bytes / 1024000 % 60)
-            [string]$duration_hours = "{0:00}" -f [int]($session_bytes / 1024000 / 60)
+            [string]$duration_mins = "{0:00}" -f [int]($session_kb / 1024000 % 60)
+            [string]$duration_hours = "{0:00}" -f [int]($session_kb / 1024000 / 60)
             $log = @"
 %ASA-6-302014: Teardown TCP connection $sess_id for source:$client_ip/$client_port to destination:$target_ip/$target_port duration ${duration_hours}:${duration_mins}:00 bytes ${session_kb}000 TCP FINs
 "@
