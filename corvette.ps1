@@ -915,7 +915,7 @@ class FortigateLogs : CommandBase {
                                     "Please retype a valid IPv4 address"
         $domain = ReadInput "Domain Name" "domain" ".+"
         $numof_logs = ParseNumber(ReadInput "Number of log records" `
-                                            "100" `
+                                            "1000" `
                                             "^[0-9]+$" `
                                             "Please retype a valid number")
         $log_type = ReadInputByChooser "Log Type" `
@@ -939,7 +939,7 @@ class FortigateLogs : CommandBase {
                             "-DestinationIP", $destination_ip,
                             "-Domain", $domain,
                             "-Count", [string]$numof_logs,
-                            "-LogType", "NTLM-auth:success")
+                            "-LogType", $log_type)
             Start-Process -FilePath "powershell.exe" -ArgumentList $args
         }
     }
