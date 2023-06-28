@@ -29,9 +29,7 @@ function ReadAllBytes ([IO.BinaryReader] $reader) {
 }
 
 function DownloadString ([string]$url) {
-    $cli = New-Object Net.WebClient
-    $cli.Headers.Add("Cache-Control", "no-cache, no-store");
-    return $cli.DownloadString($url)
+    return [Net.WebClient]::New().DownloadString($url)
 }
 
 function DownloadBytes ([string]$url) {
@@ -41,6 +39,8 @@ function DownloadBytes ([string]$url) {
 
 function DownloadFile ([string]$url, [string]$save_as) {
     $cli = New-Object Net.WebClient
+    $cli.Headers.Add("Cache-Control", "no-cache, no-store")
+    
     if ([string]::IsNullOrEmpty($save_as) -Or (IsDirectory $save_as)) {
         $uri = New-Object System.Uri($url)
         if (!$uri.AbsolutePath.EndsWith("/")) {
