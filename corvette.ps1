@@ -201,7 +201,9 @@ class ConfigureSettings : CommandBase {
         }
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host" $this.props.syslog_host
+        $syslog_host = ReadInput "Syslog Host" `
+                                 $this.props.syslog_host `
+                                 ".+"
         $syslog_port = ReadInput "Syslog Port" `
                                  $syslog_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
@@ -771,7 +773,9 @@ class FortigateLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host" $this.props.syslog_host
+        $syslog_host = ReadInput "Syslog Host" `
+                                 $this.props.syslog_host `
+                                 ".+"
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
@@ -814,7 +818,9 @@ class FortigateLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host" $this.props.syslog_host
+        $syslog_host = ReadInput "Syslog Host" `
+                                 $this.props.syslog_host `
+                                 ".+"
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
@@ -865,7 +871,9 @@ class FortigateLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host" $this.props.syslog_host
+        $syslog_host = ReadInput "Syslog Host" `
+                                 $this.props.syslog_host `
+                                 ".+"
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
@@ -953,7 +961,9 @@ class CiscoLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host" $this.props.syslog_host
+        $syslog_host = ReadInput "Syslog Host" `
+                                 $this.props.syslog_host `
+                                 ".+"
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
@@ -996,7 +1006,9 @@ class CiscoLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host" $this.props.syslog_host
+        $syslog_host = ReadInput "Syslog Host" `
+                                 $this.props.syslog_host `
+                                 ".+"
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
@@ -1044,7 +1056,9 @@ class CiscoLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host" $this.props.syslog_host
+        $syslog_host = ReadInput "Syslog Host" `
+                                 $this.props.syslog_host `
+                                 ".+"
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
