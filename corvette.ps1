@@ -757,8 +757,7 @@ class FortigateLogs : CommandBase {
         Write-Host "************************************"
         Write-Host " 1) Simulate port scan"
         Write-Host " 2) Simulate large upload"
-        Write-Host " 3) Send NTLM-auth logs (auth-success)"
-        Write-Host " 4) Send NTLM-auth logs (auth-failure)"
+        Write-Host " 3) Send NTLM-auth logs"
         Write-Host " q) Exit"
 
         while ($true) {
@@ -773,11 +772,7 @@ class FortigateLogs : CommandBase {
                     return
                 }
                 "3" {
-                    $this.RunNTLMAuthSuccess()
-                    return
-                }
-                "4" {
-                    $this.RunNTLMAuthFailure()
+                    $this.RunNTLMAuth()
                     return
                 }
                 "q" {
@@ -885,7 +880,7 @@ class FortigateLogs : CommandBase {
         }
     }
     
-    [void]RunNTLMAuthSuccess() {
+    [void]RunNTLMAuth() {
         $file_name = "syslog-fortigate-authlogs.ps1"
         $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
         $script_file = BuildFullPath $scripts_dir $file_name
@@ -923,7 +918,18 @@ class FortigateLogs : CommandBase {
                                             "100" `
                                             "^[0-9]+$" `
                                             "Please retype a valid number")
-
+        $log_type = ReadInputByChooser "Log Type" `
+                                       "success" `
+                                       @("success", "failure") `
+                                       "Please type a valid log type"
+        switch ($log_type) {
+            "success" {
+                $log_type = "NTLM-auth:success"
+            }
+            "failure" {
+                $log_type = "NTLM-auth:failure"
+            }
+        }
         if (AskYesNo "Are you sure you want to run?") {
             $args = Quote @("-ExecutionPolicy", "Bypass", $script_file,
                             "-SyslogHost", $syslog_host,
@@ -934,59 +940,6 @@ class FortigateLogs : CommandBase {
                             "-Domain", $domain,
                             "-Count", [string]$numof_logs,
                             "-LogType", "NTLM-auth:success")
-            Start-Process -FilePath "powershell.exe" -ArgumentList $args
-        }
-    }
-    
-    [void]RunNTLMAuthFailure() {
-        $file_name = "syslog-fortigate-authlogs.ps1"
-        $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
-        $script_file = BuildFullPath $scripts_dir $file_name
-
-        if (!(IsDirectory $scripts_dir)) {
-            New-Item -ItemType Directory -Force -Path $scripts_dir
-        }
-
-        $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/bin/$($file_name)"
-        DownloadFile $url $script_file
-
-        Write-Host ""
-        Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host" `
-                                 $this.props.syslog_host `
-                                 ".+"
-        $syslog_port = ReadInput "Syslog Port" `
-                                 $this.props.syslog_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
-                                 "Please retype a valid port number"
-        $syslog_protocol = ReadInput "Syslog Protocol" `
-                                     $this.props.syslog_protocol `
-                                     "^UDP|TCP|udp|tcp$" `
-                                     "Please retype a valid protocol"
-        $source_ip = ReadInput "Authentication Client IP" `
-                               "" `
-                               $script:PATTERN_IPV4_ADDR `
-                               "Please retype a valid IPv4 address"
-        $destination_ip = ReadInput "Active Directory Server IP" `
-                                    "" `
-                                    $script:PATTERN_IPV4_ADDR `
-                                    "Please retype a valid IPv4 address"
-        $domain = ReadInput "Domain Name" "domain" ".+"
-        $numof_logs = ParseNumber(ReadInput "Number of log records" `
-                                            "100" `
-                                            "^[0-9]+$" `
-                                            "Please retype a valid number")
-
-        if (AskYesNo "Are you sure you want to run?") {
-            $args = Quote @("-ExecutionPolicy", "Bypass", $script_file,
-                            "-SyslogHost", $syslog_host,
-                            "-SyslogPort", $syslog_port,
-                            "-SyslogProtocol", $syslog_protocol.ToUpper(),
-                            "-SourceIP", $source_ip,
-                            "-DestinationIP", $destination_ip,
-                            "-Domain", $domain,
-                            "-Count", [string]$numof_logs,
-                            "-LogType", "NTLM-auth:failure")
             Start-Process -FilePath "powershell.exe" -ArgumentList $args
         }
     }
