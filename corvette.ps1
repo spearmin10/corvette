@@ -112,19 +112,24 @@ function ReadInputByChooser([string]$message, [string]$default, [string[]]$optio
     if (!$options) {
         throw "options are empty."
     }
+    $display_options = $options | select -Unique
     $index = [array]::IndexOf($options, $default)
     if ($index -ge 0) {
-        $options[$index] = $default + "(default)"
+        $display_options[$index] = $default + " (default)"
     }
-    $message += " - options: " + ($options -join ", ")
-
+    Write-Host $message":"
+    $display_options | % {
+        $index = [array]::IndexOf($display_options, $_) + 1
+        Write-Host (" " + ([string]$index).PadLeft(2) + ") " + $_)
+    }
     do {
-        $input = (Read-Host $message).Trim()
-        if ([string]::IsNullOrEmpty($input) -And ![string]::IsNullOrEmpty($default)) {
+        $input = (Read-Host "Choose an option").Trim()
+        if ([string]::IsNullOrEmpty($input)) {
             return $default
         }
-        if ([array]::IndexOf($options, $input) -ge 0) {
-            return $input
+        $index = ParseNumber($input)
+        if ($index -ne $null -And $index -gt 0 -And $index -le $options.Length) {
+            return $options[$index - 1]
         }
         if (![string]::IsNullOrEmpty($input) -And ![string]::IsNullOrEmpty($retry_message)) {
             Write-Host $retry_message
@@ -181,16 +186,46 @@ class Properties {
         } else {
             $this.my_script = [System.IO.File]::ReadAllText($info.MyCommand.Path)
         }
-        
-        $this.syslog_host = $null
-        $this.syslog_port = "514"
-        $this.syslog_protocol = "UDP"
+        $this.Load()
     }
 
     hidden [void]Initialize() {
         New-Item -ItemType Directory -Force -Path $this.home_dir
     }
-
+    
+    hidden [void]Load() {
+        $conf_file = BuildFullPath $this.home_dir ".\corvette.json"
+        if (IsFile $conf_file) {
+            $settings = Get-Content $conf_file -Encoding utf8 -Raw | ConvertFrom-Json
+        } else {
+            $settings = @{}
+        }
+        $this.syslog_host = $settings.syslog.host
+        $this.syslog_port = $settings.syslog.port
+        $this.syslog_protocol = $settings.syslog.protocol
+        if ($this.syslog_host -isnot [string] -Or [string]::IsNullOrEmpty($this.syslog_port)) {
+            $this.syslog_port = $null
+        }
+        if ($this.syslog_port -isnot [string] -Or [string]::IsNullOrEmpty($this.syslog_port)) {
+            $this.syslog_port = "514"
+        }
+        if ($this.syslog_protocol -isnot [string] -Or [string]::IsNullOrEmpty($this.syslog_protocol)) {
+            $this.syslog_protocol = "UDP"
+        }
+    }
+    
+    [void]Save() {
+        $conf_file = BuildFullPath $this.home_dir ".\corvette.json"
+        $settings = @{
+            "syslog" = @{
+                "host" = $this.syslog_host
+                "port" = $this.syslog_port
+                "protocol" = $this.syslog_protocol
+            }
+        }
+        $settings | ConvertTo-Json | Set-Content -Encoding utf8 -Path $conf_file
+    }
+    
     [string]MakeSureScriptFileExists() {
         $path = $myInvocation.MyCommand.Path
         if ([string]::IsNullOrEmpty($path)) {
@@ -200,6 +235,7 @@ class Properties {
         }
         return $path
     }
+
 }
 
 class CommandBase {
@@ -243,6 +279,7 @@ class ConfigureSettings : CommandBase {
             $this.props.syslog_host = $syslog_host
             $this.props.syslog_port = [int]$syslog_port
             $this.props.syslog_protocol = $syslog_protocol
+            $this.props.Save()
         }
     }
 
@@ -263,6 +300,7 @@ class ConfigureSettings : CommandBase {
                         "0" {
                             Remove-Item -Path $this.props.home_dir -Recurse -Force -ErrorAction SilentlyContinue
                             New-Item -ItemType Directory -Force -Path $this.props.home_dir
+                            $this.props.Save()
                         }
                         "1" {
                             $this.SetDefaultSyslogServer()
@@ -1106,7 +1144,21 @@ class CiscoLogs : CommandBase {
                              $script:PATTERN_IPV4_ADDR `
                              "Please retype a valid IPv4 address"
         $user_id = ReadInput "Authentication User ID (Optional)" ""
-        $log_type = ReadInput "Log Type" "all" ".+"
+        $log_type = ReadInputByChooser "Log Type" `
+                                       "all" `
+                                       @("all",
+                                         "ASA-6-113039",
+                                         "ASA-6-716001",
+                                         "ASA-6-722022",
+                                         "ASA-5-722033",
+                                         "ASA-5-722034",
+                                         "ASA-6-722051",
+                                         "ASA-6-722055",
+                                         "ASA-6-722053",
+                                         "ASA-4-113019",
+                                         "ASA-6-716002",
+                                         "ASA-6-722023") `
+                                       "Please type a valid log type"
         $numof_logs = ParseNumber(ReadInput "Number of log records" `
                                             "100" `
                                             "^[0-9]+$" `
