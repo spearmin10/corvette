@@ -810,7 +810,7 @@ class FortigateLogs : CommandBase {
     }
     
     [void]RunLargeUploadHTTPS() {
-        $file_name = "syslog-fortigate-large-upload.ps1"
+        $file_name = "syslog-fortigate-large-upload-https.ps1"
         $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
         $script_file = BuildFullPath $scripts_dir $file_name
 
