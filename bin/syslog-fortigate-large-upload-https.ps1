@@ -87,7 +87,7 @@ class Main {
     [void]Run([string]$client_ip,
               [string]$target_ip,
               [bool]$verbose) {
-        [int]$limit = 1000
+        [int]$limit = 10000
         1..$limit | %{
             [int64]$timestamp = $(Get-Date).ToUniversalTime().ToFileTime() - 116444736000000000
             [int]$sess_id = $(Get-Random)
