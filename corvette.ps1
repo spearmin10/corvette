@@ -108,6 +108,30 @@ function ReadInputSize([string]$message, [string]$default, [string]$retry_messag
     } while ($true)
 }
 
+function ReadInputByChooser([string]$message, [string]$default, [string[]]$options, [string]$retry_message) {
+    if (!$options) {
+        throw "options are empty."
+    }
+    $index = [array]::IndexOf($options, $default)
+    if ($index -ge 0) {
+        $options[$index] = $default + "(default)"
+    }
+    $message += " - options: " + ($options -join ", ")
+
+    do {
+        $input = (Read-Host $message).Trim()
+        if ([string]::IsNullOrEmpty($input) -And ![string]::IsNullOrEmpty($default)) {
+            return $default
+        }
+        if ([array]::IndexOf($options, $input) -ge 0) {
+            return $input
+        }
+        if (![string]::IsNullOrEmpty($input) -And ![string]::IsNullOrEmpty($retry_message)) {
+            Write-Host $retry_message
+        }
+    } while ($true)
+}
+
 function AskYesNo([string]$message) {
     do {
         $answer = Read-Host "$message [Y/n]"
@@ -844,10 +868,10 @@ class FortigateLogs : CommandBase {
                                     "" `
                                     $script:PATTERN_IPV4_ADDR `
                                     "Please retype a valid IPv4 address"
-        $session_type = ReadInput "Session Type (http or https)" `
-                                  "https" `
-                                  "^(http|https)$" `
-                                  "Please type a valid session type"
+        $session_type = ReadInputByChooser "Session Type (http or https)" `
+                                           "https" `
+                                           @("http", "https") `
+                                           "Please type a valid session type"
 
         if (AskYesNo "Are you sure you want to run?") {
             $args = Quote @("-ExecutionPolicy", "Bypass", $script_file,
