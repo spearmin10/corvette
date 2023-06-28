@@ -105,7 +105,7 @@ class Main {
             switch ($log_type) {
                 "NTLM-auth:success" {
                     $log = @"
-CEF:0|Fortinet|Fortigate|v6.0.3|43017|event:user NTLM-auth success|7|deviceExternalId=FGT5HD0000000000 FTNTFGTlogid=0102043016 cat=event:user FTNTFGTsubtype=user FTNTFGTlevel=alert FTNTFGTvd=vdom1 FTNTFGTeventtime=$($timestamp)000000000 FTNTFGTlogdesc=NTLM authentication successful duser=$new_user_id FTNTFGTgroup=N/A FTNTFGTauthproto=https($client_ip) src=$client_ip dst=$target_ip FTNTFGTpolicyid=3 FTNTFGTadgroup=$domain act=NTLM-auth outcome=success reason=reason msg=AD group user succeeded in authentication
+CEF:0|Fortinet|Fortigate|v6.0.3|43016|event:user NTLM-auth success|7|deviceExternalId=FGT5HD0000000000 FTNTFGTlogid=0102043016 cat=event:user FTNTFGTsubtype=user FTNTFGTlevel=alert FTNTFGTvd=vdom1 FTNTFGTeventtime=$($timestamp)000000000 FTNTFGTlogdesc=NTLM authentication successful duser=$new_user_id FTNTFGTgroup=N/A FTNTFGTauthproto=https($client_ip) src=$client_ip dst=$target_ip FTNTFGTpolicyid=3 FTNTFGTadgroup=$domain act=NTLM-auth outcome=success reason=reason msg=AD group user succeeded in authentication
 "@
                 }
                 "NTLM-auth:failure" {
