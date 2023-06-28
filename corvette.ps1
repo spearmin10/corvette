@@ -141,6 +141,10 @@ class Properties {
     [string]$my_script
     [string]$home_dir
     [System.Management.Automation.InvocationInfo]$invocation_info
+    
+    [string]$syslog_host
+    [string]$syslog_port
+    [string]$syslog_protocol
 
     Properties([System.Management.Automation.InvocationInfo]$info) {
         $this.invocation_info = $info
@@ -151,6 +155,10 @@ class Properties {
         } else {
             $this.my_script = [System.IO.File]::ReadAllText($info.MyCommand.Path)
         }
+        
+        $this.syslog_host = $null
+        $this.syslog_port = "514"
+        $this.syslog_protocol = "UDP"
     }
 
     hidden [void]Initialize() {
@@ -173,6 +181,74 @@ class CommandBase {
 
     CommandBase([Properties]$props) {
         $this.props = $props
+    }
+}
+
+class ConfigureSettings : CommandBase {
+
+    ConfigureSettings([Properties]$props) : base($props) {
+    }
+
+    hidden [void]SetDefaultSyslogServer() {
+        
+        $syslog_port = $this.props.syslog_port
+        if ([string]::IsNullOrEmpty($syslog_port)) {
+            $syslog_port = "514"
+        }
+        $syslog_protocol = [string]$this.props.syslog_protocol
+        if ([string]::IsNullOrEmpty($syslog_protocol)) {
+            $syslog_protocol = "UDP"
+        }
+        Write-Host ""
+        Write-Host "### Enter the syslog configuration"
+        $syslog_host = ReadInput "Syslog Host" $this.props.syslog_host
+        $syslog_port = ReadInput "Syslog Port" `
+                                 $syslog_port `
+                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 "Please retype a valid port number"
+        $syslog_protocol = ReadInput "Syslog Protocol" `
+                                     $syslog_protocol `
+                                     "^UDP|TCP|udp|tcp$" `
+                                     "Please retype a valid protocol"
+
+        if (AskYesNo "Do you want to save changes?") {
+            $this.props.syslog_host = $syslog_host
+            $this.props.syslog_port = [int]$syslog_port
+            $this.props.syslog_protocol = $syslog_protocol
+        }
+    }
+
+    [void]Run() {
+        Write-Host "Settings"
+        while ($true) {
+            Write-Host "************************************"
+            Write-Host " 0) Cleanup the working directory"
+            Write-Host " 1) Set default syslog server"
+            Write-Host " q) Exit"
+            try {
+                do {
+                    $cmd = Read-Host "Please choose a menu item"
+                    switch ($cmd) {
+                        "q" {
+                            return
+                        }
+                        "0" {
+                            Remove-Item -Path $this.props.home_dir -Recurse -Force -ErrorAction SilentlyContinue
+                            New-Item -ItemType Directory -Force -Path $this.props.home_dir
+                        }
+                        "1" {
+                            $this.SetDefaultSyslogServer()
+                        }
+                        default {
+                            continue
+                        }
+                    }
+                    break
+                } while($true)
+            } catch {
+                Write-Host $_
+            }
+        }
     }
 }
 
@@ -695,13 +771,13 @@ class FortigateLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host"
+        $syslog_host = ReadInput "Syslog Host" $this.props.syslog_host
         $syslog_port = ReadInput "Syslog Port" `
-                                 "514" `
-                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
-                                  "Please retype a valid port number"
+                                 $this.props.syslog_port `
+                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 "Please retype a valid port number"
         $syslog_protocol = ReadInput "Syslog Protocol" `
-                                     "UDP" `
+                                     $this.props.syslog_protocol `
                                      "^UDP|TCP|udp|tcp$" `
                                      "Please retype a valid protocol"
         $source_ip = ReadInput "Source IP" `
@@ -738,13 +814,13 @@ class FortigateLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host"
+        $syslog_host = ReadInput "Syslog Host" $this.props.syslog_host
         $syslog_port = ReadInput "Syslog Port" `
-                                 "514" `
-                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
-                                  "Please retype a valid port number"
+                                 $this.props.syslog_port `
+                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 "Please retype a valid port number"
         $syslog_protocol = ReadInput "Syslog Protocol" `
-                                     "UDP" `
+                                     $this.props.syslog_protocol `
                                      "^UDP|TCP|udp|tcp$" `
                                      "Please retype a valid protocol"
         $source_ip = ReadInput "Authentication Client IP" `
@@ -789,13 +865,13 @@ class FortigateLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host"
+        $syslog_host = ReadInput "Syslog Host" $this.props.syslog_host
         $syslog_port = ReadInput "Syslog Port" `
-                                 "514" `
-                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
-                                  "Please retype a valid port number"
+                                 $this.props.syslog_port `
+                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 "Please retype a valid port number"
         $syslog_protocol = ReadInput "Syslog Protocol" `
-                                     "UDP" `
+                                     $this.props.syslog_protocol `
                                      "^UDP|TCP|udp|tcp$" `
                                      "Please retype a valid protocol"
         $source_ip = ReadInput "Authentication Client IP" `
@@ -834,7 +910,8 @@ class CiscoLogs : CommandBase {
     [void]Run() {
         Write-Host "************************************"
         Write-Host " 1) Simulate port scan"
-        Write-Host " 2) Send AnyConnect auth logs"
+        Write-Host " 2) Simulate large upload"
+        Write-Host " 3) Send AnyConnect auth logs"
         Write-Host " q) Exit"
 
         while ($true) {
@@ -845,6 +922,10 @@ class CiscoLogs : CommandBase {
                     return
                 }
                 "2" {
+                    $this.RunLargeUpload()
+                    return
+                }
+                "3" {
                     $this.RunAnyConnectAuth()
                     return
                 }
@@ -872,13 +953,13 @@ class CiscoLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host"
+        $syslog_host = ReadInput "Syslog Host" $this.props.syslog_host
         $syslog_port = ReadInput "Syslog Port" `
-                                 "514" `
-                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
-                                  "Please retype a valid port number"
+                                 $this.props.syslog_port `
+                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 "Please retype a valid port number"
         $syslog_protocol = ReadInput "Syslog Protocol" `
-                                     "UDP" `
+                                     $this.props.syslog_protocol `
                                      "^UDP|TCP|udp|tcp$" `
                                      "Please retype a valid protocol"
         $source_ip = ReadInput "Source IP" `
@@ -901,6 +982,54 @@ class CiscoLogs : CommandBase {
         }
     }
     
+    [void]RunLargeUpload() {
+        $file_name = "syslog-cisco-asa-large-upload.ps1"
+        $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
+        $script_file = BuildFullPath $scripts_dir $file_name
+
+        if (!(IsDirectory $scripts_dir)) {
+            New-Item -ItemType Directory -Force -Path $scripts_dir
+        }
+
+        $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/bin/$($file_name)"
+        DownloadFile $url $script_file
+
+        Write-Host ""
+        Write-Host "### Enter the syslog configuration"
+        $syslog_host = ReadInput "Syslog Host" $this.props.syslog_host
+        $syslog_port = ReadInput "Syslog Port" `
+                                 $this.props.syslog_port `
+                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 "Please retype a valid port number"
+        $syslog_protocol = ReadInput "Syslog Protocol" `
+                                     $this.props.syslog_protocol `
+                                     "^UDP|TCP|udp|tcp$" `
+                                     "Please retype a valid protocol"
+        $source_ip = ReadInput "Source IP" `
+                               "" `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $destination_ip = ReadInput "Destination IP" `
+                                    "" `
+                                    $script:PATTERN_IPV4_ADDR `
+                                    "Please retype a valid IPv4 address"
+        $destination_port = ReadInput "Destination Port" `
+                                      $null `
+                                      "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                      "Please retype a valid port number"
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $args = Quote @("-ExecutionPolicy", "Bypass", $script_file,
+                            "-SyslogHost", $syslog_host,
+                            "-SyslogPort", $syslog_port,
+                            "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                            "-SourceIP", $source_ip,
+                            "-DestinationIP", $destination_ip,
+                            "-DestinationPort", $destination_port)
+            Start-Process -FilePath "powershell.exe" -ArgumentList $args
+        }
+    }
+    
     [void]RunAnyConnectAuth() {
         $file_name = "syslog-cisco-any-connect-authlogs.ps1"
         $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
@@ -915,13 +1044,13 @@ class CiscoLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host"
+        $syslog_host = ReadInput "Syslog Host" $this.props.syslog_host
         $syslog_port = ReadInput "Syslog Port" `
-                                 "514" `
-                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
-                                  "Please retype a valid port number"
+                                 $this.props.syslog_port `
+                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 "Please retype a valid port number"
         $syslog_protocol = ReadInput "Syslog Protocol" `
-                                     "UDP" `
+                                     $this.props.syslog_protocol `
                                      "^UDP|TCP|udp|tcp$" `
                                      "Please retype a valid protocol"
         $user_ip = ReadInput "Authentication User IP" `
@@ -964,8 +1093,7 @@ class Menu {
     hidden [bool]LaunchUserModeCommand($cmd) {
         switch ($cmd) {
             "c" {
-                Remove-Item -Path $this.props.home_dir -Recurse -Force -ErrorAction SilentlyContinue
-                New-Item -ItemType Directory -Force -Path $this.props.home_dir
+                [ConfigureSettings]::New($this.props).Run()
             }
             "0" {
                 <#
@@ -1031,7 +1159,7 @@ class Menu {
         Write-Host "Corvette"
         while ($true) {
             Write-Host "************************************"
-            Write-Host " c) Cleanup the working directory"
+            Write-Host " c) Configure settings"
             Write-Host " 0) Run as administrator"
             Write-Host " 1) Download/Install tools"
             Write-Host " 2) Open an explorer"
@@ -1057,8 +1185,7 @@ class Menu {
     hidden [bool]LaunchAdminModeCommand($cmd) {
         switch ($cmd) {
             "c" {
-                Remove-Item -Path $this.props.home_dir -Recurse -Force -ErrorAction SilentlyContinue
-                New-Item -ItemType Directory -Force -Path $this.props.home_dir
+                [ConfigureSettings]::New($this.props).Run()
             }
             "0" {
                 [SetupTools]::New($this.props).Run()
@@ -1113,7 +1240,7 @@ class Menu {
         Write-Host "Corvette"
         while ($true) {
             Write-Host "************************************"
-            Write-Host " c) Cleanup the working directory"
+            Write-Host " c) Configure settings"
             Write-Host " 0) Download/Install tools"
             Write-Host " 1) Open an explorer"
             Write-Host " 2) Create a new command shell"
