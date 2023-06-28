@@ -93,9 +93,11 @@ class Main {
         1..$limit | %{
             [int]$sess_id = $(Get-Random)
             [int]$client_port = $(Get-Random -Minimum 1025 -Maximum 65534)
-            [int]$session_bytes = $(Get-Random -Minimum 1024000 -Maximum 1024000000)
+            [int]$session_bytes = $(Get-Random -Minimum 1024000 -Maximum 1024000000000)
+            [string]$duration_mins = "{0:00}" -f [int]($session_bytes / 1024000000 % 60)
+            [string]$duration_hours = "{0:00}" -f [int]($session_bytes / 1024000000 / 60)
             $log = @"
-%ASA-6-302014: Teardown TCP connection $sess_id for source:$client_ip/$client_port to destination:$target_ip/$target_port duration 00:59:59 bytes $session_bytes TCP FINs
+%ASA-6-302014: Teardown TCP connection $sess_id for source:$client_ip/$client_port to destination:$target_ip/$target_port duration ${duration_hours}:${duration_mins}:00 bytes $session_bytes TCP FINs
 "@
             $this.syslog.Send($this.syslog.Build($log))
             if ($verbose) {
