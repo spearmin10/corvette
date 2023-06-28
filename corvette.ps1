@@ -868,7 +868,7 @@ class FortigateLogs : CommandBase {
                                     "" `
                                     $script:PATTERN_IPV4_ADDR `
                                     "Please retype a valid IPv4 address"
-        $session_type = ReadInputByChooser "Session Type (http or https)" `
+        $session_type = ReadInputByChooser "Session Type" `
                                            "https" `
                                            @("http", "https") `
                                            "Please type a valid session type"
