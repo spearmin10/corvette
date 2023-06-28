@@ -732,7 +732,7 @@ class FortigateLogs : CommandBase {
     [void]Run() {
         Write-Host "************************************"
         Write-Host " 1) Simulate port scan"
-        Write-Host " 2) Simulate large upload (HTTPS)"
+        Write-Host " 2) Simulate large upload"
         Write-Host " 3) Send NTLM-auth logs (auth-success)"
         Write-Host " 4) Send NTLM-auth logs (auth-failure)"
         Write-Host " q) Exit"
@@ -745,7 +745,7 @@ class FortigateLogs : CommandBase {
                     return
                 }
                 "2" {
-                    $this.RunLargeUploadHTTPS()
+                    $this.RunLargeUpload()
                     return
                 }
                 "3" {
@@ -811,8 +811,8 @@ class FortigateLogs : CommandBase {
         }
     }
     
-    [void]RunLargeUploadHTTPS() {
-        $file_name = "syslog-fortigate-large-upload-https.ps1"
+    [void]RunLargeUpload() {
+        $file_name = "syslog-fortigate-large-upload.ps1"
         $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
         $script_file = BuildFullPath $scripts_dir $file_name
 
@@ -844,6 +844,10 @@ class FortigateLogs : CommandBase {
                                     "" `
                                     $script:PATTERN_IPV4_ADDR `
                                     "Please retype a valid IPv4 address"
+        $session_type = ReadInput "Session Type (http or https)" `
+                                  "https" `
+                                  "^(http|https)$" `
+                                  "Please type a valid session type"
 
         if (AskYesNo "Are you sure you want to run?") {
             $args = Quote @("-ExecutionPolicy", "Bypass", $script_file,
@@ -851,7 +855,8 @@ class FortigateLogs : CommandBase {
                             "-SyslogPort", $syslog_port,
                             "-SyslogProtocol", $syslog_protocol.ToUpper(),
                             "-SourceIP", $source_ip,
-                            "-DestinationIP", $destination_ip)
+                            "-DestinationIP", $destination_ip,
+                            "-SessionType", $session_type)
             Start-Process -FilePath "powershell.exe" -ArgumentList $args
         }
     }
