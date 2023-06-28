@@ -730,8 +730,9 @@ class FortigateLogs : CommandBase {
     [void]Run() {
         Write-Host "************************************"
         Write-Host " 1) Simulate port scan"
-        Write-Host " 2) Send NTLM-auth logs (auth-success)"
-        Write-Host " 3) Send NTLM-auth logs (auth-failure)"
+        Write-Host " 2) Simulate large upload"
+        Write-Host " 3) Send NTLM-auth logs (auth-success)"
+        Write-Host " 4) Send NTLM-auth logs (auth-failure)"
         Write-Host " q) Exit"
 
         while ($true) {
@@ -742,10 +743,14 @@ class FortigateLogs : CommandBase {
                     return
                 }
                 "2" {
-                    $this.RunNTLMAuthSuccess()
+                    $this.RunLargeUpload()
                     return
                 }
                 "3" {
+                    $this.RunNTLMAuthSuccess()
+                    return
+                }
+                "4" {
                     $this.RunNTLMAuthFailure()
                     return
                 }
@@ -800,6 +805,56 @@ class FortigateLogs : CommandBase {
                             "-SyslogProtocol", $syslog_protocol.ToUpper(),
                             "-SourceIP", $source_ip,
                             "-DestinationIP", $destination_ip)
+            Start-Process -FilePath "powershell.exe" -ArgumentList $args
+        }
+    }
+    
+    [void]RunLargeUpload() {
+        $file_name = "syslog-fortigate-large-upload.ps1"
+        $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
+        $script_file = BuildFullPath $scripts_dir $file_name
+
+        if (!(IsDirectory $scripts_dir)) {
+            New-Item -ItemType Directory -Force -Path $scripts_dir
+        }
+
+        $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/bin/$($file_name)"
+        DownloadFile $url $script_file
+
+        Write-Host ""
+        Write-Host "### Enter the syslog configuration"
+        $syslog_host = ReadInput "Syslog Host" `
+                                 $this.props.syslog_host `
+                                 ".+"
+        $syslog_port = ReadInput "Syslog Port" `
+                                 $this.props.syslog_port `
+                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 "Please retype a valid port number"
+        $syslog_protocol = ReadInput "Syslog Protocol" `
+                                     $this.props.syslog_protocol `
+                                     "^UDP|TCP|udp|tcp$" `
+                                     "Please retype a valid protocol"
+        $source_ip = ReadInput "Source IP" `
+                               "" `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $destination_ip = ReadInput "Destination IP" `
+                                    "" `
+                                    $script:PATTERN_IPV4_ADDR `
+                                    "Please retype a valid IPv4 address"
+        $destination_port = ReadInput "Destination Port" `
+                                      $null `
+                                      "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                      "Please retype a valid port number"
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $args = Quote @("-ExecutionPolicy", "Bypass", $script_file,
+                            "-SyslogHost", $syslog_host,
+                            "-SyslogPort", $syslog_port,
+                            "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                            "-SourceIP", $source_ip,
+                            "-DestinationIP", $destination_ip,
+                            "-DestinationPort", $destination_port)
             Start-Process -FilePath "powershell.exe" -ArgumentList $args
         }
     }
