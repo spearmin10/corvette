@@ -92,7 +92,7 @@ class Main {
               [int]$num_records,
               [bool]$verbose) {
         1..$num_records | %{
-            [int64]$timestamp = [string]($(Get-Date).ToUniversalTime().ToFileTime() - 116444736000000000) + "00"
+            [int64]$timestamp = ($(Get-Date).ToUniversalTime().ToFileTime() - 116444736000000000) * 100
             [int]$sess_id = $(Get-Random)
             [int]$client_port = $(Get-Random -Minimum 1025 -Maximum 65534)
             [int]$session_kb = $(Get-Random -Minimum 1024000 -Maximum 1024000000)
