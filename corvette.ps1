@@ -905,7 +905,7 @@ class FortigateLogs : CommandBase {
                                            "https" `
                                            @("http", "https", "ssh") `
                                            "Please type a valid session type"
-        $upload_size = ReadInputSize "Total upload size" "100MB" "Invalid size. Please retype the size."
+        $upload_size = ReadInputSize "Total upload size" "1GB" "Invalid size. Please retype the size."
         $numof_session = ParseNumber(ReadInput "Number of sessions" `
                                                "100" `
                                                "^[0-9]+$" `
@@ -1110,7 +1110,7 @@ class CiscoLogs : CommandBase {
                                       $null `
                                       "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
                                       "Please retype a valid port number"
-        $upload_size = ReadInputSize "Total upload size" "100MB" "Invalid size. Please retype the size."
+        $upload_size = ReadInputSize "Total upload size" "1GB" "Invalid size. Please retype the size."
         $numof_session = ParseNumber(ReadInput "Number of sessions" `
                                                "100" `
                                                "^[0-9]+$" `
