@@ -5,6 +5,8 @@ Param(
   [int]$SyslogFacility = 16,
   [int]$SyslogSeverity = 6,
   [bool]$ShowLogs = $false,
+  [int64]$TotalUploadSize = 100 * 1024 * 1024,
+  [int]$NumberOfRecords = 1,
   [parameter(mandatory=$true)][string]$SourceIP,
   [parameter(mandatory=$true)][string]$DestinationIP,
   [parameter(mandatory=$true)][int]$DestinationPort
@@ -88,26 +90,31 @@ class Main {
     [void]Run([string]$client_ip,
               [string]$target_ip,
               [int]$target_port,
+              [int64]$upload_size,
+              [int]$num_records,
               [bool]$verbose) {
-        [int]$limit = 10000
-        1..$limit | %{
+        if ($num_records -le 0) {
+            throw "The number of records must be grater than 0."
+        }
+        [int64]$session_size = $upload_size / $num_records
+        1..$num_records | %{
             [int]$sess_id = $(Get-Random)
             [int]$client_port = $(Get-Random -Minimum 1025 -Maximum 65534)
-            [int]$session_kb = $(Get-Random -Minimum 1024000 -Maximum 1024000000)
-            [string]$duration_mins = "{0:00}" -f [int]($session_kb / 1024000 % 60)
-            [string]$duration_hours = "{0:00}" -f [int]($session_kb / 1024000 / 60)
+            [int64]$session_mb = $session_size / (1024 * 1024)
+            [string]$duration_mins = "{0:00}" -f [int]($session_mb / 1024 % 60)
+            [string]$duration_hours = "{0:00}" -f [int]($session_mb / 1024 / 60)
             $log = @"
-%ASA-6-302014: Teardown TCP connection $sess_id for source:$client_ip/$client_port to destination:$target_ip/$target_port duration ${duration_hours}:${duration_mins}:00 bytes ${session_kb}000 TCP FINs
+%ASA-6-302014: Teardown TCP connection $sess_id for source:$client_ip/$client_port to destination:$target_ip/$target_port duration ${duration_hours}:${duration_mins}:00 bytes ${session_size} TCP FINs
 "@
             $this.syslog.Send($this.syslog.Build($log))
             if ($verbose) {
                 Write-Host $log
             } else {
-                Write-Host "log: "$client_ip" > "$target_ip":"$target_port" - size: "$session_kb" KB"
+                Write-Host "log: "$client_ip" > "$target_ip":"$target_port" - size: "$session_mb" MB"
             }
         }
     }
 }
 
 $main = [Main]::New($SyslogProtocol, $SyslogHost, $SyslogPort, $SyslogFacility, $SyslogSeverity)
-$main.Run($SourceIP, $DestinationIP, $DestinationPort, $ShowLogs)
+$main.Run($SourceIP, $DestinationIP, $DestinationPort, $TotalUploadSize, $NumberOfRecords, $ShowLogs)

@@ -97,7 +97,7 @@ class Main {
         if ($num_records -le 0) {
             throw "The number of records must be grater than 0."
         }
-        [int64]$session_size = $num_records / $num_records
+        [int64]$session_size = $upload_size / $num_records
         1..$num_records | %{
             [int64]$timestamp = ($(Get-Date).ToUniversalTime().ToFileTime() - 116444736000000000) * 100
             [int64]$session_kb = $session_size / 1024
@@ -133,7 +133,7 @@ CEF:0|Fortinet|Fortigate|v6.0.3|00013|traffic:forward close|3|deviceExternalId=F
             if ($verbose) {
                 Write-Host $log
             } else {
-                Write-Host "log: "$client_ip" > "$target_ip":"$target_port" - size :"$session_mb" MB"
+                Write-Host "log: "$client_ip" > "$target_ip":"$target_port" - size: "$session_mb" MB"
             }
         }
     }
