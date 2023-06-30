@@ -5,7 +5,8 @@ Param(
   [int]$SyslogFacility = 16,
   [int]$SyslogSeverity = 6,
   [bool]$ShowLogs = $false,
-  [int]$NumberOfRecords = 10000,
+  [int]$NumberOfRecords = 1,
+  [int64]$UploadSize = 100 * 1024 * 1024,
   [parameter(mandatory=$true)][string]$SourceIP,
   [parameter(mandatory=$true)][string]$DestinationIP,
   [parameter(mandatory=$true)][string]$SessionType
@@ -89,25 +90,39 @@ class Main {
     [void]Run([string]$client_ip,
               [string]$target_ip,
               [string]$session_type,
+              [int64]$upload_size,
               [int]$num_records,
               [bool]$verbose) {
+        
+        if ($num_records -le 0) {
+            throw "The number of records must be grater than 0."
+        }
+        [int64]$session_size = $num_records / $num_records
         1..$num_records | %{
             [int64]$timestamp = ($(Get-Date).ToUniversalTime().ToFileTime() - 116444736000000000) * 100
+            [int64]$session_kb = $session_size / 1024
+            [int64]$session_mb = $session_size / (1024 * 1024)
             [int]$sess_id = $(Get-Random)
             [int]$client_port = $(Get-Random -Minimum 1025 -Maximum 65534)
-            [int]$session_kb = $(Get-Random -Minimum 1024000 -Maximum 1024000000)
+            [int]$duration_secs = [int]($session_mb / 1024)
             
             switch ($session_type) {
                 "http" {
                     $target_port = 80
                     $log = @"
-CEF:0|Fortinet|Fortigate|v6.0.3|00013|traffic:forward close|3|deviceExternalId=FGT5HD0000000000 FTNTFGTlogid=0000000013 cat=traffic:forward FTNTFGTsubtype=forward FTNTFGTlevel=notice FTNTFGTvd=vdom1 FTNTFGTeventtime=${timestamp} src=$client_ip spt=$client_port deviceInboundInterface=port12 FTNTFGTsrcintfrole=undefined dst=$target_ip dpt=$target_port deviceOutboundInterface=port11 FTNTFGTdstintfrole=undefined FTNTFGTpoluuid=c2d460aa-fe6f-51e8-9505-41b5117dfdd4 externalId=402 proto=6 act=close FTNTFGTpolicyid=1 FTNTFGTpolicytype=policy app=HTTP FTNTFGTdstcountry=United States FTNTFGTsrccountry=Reserved FTNTFGTappid=40568 FTNTFGTapp=HTTP.BROWSER FTNTFGTappcat=Web.Client FTNTFGTapprisk=medium FTNTFGTapplist=g-default FTNTFGTduration=2 out=$session_kb in=1024000 FTNTFGTcountapp=2
+CEF:0|Fortinet|Fortigate|v6.0.3|00013|traffic:forward close|3|deviceExternalId=FGT5HD0000000000 FTNTFGTlogid=0000000013 cat=traffic:forward FTNTFGTsubtype=forward FTNTFGTlevel=notice FTNTFGTvd=vdom1 FTNTFGTeventtime=${timestamp} src=$client_ip spt=$client_port deviceInboundInterface=port12 FTNTFGTsrcintfrole=undefined dst=$target_ip dpt=$target_port deviceOutboundInterface=port11 FTNTFGTdstintfrole=undefined FTNTFGTpoluuid=c2d460aa-fe6f-51e8-9505-41b5117dfdd4 externalId=402 proto=6 act=close FTNTFGTpolicyid=1 FTNTFGTpolicytype=policy app=HTTP FTNTFGTdstcountry=United States FTNTFGTsrccountry=Reserved FTNTFGTappid=40568 FTNTFGTapp=HTTP.BROWSER FTNTFGTappcat=Web.Client FTNTFGTapprisk=medium FTNTFGTapplist=g-default FTNTFGTduration=$duration_secs out=$session_kb in=1024000 FTNTFGTcountapp=2
 "@
                 }
                 "https" {
                     $target_port = 443
                     $log = @"
-CEF:0|Fortinet|Fortigate|v6.0.3|00013|traffic:forward close|3|deviceExternalId=FGT5HD0000000000 FTNTFGTlogid=0000000013 cat=traffic:forward FTNTFGTsubtype=forward FTNTFGTlevel=notice FTNTFGTvd=vdom1 FTNTFGTeventtime=${timestamp} src=$client_ip spt=$client_port deviceInboundInterface=port12 FTNTFGTsrcintfrole=undefined dst=$target_ip dpt=$target_port deviceOutboundInterface=port11 FTNTFGTdstintfrole=undefined FTNTFGTpoluuid=c2d460aa-fe6f-51e8-9505-41b5117dfdd4 externalId=402 proto=6 act=close FTNTFGTpolicyid=1 FTNTFGTpolicytype=policy app=HTTPS FTNTFGTdstcountry=United States FTNTFGTsrccountry=Reserved FTNTFGTappid=40568 FTNTFGTapp=HTTPS.BROWSER FTNTFGTappcat=Web.Client FTNTFGTapprisk=medium FTNTFGTapplist=g-default FTNTFGTduration=2 out=$session_kb in=1024000 FTNTFGTcountapp=2
+CEF:0|Fortinet|Fortigate|v6.0.3|00013|traffic:forward close|3|deviceExternalId=FGT5HD0000000000 FTNTFGTlogid=0000000013 cat=traffic:forward FTNTFGTsubtype=forward FTNTFGTlevel=notice FTNTFGTvd=vdom1 FTNTFGTeventtime=${timestamp} src=$client_ip spt=$client_port deviceInboundInterface=port12 FTNTFGTsrcintfrole=undefined dst=$target_ip dpt=$target_port deviceOutboundInterface=port11 FTNTFGTdstintfrole=undefined FTNTFGTpoluuid=c2d460aa-fe6f-51e8-9505-41b5117dfdd4 externalId=402 proto=6 act=close FTNTFGTpolicyid=1 FTNTFGTpolicytype=policy app=HTTPS FTNTFGTdstcountry=United States FTNTFGTsrccountry=Reserved FTNTFGTappid=40568 FTNTFGTapp=HTTPS.BROWSER FTNTFGTappcat=Web.Client FTNTFGTapprisk=medium FTNTFGTapplist=g-default FTNTFGTduration=$duration_secs out=$session_kb in=1024000 FTNTFGTcountapp=2
+"@
+                }
+                "ssh" {
+                    $target_port = 22
+                    $log = @"
+CEF:0|Fortinet|Fortigate|v6.0.3|00013|traffic:forward close|3|deviceExternalId=FGT5HD0000000000 FTNTFGTlogid=0000000013 cat=traffic:forward FTNTFGTsubtype=forward FTNTFGTlevel=notice FTNTFGTvd=vdom1 FTNTFGTeventtime=${timestamp} src=$client_ip spt=$client_port deviceInboundInterface=port12 FTNTFGTsrcintfrole=undefined dst=$target_ip dpt=$target_port deviceOutboundInterface=port11 FTNTFGTdstintfrole=undefined FTNTFGTpoluuid=c2d460aa-fe6f-51e8-9505-41b5117dfdd4 externalId=402 proto=6 act=close FTNTFGTpolicyid=1 FTNTFGTpolicytype=policy app=ssh FTNTFGTdstcountry=United States FTNTFGTsrccountry=Reserved FTNTFGTappid=40568 FTNTFGTapp=ssh FTNTFGTappcat=unscanned FTNTFGTapprisk=medium FTNTFGTapplist=g-default FTNTFGTduration=$duration_secs out=$session_kb in=1024000 FTNTFGTcountapp=2
 "@
                 }
                 default {
@@ -118,7 +133,7 @@ CEF:0|Fortinet|Fortigate|v6.0.3|00013|traffic:forward close|3|deviceExternalId=F
             if ($verbose) {
                 Write-Host $log
             } else {
-                Write-Host "log: "$client_ip" > "$target_ip":"$target_port" - size: "$session_kb" KB"
+                Write-Host "log: "$client_ip" > "$target_ip":"$target_port" - size :"$session_mb" MB"
             }
         }
     }
