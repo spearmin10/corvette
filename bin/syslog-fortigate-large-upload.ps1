@@ -5,8 +5,8 @@ Param(
   [int]$SyslogFacility = 16,
   [int]$SyslogSeverity = 6,
   [bool]$ShowLogs = $false,
+  [int64]$TotalUploadSize = 100 * 1024 * 1024,
   [int]$NumberOfRecords = 1,
-  [int64]$UploadSize = 100 * 1024 * 1024,
   [parameter(mandatory=$true)][string]$SourceIP,
   [parameter(mandatory=$true)][string]$DestinationIP,
   [parameter(mandatory=$true)][string]$SessionType
@@ -140,4 +140,4 @@ CEF:0|Fortinet|Fortigate|v6.0.3|00013|traffic:forward close|3|deviceExternalId=F
 }
 
 $main = [Main]::New($SyslogProtocol, $SyslogHost, $SyslogPort, $SyslogFacility, $SyslogSeverity)
-$main.Run($SourceIP, $DestinationIP, $SessionType, $NumberOfRecords, $ShowLogs)
+$main.Run($SourceIP, $DestinationIP, $SessionType, $TotalUploadSize, $NumberOfRecords, $ShowLogs)
