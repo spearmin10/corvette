@@ -1115,8 +1115,6 @@ class CiscoLogs : CommandBase {
                                                "100" `
                                                "^[0-9]+$" `
                                                "Please retype a valid number")
-
-
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("powershell.exe",
                        "-ExecutionPolicy", "Bypass", $script_file,
@@ -1125,6 +1123,7 @@ class CiscoLogs : CommandBase {
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
                        "-SourceIP", $source_ip,
                        "-DestinationIP", $destination_ip,
+                       "-DestinationPort", $destination_port,
                        "-TotalUploadSize", [string]$upload_size,
                        "-NumberOfRecords", [string]$numof_session)
             $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
