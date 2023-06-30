@@ -903,18 +903,27 @@ class FortigateLogs : CommandBase {
                                     "Please retype a valid IPv4 address"
         $session_type = ReadInputByChooser "Session Type" `
                                            "https" `
-                                           @("http", "https") `
+                                           @("http", "https", "ssh") `
                                            "Please type a valid session type"
+        $upload_size = ReadInputSize "Total upload size" "100MB" "Invalid size. Please retype the size."
+        $numof_session = ParseNumber(ReadInput "Number of sessions" `
+                                               "100" `
+                                               "^[0-9]+$" `
+                                               "Please retype a valid number")
 
         if (AskYesNo "Are you sure you want to run?") {
-            $args = Quote @("-ExecutionPolicy", "Bypass", $script_file,
-                            "-SyslogHost", $syslog_host,
-                            "-SyslogPort", $syslog_port,
-                            "-SyslogProtocol", $syslog_protocol.ToUpper(),
-                            "-SourceIP", $source_ip,
-                            "-DestinationIP", $destination_ip,
-                            "-SessionType", $session_type)
-            Start-Process -FilePath "powershell.exe" -ArgumentList $args
+            $cargs = @("powershell.exe",
+                       "-ExecutionPolicy", "Bypass", $script_file,
+                       "-SyslogHost", $syslog_host,
+                       "-SyslogPort", $syslog_port,
+                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                       "-SourceIP", $source_ip,
+                       "-DestinationIP", $destination_ip,
+                       "-SessionType", $session_type,
+                       "-TotalUploadSize", [string]$upload_size,
+                       "-NumberOfRecords", [string]$numof_session)
+            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
+            Start-Process -FilePath "cmd.exe" -ArgumentList $args
         }
     }
     
@@ -1101,16 +1110,25 @@ class CiscoLogs : CommandBase {
                                       $null `
                                       "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
                                       "Please retype a valid port number"
+        $upload_size = ReadInputSize "Total upload size" "100MB" "Invalid size. Please retype the size."
+        $numof_session = ParseNumber(ReadInput "Number of sessions" `
+                                               "100" `
+                                               "^[0-9]+$" `
+                                               "Please retype a valid number")
+
 
         if (AskYesNo "Are you sure you want to run?") {
-            $args = Quote @("-ExecutionPolicy", "Bypass", $script_file,
-                            "-SyslogHost", $syslog_host,
-                            "-SyslogPort", $syslog_port,
-                            "-SyslogProtocol", $syslog_protocol.ToUpper(),
-                            "-SourceIP", $source_ip,
-                            "-DestinationIP", $destination_ip,
-                            "-DestinationPort", $destination_port)
-            Start-Process -FilePath "powershell.exe" -ArgumentList $args
+            $cargs = @("powershell.exe",
+                       "-ExecutionPolicy", "Bypass", $script_file,
+                       "-SyslogHost", $syslog_host,
+                       "-SyslogPort", $syslog_port,
+                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                       "-SourceIP", $source_ip,
+                       "-DestinationIP", $destination_ip,
+                       "-TotalUploadSize", [string]$upload_size,
+                       "-NumberOfRecords", [string]$numof_session)
+            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
+            Start-Process -FilePath "cmd.exe" -ArgumentList $args
         }
     }
     
