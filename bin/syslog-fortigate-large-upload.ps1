@@ -5,7 +5,7 @@ Param(
   [int]$SyslogFacility = 16,
   [int]$SyslogSeverity = 6,
   [bool]$ShowLogs = $false,
-  [int64]$TotalUploadSize = 100 * 1024 * 1024,
+  [int64]$TotalUploadSize = 1 * 1024 * 1024 * 1024,
   [int]$NumberOfRecords = 1,
   [parameter(mandatory=$true)][string]$SourceIP,
   [parameter(mandatory=$true)][string]$DestinationIP,
