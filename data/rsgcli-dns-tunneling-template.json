@@ -1,0 +1,15 @@
+{
+  "server": {
+    "port": 53
+  },
+  "sequence": [
+    ["for.session",[0,10000],"i",
+      [
+        ["udp.handshake"],
+        ["sys.print", "dns.q: ${RSGCLI_UDP_CLIENT_IP} -> ${RSGCLI_UDP_SERVER_IP}:53"],
+        ["dns.q.txt","${rand.lower_alnum(32)}.${domain}","${rand.lower_alnum(120)}"],
+        ["sys.time.sleep", 500]
+      ]
+    ]
+  ]
+}
