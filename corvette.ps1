@@ -578,13 +578,13 @@ class IptgenBase : CommandBase {
     }
 }
 
-class DnsTunneling : IptgenBase {
+class IptgenDnsTunneling : IptgenBase {
     [string]$iptgen_json
 
-    DnsTunneling([Properties]$props) : base ($props) {
-        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\dns-tunneling-template.json"
+    IptgenDnsTunneling([Properties]$props) : base ($props) {
+        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\iptgen-dns-tunneling-template.json"
         if (!(IsFile $this.iptgen_json)) {
-            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/dns-tunneling-template.json"
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/iptgen-dns-tunneling-template.json"
             DownloadFile $url $this.iptgen_json
         }
     }
@@ -615,13 +615,13 @@ class DnsTunneling : IptgenBase {
     }
 }
 
-class FtpFileUpload : IptgenBase {
+class IptgenFtpFileUpload : IptgenBase {
     [string]$iptgen_json
 
-    FtpFileUpload([Properties]$props) : base ($props) {
-        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\ftp-upload-passive-template.json"
+    IptgenFtpFileUpload([Properties]$props) : base ($props) {
+        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\iptgen-ftp-upload-passive-template.json"
         if (!(IsFile $this.iptgen_json)) {
-            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/ftp-upload-passive-template.json"
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/iptgen-ftp-upload-passive-template.json"
             DownloadFile $url $this.iptgen_json
         }
     }
@@ -657,17 +657,17 @@ class FtpFileUpload : IptgenBase {
     }
 }
 
-class HttpFileUpload : IptgenBase {
+class IptgenHttpFileUpload : IptgenBase {
     [string]$iptgen_json
     [bool]$https
 
-    HttpFileUpload([Properties]$props, [bool]$https) : base ($props) {
+    IptgenHttpFileUpload([Properties]$props, [bool]$https) : base ($props) {
         $file_name = $null
         
         if ($https) {
-          $file_name = "https-upload-template.json"
+          $file_name = "iptgen-https-upload-template.json"
         } else {
-          $file_name = "http-upload-template.json"
+          $file_name = "iptgen-http-upload-template.json"
         }
         $this.https = $https
         $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
@@ -709,11 +709,11 @@ class HttpFileUpload : IptgenBase {
     }
 }
 
-class HttpUnauthorizedLoginAttempts : IptgenBase {
+class IptgenHttpUnauthorizedLoginAttempts : IptgenBase {
     [string]$iptgen_json
 
-    HttpUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "http-login-attempts-template.json"
+    IptgenHttpUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
+        $file_name = "iptgen-http-login-attempts-template.json"
         $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
 
         if (!(IsFile $this.iptgen_json)) {
@@ -748,11 +748,11 @@ class HttpUnauthorizedLoginAttempts : IptgenBase {
     }
 }
 
-class SmbUnauthorizedLoginAttempts : IptgenBase {
+class IptgenSmbUnauthorizedLoginAttempts : IptgenBase {
     [string]$iptgen_json
 
-    SmbUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "smb-ntlm-login-attempts-template.json"
+    IptgenSmbUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
+        $file_name = "iptgen-smb-ntlm-login-attempts-template.json"
         $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
 
         if (!(IsFile $this.iptgen_json)) {
@@ -783,6 +783,52 @@ class SmbUnauthorizedLoginAttempts : IptgenBase {
 
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+        }
+    }
+}
+
+class IptgenMenu : CommandBase {
+    IptgenMenu([Properties]$props) : base($props) {
+    }
+
+    [void]Run() {
+        Write-Host "************************************"
+        Write-Host " 1) Generate DNS tunneling packets"
+        Write-Host " 2) Generate FTP file upload packets"
+        Write-Host " 3) Generate HTTP file upload packets"
+        Write-Host " 4) Generate HTTPS file upload packets"
+        Write-Host " 5) Generate HTTP unauthorized login attempts packets"
+        Write-Host " 6) Generate SMB unauthorized login attempts packets"
+        Write-Host " q) Exit"
+
+        while ($true) {
+            $cmd = Read-Host "Please choose a menu item to run"
+            switch($cmd) {
+                "1" {
+                    [IptgenDnsTunneling]::New($this.props).Run()
+                }
+                "2" {
+                    [IptgenFtpFileUpload]::New($this.props).Run()
+                }
+                "3" {
+                    [IptgenHttpFileUpload]::New($this.props, $false).Run()
+                }
+                "4" {
+                    [IptgenHttpFileUpload]::New($this.props, $true).Run()
+                }
+                "5" {
+                    [IptgenHttpUnauthorizedLoginAttempts]::New($this.props).Run()
+                }
+                "6" {
+                    [IptgenSmbUnauthorizedLoginAttempts]::New($this.props).Run()
+                }
+                "q" {
+                    return
+                }
+                default {
+                    continue
+                }
+            }
         }
     }
 }
@@ -1329,22 +1375,7 @@ class Menu {
                 [WildFireTestPE]::New($this.props).Run()
             }
             "8" {
-                [DnsTunneling]::New($this.props).Run()
-            }
-            "9" {
-                [FtpFileUpload]::New($this.props).Run()
-            }
-            "10" {
-                [HttpFileUpload]::New($this.props, $false).Run()
-            }
-            "11" {
-                [HttpFileUpload]::New($this.props, $true).Run()
-            }
-            "12" {
-                [HttpUnauthorizedLoginAttempts]::New($this.props).Run()
-            }
-            "13" {
-                [SmbUnauthorizedLoginAttempts]::New($this.props).Run()
+                [IptgenMenu]::New($this.props).Run()
             }
             default {
                 return $false
@@ -1366,12 +1397,7 @@ class Menu {
             Write-Host " 5) Run port scan"
             Write-Host " 6) Run Kerberos Brute Force"
             Write-Host " 7) Run WildFire Test PE"
-            Write-Host " 8) Generate DNS tunneling packets"
-            Write-Host " 9) Generate FTP file upload packets"
-            Write-Host "10) Generate HTTP file upload packets"
-            Write-Host "11) Generate HTTPS file upload packets"
-            Write-Host "12) Generate HTTP unauthorized login attempts packets"
-            Write-Host "13) Generate SMB unauthorized login attempts packets"
+            Write-Host " 8) Generate Network Traffic (iptgen)"
             try {
                 while (!$this.LaunchAdminModeCommand((Read-Host "Please choose a menu item to run"))) {}
             } catch {
