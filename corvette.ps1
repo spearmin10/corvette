@@ -177,6 +177,9 @@ class Properties {
     [string]$syslog_port
     [string]$syslog_protocol
 
+    [string]$rsgsvr_host
+    [string]$rsgsvr_port
+
     Properties([System.Management.Automation.InvocationInfo]$info) {
         $this.invocation_info = $info
         $this.home_dir = BuildFullPath ([IO.Path]::GetTempPath()) ".\corvette"
@@ -212,6 +215,14 @@ class Properties {
         if ($this.syslog_protocol -isnot [string] -Or [string]::IsNullOrEmpty($this.syslog_protocol)) {
             $this.syslog_protocol = "UDP"
         }
+        $this.rsgsvr_host = $settings.rsgsvr.host
+        $this.rsgsvr_port = $settings.rsgsvr.port
+        if ($this.rsgsvr_host -isnot [string] -Or [string]::IsNullOrEmpty($this.rsgsvr_port)) {
+            $this.rsgsvr_port = $null
+        }
+        if ($this.rsgsvr_port -isnot [string] -Or [string]::IsNullOrEmpty($this.rsgsvr_port)) {
+            $this.rsgsvr_port = "65534"
+        }
     }
     
     [void]Save() {
@@ -221,6 +232,10 @@ class Properties {
                 "host" = $this.syslog_host
                 "port" = $this.syslog_port
                 "protocol" = $this.syslog_protocol
+            }
+            "rsgsvr" = @{
+                "host" = $this.rsgsvr_host
+                "port" = $this.rsgsvr_port
             }
         }
         $settings | ConvertTo-Json | Set-Content -Encoding utf8 -Path $conf_file
@@ -283,12 +298,36 @@ class ConfigureSettings : CommandBase {
         }
     }
 
+    hidden [void]SetDefaultRsgServer() {
+        
+        $rsgsvr_port = $this.props.rsgsvr_port
+        if ([string]::IsNullOrEmpty($rsgsvr_port)) {
+            $rsgsvr_port = "65534"
+        }
+        Write-Host ""
+        Write-Host "### Enter the rsg server configuration"
+        $rsgsvr_host = ReadInput "RSG Host" `
+                                 $this.props.rsgsvr_host `
+                                 ".+"
+        $rsgsvr_port = ReadInput "RSG Port" `
+                                 $rsgsvr_port `
+                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 "Please retype a valid port number"
+
+        if (AskYesNo "Do you want to save changes?") {
+            $this.props.rsgsvr_host = $rsgsvr_host
+            $this.props.rsgsvr_port = [int]$rsgsvr_port
+            $this.props.Save()
+        }
+    }
+
     [void]Run() {
         Write-Host "Settings"
         while ($true) {
             Write-Host "************************************"
             Write-Host " 0) Cleanup the working directory"
             Write-Host " 1) Set default syslog server"
+            Write-Host " 2) Set default RSG server"
             Write-Host " q) Exit"
             try {
                 do {
@@ -304,6 +343,9 @@ class ConfigureSettings : CommandBase {
                         }
                         "1" {
                             $this.SetDefaultSyslogServer()
+                        }
+                        "2" {
+                            $this.SetDefaultRsgServer()
                         }
                         default {
                             continue
@@ -578,6 +620,30 @@ class IptgenBase : CommandBase {
     }
 }
 
+class RsgcliBase : CommandBase {
+    [string]$rsgcli_dir
+    [string]$rsgcli_exe
+
+    RsgcliBase([Properties]$props) : base($props) {
+        $this.rsgcli_dir = BuildFullPath $props.home_dir ".\rsgcli-0.0.1"
+        $this.rsgcli_exe = BuildFullPath $this.rsgcli_dir ".\bin\rsgcli.exe"
+
+        if (!(IsFile $this.rsgcli_exe)) {
+            $url = "https://github.com/spearmin10/rsgen/releases/download/0.0.1/rsgcli.win32.zip"
+            DownloadAndExtractArchive $url $this.rsgcli_dir
+        }
+    }
+
+    [void]Run([string]$rsgsvr_host, [int]$rsgsvr_port, [string]$rsgcli_json) {
+        $cargs = @($this.rsgcli_exe,
+                   "--in.file", $rsgcli_json,
+                   "--mgmt.host", $rsgsvr_host,
+                   "--mgmt.port", [string]$rsgsvr_port)
+        $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
+        Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
+    }
+}
+
 class IptgenDnsTunneling : IptgenBase {
     [string]$iptgen_json
 
@@ -821,6 +887,104 @@ class IptgenMenu : CommandBase {
                 }
                 "6" {
                     [IptgenSmbUnauthorizedLoginAttempts]::New($this.props).Run()
+                }
+                "q" {
+                    return
+                }
+                default {
+                    continue
+                }
+            }
+        }
+    }
+}
+
+class RsgcliDnsTunneling : RsgcliBase {
+    [string]$rsgcli_json
+
+    RsgcliDnsTunneling([Properties]$props) : base ($props) {
+        $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\rsgcli-dns-tunneling-template.json"
+        if (!(IsFile $this.rsgcli_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/rsgcli-dns-tunneling-template.json"
+            DownloadFile $url $this.rsgcli_json
+        }
+    }
+
+    [void]Run() {
+        Write-Host ""
+        Write-Host "### Enter the RSG Server configuration"
+        $rsgsvr_host = ReadInput "RSG Server Host" `
+                                 $this.props.rsgsvr_host `
+                                 ".+"
+        $rsgsvr_port = ReadInput "RSG Server Port" `
+                                 $this.props.rsgsvr_port `
+                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 "Please retype a valid port number"
+
+        Write-Host "### Enter the DNS tunneling configuration"
+        $domain = ReadInput "DNS tunnel domain" $null ".+"
+
+        $Env:domain = $domain
+        if (AskYesNo "Are you sure you want to run?") {
+            $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
+        }
+    }
+}
+
+class RsgcliFtpFileUpload : RsgcliBase {
+    [string]$rsgcli_json
+
+    RsgcliFtpFileUpload([Properties]$props) : base ($props) {
+        $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\rsgcli-ftp-upload-passive-template.json"
+        if (!(IsFile $this.rsgcli_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/rsgcli-ftp-upload-passive-template.json"
+            DownloadFile $url $this.rsgcli_json
+        }
+    }
+
+    [void]Run() {
+        Write-Host ""
+        Write-Host "### Enter the RSG Server configuration"
+        $rsgsvr_host = ReadInput "RSG Server Host" `
+                                 $this.props.rsgsvr_host `
+                                 ".+"
+        $rsgsvr_port = ReadInput "RSG Server Port" `
+                                 $this.props.rsgsvr_port `
+                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 "Please retype a valid port number"
+
+        Write-Host "### Enter the FTP file upload configuration"
+        $upload_filename = ReadInput "Upload file name" "test.dat" ".+"
+        $upload_filesize = ReadInputSize "Upload file size" "100MB" "Invalid file size. Please retype the size."
+
+        $pasv_port = 34567
+        $Env:upload_filename = $upload_filename
+        $Env:upload_filesize = $upload_filesize
+        $Env:pasv_port = $pasv_port
+        if (AskYesNo "Are you sure you want to run?") {
+            $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
+        }
+    }
+}
+
+class RsgcliMenu : CommandBase {
+    RsgcliMenu([Properties]$props) : base($props) {
+    }
+
+    [void]Run() {
+        Write-Host "************************************"
+        Write-Host " 1) Generate DNS tunneling sessions"
+        Write-Host " 2) Generate FTP file upload session"
+        Write-Host " q) Exit"
+
+        while ($true) {
+            $cmd = Read-Host "Please choose a menu item to run"
+            switch($cmd) {
+                "1" {
+                    [RsgcliDnsTunneling]::New($this.props).Run()
+                }
+                "2" {
+                    [RsgcliFtpFileUpload]::New($this.props).Run()
                 }
                 "q" {
                     return
@@ -1306,9 +1470,12 @@ class Menu {
                 [WildFireTestPE]::New($this.props).Run()
             }
             "12" {
-                [FortigateLogs]::New($this.props).Run()
+                [RsgcliMenu]::New($this.props).Run()
             }
             "13" {
+                [FortigateLogs]::New($this.props).Run()
+            }
+            "14" {
                 [CiscoLogs]::New($this.props).Run()
             }
             default {
@@ -1335,8 +1502,9 @@ class Menu {
             Write-Host " 9) Run port scan"
             Write-Host "10) Run Kerberos Brute Force"
             Write-Host "11) Run WildFire Test PE"
-            Write-Host "12) Send Fortigate Logs"
-            Write-Host "13) Send Cisco Logs"
+            Write-Host "12) Generate Network Traffic (rsgen)"
+            Write-Host "13) Send Fortigate Logs"
+            Write-Host "14) Send Cisco Logs"
             try {
                 while (!$this.LaunchUserModeCommand((Read-Host "Please choose a menu item to run"))) {}
             } catch {
