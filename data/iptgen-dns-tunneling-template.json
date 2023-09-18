@@ -1,0 +1,13 @@
+{
+  "client": "${client_ip}",
+  "server": "${server_ip}:53",
+  "sequence": [
+    ["for.session",[0,10000],"i",
+      [
+        ["sys.print", "dns.q: ${client_ip} -> ${server_ip}:53"],
+        ["dns.q.txt","${rand.lower_alnum(32)}.${domain}","${rand.lower_alnum(120)}"],
+        ["sys.time.drift", 500]
+      ]
+    ]
+  ]
+}
