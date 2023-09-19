@@ -1664,6 +1664,9 @@ class Menu {
             "8" {
                 [IptgenMenu]::New($this.props).Run()
             }
+            "9" {
+                [RsgcliMenu]::New($this.props).Run()
+            }
             default {
                 return $false
             }
@@ -1685,6 +1688,7 @@ class Menu {
             Write-Host " 6) Run Kerberos Brute Force"
             Write-Host " 7) Run WildFire Test PE"
             Write-Host " 8) Generate Network Traffic (iptgen)"
+            Write-Host " 9) Generate Network Traffic (rsgen)"
             try {
                 while (!$this.LaunchAdminModeCommand((Read-Host "Please choose a menu item to run"))) {}
             } catch {
