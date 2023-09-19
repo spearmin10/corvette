@@ -807,7 +807,7 @@ class IptgenHttpUnauthorizedLoginAttempts : IptgenBase {
 
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
-        $Env:attempt_count = 100000
+        $Env:attempt_count = 10000
 
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
@@ -846,7 +846,7 @@ class IptgenSmbUnauthorizedLoginAttempts : IptgenBase {
 
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
-        $Env:attempt_count = 100000
+        $Env:attempt_count = 2000
 
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
@@ -1029,7 +1029,7 @@ class RsgcliHttpUnauthorizedLoginAttempts : RsgcliBase {
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
                                  "Please retype a valid port number"
 
-        $Env:attempt_count = 100000
+        $Env:attempt_count = 10000
 
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
@@ -1061,7 +1061,7 @@ class RsgcliSmbUnauthorizedLoginAttempts : RsgcliBase {
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
                                  "Please retype a valid port number"
 
-        $Env:attempt_count = 100000
+        $Env:attempt_count = 2000
 
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
