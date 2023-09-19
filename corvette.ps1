@@ -340,6 +340,7 @@ class ConfigureSettings : CommandBase {
                             Remove-Item -Path $this.props.home_dir -Recurse -Force -ErrorAction SilentlyContinue
                             New-Item -ItemType Directory -Force -Path $this.props.home_dir
                             $this.props.Save()
+                            Write-Host "Done.."
                         }
                         "1" {
                             $this.SetDefaultSyslogServer()
@@ -872,21 +873,27 @@ class IptgenMenu : CommandBase {
             switch($cmd) {
                 "1" {
                     [IptgenDnsTunneling]::New($this.props).Run()
+                    return
                 }
                 "2" {
                     [IptgenFtpFileUpload]::New($this.props).Run()
+                    return
                 }
                 "3" {
                     [IptgenHttpFileUpload]::New($this.props, $false).Run()
+                    return
                 }
                 "4" {
                     [IptgenHttpFileUpload]::New($this.props, $true).Run()
+                    return
                 }
                 "5" {
                     [IptgenHttpUnauthorizedLoginAttempts]::New($this.props).Run()
+                    return
                 }
                 "6" {
                     [IptgenSmbUnauthorizedLoginAttempts]::New($this.props).Run()
+                    return
                 }
                 "q" {
                     return
@@ -912,7 +919,7 @@ class RsgcliDnsTunneling : RsgcliBase {
 
     [void]Run() {
         Write-Host ""
-        Write-Host "### Enter the RSG Server configuration"
+        Write-Host "### Enter the DNS tunneling configuration"
         $rsgsvr_host = ReadInput "RSG Server Host" `
                                  $this.props.rsgsvr_host `
                                  ".+"
@@ -921,7 +928,6 @@ class RsgcliDnsTunneling : RsgcliBase {
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
                                  "Please retype a valid port number"
 
-        Write-Host "### Enter the DNS tunneling configuration"
         $domain = ReadInput "DNS tunnel domain" $null ".+"
 
         $Env:domain = $domain
@@ -944,7 +950,7 @@ class RsgcliFtpFileUpload : RsgcliBase {
 
     [void]Run() {
         Write-Host ""
-        Write-Host "### Enter the RSG Server configuration"
+        Write-Host "### Enter the FTP file upload configuration"
         $rsgsvr_host = ReadInput "RSG Server Host" `
                                  $this.props.rsgsvr_host `
                                  ".+"
@@ -953,7 +959,6 @@ class RsgcliFtpFileUpload : RsgcliBase {
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
                                  "Please retype a valid port number"
 
-        Write-Host "### Enter the FTP file upload configuration"
         $upload_filename = ReadInput "Upload file name" "test.dat" ".+"
         $upload_filesize = ReadInputSize "Upload file size" "100MB" "Invalid file size. Please retype the size."
 
@@ -961,6 +966,103 @@ class RsgcliFtpFileUpload : RsgcliBase {
         $Env:upload_filename = $upload_filename
         $Env:upload_filesize = $upload_filesize
         $Env:pasv_port = $pasv_port
+        if (AskYesNo "Are you sure you want to run?") {
+            $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
+        }
+    }
+}
+
+class RsgcliHttpFileUpload : RsgcliBase {
+    [string]$rsgcli_json
+
+    RsgcliHttpFileUpload([Properties]$props) : base ($props) {
+        $file_name = "rsgcli-http-upload-template.json"
+        $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
+
+        if (!(IsFile $this.rsgcli_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
+            DownloadFile $url $this.rsgcli_json
+        }
+    }
+
+    [void]Run() {
+        Write-Host ""
+        Write-Host "### Enter the HTTP file upload configuration"
+        $rsgsvr_host = ReadInput "RSG Server Host" `
+                                 $this.props.rsgsvr_host `
+                                 ".+"
+        $rsgsvr_port = ReadInput "RSG Server Port" `
+                                 $this.props.rsgsvr_port `
+                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 "Please retype a valid port number"
+
+        $upload_filesize = ReadInputSize "Upload file size" "100MB" "Invalid file size. Please retype the size."
+
+        $Env:upload_filesize = $upload_filesize
+        if (AskYesNo "Are you sure you want to run?") {
+            $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
+        }
+    }
+}
+
+class RsgcliHttpUnauthorizedLoginAttempts : RsgcliBase {
+    [string]$rsgcli_json
+
+    RsgcliHttpUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
+        $file_name = "rsgcli-http-login-attempts-template.json"
+        $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
+
+        if (!(IsFile $this.rsgcli_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
+            DownloadFile $url $this.rsgcli_json
+        }
+    }
+
+    [void]Run() {
+        Write-Host ""
+        Write-Host "### Enter the HTTP configuration"
+        $rsgsvr_host = ReadInput "RSG Server Host" `
+                                 $this.props.rsgsvr_host `
+                                 ".+"
+        $rsgsvr_port = ReadInput "RSG Server Port" `
+                                 $this.props.rsgsvr_port `
+                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 "Please retype a valid port number"
+
+        $Env:attempt_count = 100000
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
+        }
+    }
+}
+
+class RsgcliSmbUnauthorizedLoginAttempts : RsgcliBase {
+    [string]$rsgcli_json
+
+    RsgcliSmbUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
+        $file_name = "rsgcli-smb-ntlm-login-attempts-template.json"
+        $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
+
+        if (!(IsFile $this.rsgcli_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
+            DownloadFile $url $this.rsgcli_json
+        }
+    }
+
+    [void]Run() {
+        Write-Host ""
+        Write-Host "### Enter the SMB configuration"
+        $rsgsvr_host = ReadInput "RSG Server Host" `
+                                 $this.props.rsgsvr_host `
+                                 ".+"
+        $rsgsvr_port = ReadInput "RSG Server Port" `
+                                 $this.props.rsgsvr_port `
+                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 "Please retype a valid port number"
+
+        $Env:attempt_count = 100000
+
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
         }
@@ -975,6 +1077,9 @@ class RsgcliMenu : CommandBase {
         Write-Host "************************************"
         Write-Host " 1) Generate DNS tunneling sessions"
         Write-Host " 2) Generate FTP file upload session"
+        Write-Host " 3) Generate HTTP file upload session"
+        Write-Host " 4) Generate HTTP unauthorized login attempts sessions"
+        Write-Host " 5) Generate SMB unauthorized login attempts sessions"
         Write-Host " q) Exit"
 
         while ($true) {
@@ -982,9 +1087,23 @@ class RsgcliMenu : CommandBase {
             switch($cmd) {
                 "1" {
                     [RsgcliDnsTunneling]::New($this.props).Run()
+                    return
                 }
                 "2" {
                     [RsgcliFtpFileUpload]::New($this.props).Run()
+                    return
+                }
+                "3" {
+                    [RsgcliHttpFileUpload]::New($this.props).Run()
+                    return
+                }
+                "4" {
+                    [RsgcliHttpUnauthorizedLoginAttempts]::New($this.props).Run()
+                    return
+                }
+                "5" {
+                    [RsgcliSmbUnauthorizedLoginAttempts]::New($this.props).Run()
+                    return
                 }
                 "q" {
                     return
