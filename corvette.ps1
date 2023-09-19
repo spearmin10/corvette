@@ -572,11 +572,11 @@ class IptgenBase : CommandBase {
     [string]$iptgen_exe
 
     IptgenBase([Properties]$props) : base($props) {
-        $this.iptgen_dir = BuildFullPath $props.home_dir ".\iptgen-0.9.0"
+        $this.iptgen_dir = BuildFullPath $props.home_dir ".\iptgen-0.10.0"
         $this.iptgen_exe = BuildFullPath $this.iptgen_dir ".\bin\iptgen.exe"
 
         if (!(IsFile $this.iptgen_exe)) {
-            $url = "https://github.com/spearmin10/iptgen/releases/download/0.9.0/iptgen.win32.zip"
+            $url = "https://github.com/spearmin10/iptgen/releases/download/0.10.0/iptgen.win32.zip"
             DownloadAndExtractArchive $url $this.iptgen_dir
         }
         if (!(IsFile $env:WINDIR\system32\Npcap\wpcap.dll)) {
