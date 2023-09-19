@@ -1,4 +1,14 @@
 {
+  "environment": {
+    "username_c1": "${rand.lower_alpha(1)}",
+    "username_c2": "${rand.lower_alpha(1)}",
+    "username_c3": "${rand.lower_alpha(1)}",
+    "username_c4": "${rand.lower_alpha(1)}",
+    "username_c5": "${rand.lower_alpha(1)}",
+    "username_c6": "${rand.lower_alpha(1)}",
+    "username_c7": "${rand.lower_alpha(1)}",
+    "username_c8": "${rand.lower_alpha(1)}"
+  },
   "client": "${client_ip}", 
   "server": "${server_ip}:445",
   "sequence": [
@@ -169,21 +179,21 @@
             ],
             ["multi", [
                 ["", "## User name"],
-                ["text", "${rand.lower_alpha(1)}"],
+                ["text", "${username_c1}"],
                 ["hex.raw", "00"],
-                ["text", "${rand.lower_alpha(1)}"],
+                ["text", "${username_c2}"],
                 ["hex.raw", "00"],
-                ["text", "${rand.lower_alpha(1)}"],
+                ["text", "${username_c3}"],
                 ["hex.raw", "00"],
-                ["text", "${rand.lower_alpha(1)}"],
+                ["text", "${username_c4}"],
                 ["hex.raw", "00"],
-                ["text", "${rand.lower_alpha(1)}"],
+                ["text", "${username_c5}"],
                 ["hex.raw", "00"],
-                ["text", "${rand.lower_alpha(1)}"],
+                ["text", "${username_c6}"],
                 ["hex.raw", "00"],
-                ["text", "${rand.lower_alpha(1)}"],
+                ["text", "${username_c7}"],
                 ["hex.raw", "00"],
-                ["text", "${rand.lower_alpha(1)}"],
+                ["text", "${username_c8}"],
                 ["hex.raw", "00"]
               ]
             ],
