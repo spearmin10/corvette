@@ -7,7 +7,7 @@
     ["sys.print", "http.request: ${RSGCLI_TCP_CLIENT_IP} -> ${RSGCLI_TCP_SERVER_IP}:80"],
     ["tcp.send", "text", [
         "POST / HTTP/1.1",
-        "Host: ${server_ip}:80",
+        "Host: ${RSGCLI_TCP_SERVER_IP}:${RSGCLI_TCP_SERVER_PORT}",
         "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:83.0) Gecko/20100101 Firefox/83.0",
         "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language: en-US,en;q=0.5",
