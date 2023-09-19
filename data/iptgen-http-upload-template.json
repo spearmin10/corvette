@@ -15,7 +15,7 @@
         "",
         "-----------------------------708960429131151983491114524",
         "Content-Disposition: form-data; name=\"upload-file\"; filename=\"test.dat\"",
-        "Content-Type: text/plain",
+        "Content-Type: application/octet-stream",
         ""
       ]
     ],
