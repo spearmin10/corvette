@@ -6,7 +6,7 @@
     ["for.session", [0, "${attempt_count}"], "i", [
         ["tcp.handshake"],
         ["sys.print", "http: ${RSGCLI_TCP_CLIENT_IP} -> ${RSGCLI_TCP_SERVER_IP}:80"],
-        ["tcp.send", "text.raw", [
+        ["tcp.send", "text", [
             "GET / HTTP/1.1",
             "Host: ${RSGCLI_TCP_SERVER_IP}:80",
             "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:83.0) Gecko/20100101 Firefox/83.0",
@@ -23,7 +23,7 @@
             ""
           ]
         ],
-        ["tcp.recv", "text.raw", [
+        ["tcp.recv", "text", [
             "HTTP/1.1 401 Unauthorized",
             "Connection: Keep-Alive",
             "Keep-Alive: timeout=10 ,max=100",
