@@ -340,7 +340,7 @@ class ConfigureSettings : CommandBase {
                             Remove-Item -Path $this.props.home_dir -Recurse -Force -ErrorAction SilentlyContinue
                             New-Item -ItemType Directory -Force -Path $this.props.home_dir
                             $this.props.Save()
-                            Write-Host "Done.."
+                            Write-Host "Done."
                         }
                         "1" {
                             $this.SetDefaultSyslogServer()
@@ -873,27 +873,21 @@ class IptgenMenu : CommandBase {
             switch($cmd) {
                 "1" {
                     [IptgenDnsTunneling]::New($this.props).Run()
-                    return
                 }
                 "2" {
                     [IptgenFtpFileUpload]::New($this.props).Run()
-                    return
                 }
                 "3" {
                     [IptgenHttpFileUpload]::New($this.props, $false).Run()
-                    return
                 }
                 "4" {
                     [IptgenHttpFileUpload]::New($this.props, $true).Run()
-                    return
                 }
                 "5" {
                     [IptgenHttpUnauthorizedLoginAttempts]::New($this.props).Run()
-                    return
                 }
                 "6" {
                     [IptgenSmbUnauthorizedLoginAttempts]::New($this.props).Run()
-                    return
                 }
                 "q" {
                     return
@@ -1087,23 +1081,18 @@ class RsgcliMenu : CommandBase {
             switch($cmd) {
                 "1" {
                     [RsgcliDnsTunneling]::New($this.props).Run()
-                    return
                 }
                 "2" {
                     [RsgcliFtpFileUpload]::New($this.props).Run()
-                    return
                 }
                 "3" {
                     [RsgcliHttpFileUpload]::New($this.props).Run()
-                    return
                 }
                 "4" {
                     [RsgcliHttpUnauthorizedLoginAttempts]::New($this.props).Run()
-                    return
                 }
                 "5" {
                     [RsgcliSmbUnauthorizedLoginAttempts]::New($this.props).Run()
-                    return
                 }
                 "q" {
                     return
@@ -1132,15 +1121,12 @@ class FortigateLogs : CommandBase {
             switch($cmd) {
                 "1" {
                     $this.RunPortScan()
-                    return
                 }
                 "2" {
                     $this.RunLargeUpload()
-                    return
                 }
                 "3" {
                     $this.RunNTLMAuth()
-                    return
                 }
                 "q" {
                     return
@@ -1337,15 +1323,12 @@ class CiscoLogs : CommandBase {
             switch($cmd) {
                 "1" {
                     $this.RunPortScan()
-                    return
                 }
                 "2" {
                     $this.RunLargeUpload()
-                    return
                 }
                 "3" {
                     $this.RunAnyConnectAuth()
-                    return
                 }
                 "q" {
                     return
