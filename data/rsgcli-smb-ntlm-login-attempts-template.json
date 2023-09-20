@@ -1,25 +1,7 @@
 {
   "environment": {
-    "username_c1": "${rand.lower_alpha(1)}",
-    "username_c2": "${rand.lower_alpha(1)}",
-    "username_c3": "${rand.lower_alpha(1)}",
-    "username_c4": "${rand.lower_alpha(1)}",
-    "username_c5": "${rand.lower_alpha(1)}",
-    "username_c6": "${rand.lower_alpha(1)}",
-    "username_c7": "${rand.lower_alpha(1)}",
-    "username_c8": "${rand.lower_alpha(1)}",
-
-    "dsthost_c01": "X",
-    "dsthost_c02": "X",
-    "dsthost_c03": "X",
-    "dsthost_c04": "-",
-    "dsthost_c05": "W",
-    "dsthost_c06": "I",
-    "dsthost_c07": "N",
-    "dsthost_c08": "H",
-    "dsthost_c09": "O",
-    "dsthost_c10": "S",
-    "dsthost_c11": "T"
+    "username_8": "${rand.lower_alpha(8)}",
+    "dsthost_11": "XXX-WINHOST"
   },
   "server": {
     "port": 445
@@ -163,33 +145,7 @@
                 "00 43 00 4f 00 52 00 50  00 01 00"
               ]
             ],
-            ["multi", [
-                ["", "## Dest Computer Name"],
-                ["hex.raw", "16 00"],
-                ["text", "${dsthost_c01}"],
-                ["hex.raw", "00"],
-                ["text", "${dsthost_c02}"],
-                ["hex.raw", "00"],
-                ["text", "${dsthost_c03}"],
-                ["hex.raw", "00"],
-                ["text", "${dsthost_c04}"],
-                ["hex.raw", "00"],
-                ["text", "${dsthost_c05}"],
-                ["hex.raw", "00"],
-                ["text", "${dsthost_c06}"],
-                ["hex.raw", "00"],
-                ["text", "${dsthost_c07}"],
-                ["hex.raw", "00"],
-                ["text", "${dsthost_c08}"],
-                ["hex.raw", "00"],
-                ["text", "${dsthost_c09}"],
-                ["hex.raw", "00"],
-                ["text", "${dsthost_c10}"],
-                ["hex.raw", "00"],
-                ["text", "${dsthost_c11}"],
-                ["hex.raw", "00"]
-              ]
-            ],
+            ["utf16be", "${dsthost_11}"],
             ["hex.raw", [
                 "04 00 1e 00 63 00 6f 00 72 00 70 00 2e 00 63 00",
                 "6f 00 72 00 74 00 65 00 78 00 2e 00 6c 00 61 00",
@@ -222,26 +178,7 @@
                 "00 43 00 4c 00 49 00 45  00 4e 00 54 00"
               ]
             ],
-            ["multi", [
-                ["", "## User name"],
-                ["text", "${username_c1}"],
-                ["hex.raw", "00"],
-                ["text", "${username_c2}"],
-                ["hex.raw", "00"],
-                ["text", "${username_c3}"],
-                ["hex.raw", "00"],
-                ["text", "${username_c4}"],
-                ["hex.raw", "00"],
-                ["text", "${username_c5}"],
-                ["hex.raw", "00"],
-                ["text", "${username_c6}"],
-                ["hex.raw", "00"],
-                ["text", "${username_c7}"],
-                ["hex.raw", "00"],
-                ["text", "${username_c8}"],
-                ["hex.raw", "00"]
-              ]
-            ],
+            ["utf16be", "${username_8}"],
             ["hex.raw", [
                 "58 00 58 00 58 00 2d 00  43 00 4c 00 49 00 45 00",
                 "4e 00 54 00 00 00 00 00  00 00 00 00 00 00 00 00",
