@@ -1,7 +1,7 @@
 {
   "environment": {
     "username_8": "${rand.lower_alpha(8)}",
-    "dsthost_11": "XXX-WINHOST"
+    "dsthost_11": "WIN-${rand.digit(4)}${rand.upper_alpha(3)}"
   },
   "server": {
     "port": 445
