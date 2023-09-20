@@ -859,42 +859,48 @@ class IptgenMenu : CommandBase {
     }
 
     [void]Run() {
-        Write-Host "************************************"
-        Write-Host " 1) Generate DNS tunneling packets"
-        Write-Host " 2) Generate FTP file upload packets"
-        Write-Host " 3) Generate HTTP file upload packets"
-        Write-Host " 4) Generate HTTPS file upload packets"
-        Write-Host " 5) Generate HTTP unauthorized login attempts packets"
-        Write-Host " 6) Generate SMB unauthorized login attempts packets"
-        Write-Host " q) Exit"
-
         while ($true) {
-            $cmd = Read-Host "Please choose a menu item to run"
-            switch($cmd) {
-                "1" {
-                    [IptgenDnsTunneling]::New($this.props).Run()
-                }
-                "2" {
-                    [IptgenFtpFileUpload]::New($this.props).Run()
-                }
-                "3" {
-                    [IptgenHttpFileUpload]::New($this.props, $false).Run()
-                }
-                "4" {
-                    [IptgenHttpFileUpload]::New($this.props, $true).Run()
-                }
-                "5" {
-                    [IptgenHttpUnauthorizedLoginAttempts]::New($this.props).Run()
-                }
-                "6" {
-                    [IptgenSmbUnauthorizedLoginAttempts]::New($this.props).Run()
-                }
-                "q" {
-                    return
-                }
-                default {
-                    continue
-                }
+            Write-Host "************************************"
+            Write-Host " 1) Generate DNS tunneling packets"
+            Write-Host " 2) Generate FTP file upload packets"
+            Write-Host " 3) Generate HTTP file upload packets"
+            Write-Host " 4) Generate HTTPS file upload packets"
+            Write-Host " 5) Generate HTTP unauthorized login attempts packets"
+            Write-Host " 6) Generate SMB unauthorized login attempts packets"
+            Write-Host " q) Exit"
+            try {
+                do {
+                    $cmd = Read-Host "Please choose a menu item to run"
+                    switch($cmd) {
+                        "1" {
+                            [IptgenDnsTunneling]::New($this.props).Run()
+                        }
+                        "2" {
+                            [IptgenFtpFileUpload]::New($this.props).Run()
+                        }
+                        "3" {
+                            [IptgenHttpFileUpload]::New($this.props, $false).Run()
+                        }
+                        "4" {
+                            [IptgenHttpFileUpload]::New($this.props, $true).Run()
+                        }
+                        "5" {
+                            [IptgenHttpUnauthorizedLoginAttempts]::New($this.props).Run()
+                        }
+                        "6" {
+                            [IptgenSmbUnauthorizedLoginAttempts]::New($this.props).Run()
+                        }
+                        "q" {
+                            return
+                        }
+                        default {
+                            continue
+                        }
+                    }
+                    break
+                } while($true)
+            } catch {
+                Write-Host $_
             }
         }
     }
@@ -1068,38 +1074,45 @@ class RsgcliMenu : CommandBase {
     }
 
     [void]Run() {
-        Write-Host "************************************"
-        Write-Host " 1) Generate DNS tunneling sessions"
-        Write-Host " 2) Generate FTP file upload session"
-        Write-Host " 3) Generate HTTP file upload session"
-        Write-Host " 4) Generate HTTP unauthorized login attempts sessions"
-        Write-Host " 5) Generate SMB unauthorized login attempts sessions"
-        Write-Host " q) Exit"
-
         while ($true) {
-            $cmd = Read-Host "Please choose a menu item to run"
-            switch($cmd) {
-                "1" {
-                    [RsgcliDnsTunneling]::New($this.props).Run()
-                }
-                "2" {
-                    [RsgcliFtpFileUpload]::New($this.props).Run()
-                }
-                "3" {
-                    [RsgcliHttpFileUpload]::New($this.props).Run()
-                }
-                "4" {
-                    [RsgcliHttpUnauthorizedLoginAttempts]::New($this.props).Run()
-                }
-                "5" {
-                    [RsgcliSmbUnauthorizedLoginAttempts]::New($this.props).Run()
-                }
-                "q" {
-                    return
-                }
-                default {
-                    continue
-                }
+            Write-Host "************************************"
+            Write-Host " 1) Generate DNS tunneling sessions"
+            Write-Host " 2) Generate FTP file upload session"
+            Write-Host " 3) Generate HTTP file upload session"
+            Write-Host " 4) Generate HTTP unauthorized login attempts sessions"
+            Write-Host " 5) Generate SMB unauthorized login attempts sessions"
+            Write-Host " q) Exit"
+            
+            try {
+                do {
+                    $cmd = Read-Host "Please choose a menu item to run"
+                    switch($cmd) {
+                        "1" {
+                            [RsgcliDnsTunneling]::New($this.props).Run()
+                        }
+                        "2" {
+                            [RsgcliFtpFileUpload]::New($this.props).Run()
+                        }
+                        "3" {
+                            [RsgcliHttpFileUpload]::New($this.props).Run()
+                        }
+                        "4" {
+                            [RsgcliHttpUnauthorizedLoginAttempts]::New($this.props).Run()
+                        }
+                        "5" {
+                            [RsgcliSmbUnauthorizedLoginAttempts]::New($this.props).Run()
+                        }
+                        "q" {
+                            return
+                        }
+                        default {
+                            continue
+                        }
+                    }
+                    break
+                } while($true)
+            } catch {
+                Write-Host $_
             }
         }
     }
@@ -1110,30 +1123,37 @@ class FortigateLogs : CommandBase {
     }
 
     [void]Run() {
-        Write-Host "************************************"
-        Write-Host " 1) Simulate port scan"
-        Write-Host " 2) Simulate large upload"
-        Write-Host " 3) Send NTLM-auth logs"
-        Write-Host " q) Exit"
-
         while ($true) {
-            $cmd = Read-Host "Please choose a menu item to run"
-            switch($cmd) {
-                "1" {
-                    $this.RunPortScan()
-                }
-                "2" {
-                    $this.RunLargeUpload()
-                }
-                "3" {
-                    $this.RunNTLMAuth()
-                }
-                "q" {
-                    return
-                }
-                default {
-                    continue
-                }
+            Write-Host "************************************"
+            Write-Host " 1) Simulate port scan"
+            Write-Host " 2) Simulate large upload"
+            Write-Host " 3) Send NTLM-auth logs"
+            Write-Host " q) Exit"
+            
+            try {
+                do {
+                    $cmd = Read-Host "Please choose a menu item to run"
+                    switch($cmd) {
+                        "1" {
+                            $this.RunPortScan()
+                        }
+                        "2" {
+                            $this.RunLargeUpload()
+                        }
+                        "3" {
+                            $this.RunNTLMAuth()
+                        }
+                        "q" {
+                            return
+                        }
+                        default {
+                            continue
+                        }
+                    }
+                    break
+                } while($true)
+            } catch {
+                Write-Host $_
             }
         }
     }
@@ -1312,30 +1332,37 @@ class CiscoLogs : CommandBase {
     }
 
     [void]Run() {
-        Write-Host "************************************"
-        Write-Host " 1) Simulate port scan"
-        Write-Host " 2) Simulate large upload"
-        Write-Host " 3) Send AnyConnect auth logs"
-        Write-Host " q) Exit"
-
         while ($true) {
-            $cmd = Read-Host "Please choose a menu item to run"
-            switch($cmd) {
-                "1" {
-                    $this.RunPortScan()
-                }
-                "2" {
-                    $this.RunLargeUpload()
-                }
-                "3" {
-                    $this.RunAnyConnectAuth()
-                }
-                "q" {
-                    return
-                }
-                default {
-                    continue
-                }
+            Write-Host "************************************"
+            Write-Host " 1) Simulate port scan"
+            Write-Host " 2) Simulate large upload"
+            Write-Host " 3) Send AnyConnect auth logs"
+            Write-Host " q) Exit"
+            
+            try {
+                do {
+                    $cmd = Read-Host "Please choose a menu item to run"
+                    switch($cmd) {
+                        "1" {
+                            $this.RunPortScan()
+                        }
+                        "2" {
+                            $this.RunLargeUpload()
+                        }
+                        "3" {
+                            $this.RunAnyConnectAuth()
+                        }
+                        "q" {
+                            return
+                        }
+                        default {
+                            continue
+                        }
+                    }
+                    break
+                } while($true)
+            } catch {
+                Write-Host $_
             }
         }
     }
