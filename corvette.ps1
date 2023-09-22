@@ -854,10 +854,10 @@ class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
     }
 }
 
-class IptgenLdapSmbUnauthorizedLoginAttempts : IptgenBase {
+class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
     [string]$iptgen_json
 
-    IptgenLdapSmbUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
+    IptgenLdapNtlmUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
         $file_name = "iptgen-ldap-ntlm-login-attempts-template.json"
         $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
 
@@ -1179,7 +1179,7 @@ class RsgcliMenu : CommandBase {
                             [RsgcliSmbNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
                         }
                         "6" {
-                            [RsgcliSmbNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
+                            [RsgcliLdapNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
                         }
                         "q" {
                             return
