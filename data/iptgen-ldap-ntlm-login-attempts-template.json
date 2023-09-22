@@ -12,7 +12,7 @@
   "server": "${server_ip}:389",
   "sequence": [
     ["for.session", [0, "${attempt_count}"], "i", [
-        ["sys.print", "smb: ${client_ip} -> ${server_ip}:389"],
+        ["sys.print", "ldap: ${client_ip} -> ${server_ip}:389"],
         
         ["", "## bindRequest - NTLMSSP_NEGOTIATEsasl"],
         ["tcp.send", "hex.raw", [

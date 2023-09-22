@@ -14,7 +14,7 @@
   "sequence": [
     ["for.session", [0, "${attempt_count}"], "i", [
         ["tcp.handshake"],
-        ["sys.print", "smb: ${RSGCLI_TCP_CLIENT_IP} -> ${RSGCLI_TCP_SERVER_IP}:${RSGCLI_TCP_SERVER_PORT}"],
+        ["sys.print", "ldap: ${RSGCLI_TCP_CLIENT_IP} -> ${RSGCLI_TCP_SERVER_IP}:${RSGCLI_TCP_SERVER_PORT}"],
 
         ["", "## bindRequest - NTLMSSP_NEGOTIATEsasl"],
         ["tcp.send", "hex.raw", [
