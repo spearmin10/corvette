@@ -4,7 +4,8 @@
     "netbios_dst_upper_domain_4": "CORP",
     "username_8": "${rand.lower_alpha(8)}",
     "srchost_12": "WIN-${rand.digit(4)}${rand.upper_alpha(4)}",
-    "dsthost_12": "WIN-${rand.digit(4)}${rand.upper_alpha(4)}"
+    "dsthost_12": "WIN-${rand.digit(4)}${rand.upper_alpha(4)}",
+    "target_name_4": "cifs"
   },
   "server": {
     "port": 445
@@ -255,12 +256,16 @@
                 "1a 11 78 38 e2 9c b1 ba  e7 5b b6 d3 69 15 16 0c",
                 "ca 35 a8 82 1f 96 5d 3c  be 81 0a 00 10 00 00 00",
                 "00 00 00 00 00 00 00 00  00 00 00 00 00 00 09 00",
-                "22 00 63 00 69 00 66 00  73 00 2f 00 31 00 39 00",
-                "32 00 2e 00 31 00 36 00  38 00 2e 00 31 00 2e 00",
-                "34 00 33 00 00 00 00 00  00 00 00 00 00 00 00 00",
-                "6b a4 9b cd 11 38 70 dd  c0 a1 5d 0d 3e 23 7f 49",
-                "a3 12 04 10 01 00 00 00  bf 99 3b 71 54 16 2b 95",
-                "00 00 00 00"
+                "22 00"
+              ]
+            ],
+            ["utf16le.raw", "${target_name_4}"],
+            ["hex.raw", [
+                "2f 00 31 00 39 00 32 00  2e 00 31 00 36 00 38 00",
+                "2e 00 31 00 2e 00 34 00  33 00 00 00 00 00 00 00",
+                "00 00 00 00 00 00 6b a4  9b cd 11 38 70 dd c0 a1",
+                "5d 0d 3e 23 7f 49 a3 12  04 10 01 00 00 00 bf 99",
+                "3b 71 54 16 2b 95 00 00  00 00"
               ]
             ]
           ]
