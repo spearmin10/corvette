@@ -815,11 +815,50 @@ class IptgenHttpUnauthorizedLoginAttempts : IptgenBase {
     }
 }
 
-class IptgenSmbUnauthorizedLoginAttempts : IptgenBase {
+class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
     [string]$iptgen_json
 
-    IptgenSmbUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
+    IptgenSmbNtlmUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
         $file_name = "iptgen-smb-ntlm-login-attempts-template.json"
+        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
+
+        if (!(IsFile $this.iptgen_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
+            DownloadFile $url $this.iptgen_json
+        }
+    }
+
+    [void]Run() {
+        $interface = $this.SelectInterface()
+        if ([string]::IsNullOrEmpty($interface)) {
+            return
+        }
+        Write-Host ""
+        Write-Host "### Enter the SMB configuration"
+        $client_ip = ReadInput "Client IP" `
+                               $interface.IPAddress `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $server_ip = ReadInput "Server IP" `
+                               "" `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+
+        $Env:client_ip = $client_ip
+        $Env:server_ip = $server_ip
+        $Env:attempt_count = 2000
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+        }
+    }
+}
+
+class IptgenLdapSmbUnauthorizedLoginAttempts : IptgenBase {
+    [string]$iptgen_json
+
+    IptgenLdapSmbUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
+        $file_name = "iptgen-ldap-ntlm-login-attempts-template.json"
         $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
 
         if (!(IsFile $this.iptgen_json)) {
@@ -866,7 +905,8 @@ class IptgenMenu : CommandBase {
             Write-Host " 3) Generate HTTP file upload packets"
             Write-Host " 4) Generate HTTPS file upload packets"
             Write-Host " 5) Generate HTTP unauthorized login attempts packets"
-            Write-Host " 6) Generate SMB unauthorized login attempts packets"
+            Write-Host " 6) Generate SMB NTLM unauthorized login attempts packets"
+            Write-Host " 7) Generate LDAP NTLM unauthorized login attempts packets"
             Write-Host " q) Exit"
             try {
                 do {
@@ -888,7 +928,10 @@ class IptgenMenu : CommandBase {
                             [IptgenHttpUnauthorizedLoginAttempts]::New($this.props).Run()
                         }
                         "6" {
-                            [IptgenSmbUnauthorizedLoginAttempts]::New($this.props).Run()
+                            [IptgenSmbNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
+                        }
+                        "6" {
+                            [IptgenLdapNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
                         }
                         "q" {
                             return
@@ -1037,11 +1080,43 @@ class RsgcliHttpUnauthorizedLoginAttempts : RsgcliBase {
     }
 }
 
-class RsgcliSmbUnauthorizedLoginAttempts : RsgcliBase {
+class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
     [string]$rsgcli_json
 
-    RsgcliSmbUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
+    RsgcliSmbNtlmUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
         $file_name = "rsgcli-smb-ntlm-login-attempts-template.json"
+        $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
+
+        if (!(IsFile $this.rsgcli_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
+            DownloadFile $url $this.rsgcli_json
+        }
+    }
+
+    [void]Run() {
+        Write-Host ""
+        Write-Host "### Enter the SMB configuration"
+        $rsgsvr_host = ReadInput "RSG Server Host" `
+                                 $this.props.rsgsvr_host `
+                                 ".+"
+        $rsgsvr_port = ReadInput "RSG Server Port" `
+                                 $this.props.rsgsvr_port `
+                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 "Please retype a valid port number"
+
+        $Env:attempt_count = 2000
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
+        }
+    }
+}
+
+class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
+    [string]$rsgcli_json
+
+    RsgcliLdapNtlmUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
+        $file_name = "rsgcli-ldap-ntlm-login-attempts-template.json"
         $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
 
         if (!(IsFile $this.rsgcli_json)) {
@@ -1080,7 +1155,8 @@ class RsgcliMenu : CommandBase {
             Write-Host " 2) Generate FTP file upload session"
             Write-Host " 3) Generate HTTP file upload session"
             Write-Host " 4) Generate HTTP unauthorized login attempts sessions"
-            Write-Host " 5) Generate SMB unauthorized login attempts sessions"
+            Write-Host " 5) Generate SMB NTLM unauthorized login attempts sessions"
+            Write-Host " 6) Generate LDAP NTLM unauthorized login attempts sessions"
             Write-Host " q) Exit"
             
             try {
@@ -1100,7 +1176,10 @@ class RsgcliMenu : CommandBase {
                             [RsgcliHttpUnauthorizedLoginAttempts]::New($this.props).Run()
                         }
                         "5" {
-                            [RsgcliSmbUnauthorizedLoginAttempts]::New($this.props).Run()
+                            [RsgcliSmbNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
+                        }
+                        "6" {
+                            [RsgcliSmbNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
                         }
                         "q" {
                             return
