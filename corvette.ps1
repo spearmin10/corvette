@@ -930,7 +930,7 @@ class IptgenMenu : CommandBase {
                         "6" {
                             [IptgenSmbNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
                         }
-                        "6" {
+                        "7" {
                             [IptgenLdapNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
                         }
                         "q" {
