@@ -9,13 +9,6 @@
       "target_name_4": "cifs"
     }
   },
-  "environment": {
-    "netbios_src_upper_domain_4": "CORP",
-    "netbios_dst_upper_domain_4": "CORP",
-    "srchost_12": "WIN-${rand.digit(4)}${rand.upper_alpha(4)}",
-    "dsthost_12": "WIN-${rand.digit(4)}${rand.upper_alpha(4)}",
-    "target_name_4": "ldap"
-  },
   "client": "${client_ip}", 
   "server": "${server_ip}:389",
   "sequence": [
