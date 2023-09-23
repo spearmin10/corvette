@@ -1,12 +1,13 @@
 {
-  "environment": {
-    "netbios_src_upper_domain_4": "CORP",
-    "netbios_dst_upper_domain_4": "CORP",
-    "netbios_dst_lower_domain_4": "corp",
-    "username_8": "${rand.lower_alpha(8)}",
-    "srchost_12": "WIN-${rand.digit(4)}${rand.upper_alpha(4)}",
-    "dsthost_12": "WIN-${rand.digit(4)}${rand.upper_alpha(4)}",
-    "target_name_4": "cifs"
+  "default": {
+    "environment":{
+      "username_max13": "${rand.lower_alpha(8)}",
+      "netbios_src_upper_domain_4": "CORP",
+      "netbios_dst_upper_domain_4": "CORP",
+      "srchost_12": "WIN-${rand.digit(4)}${rand.upper_alpha(4)}",
+      "dsthost_12": "WIN-${rand.digit(4)}${rand.upper_alpha(4)}",
+      "target_name_4": "cifs"
+    }
   },
   "server": {
     "port": 445
@@ -176,7 +177,7 @@
                 "04 00 1e 00"
               ]
             ],
-            ["utf16le.raw", "${netbios_dst_lower_domain_4}"],
+            ["utf16le.raw", "${netbios_dst_upper_domain_4=val.upper()}"],
             ["hex.raw", [
                 "2e 00 63 00 6f 00 72 00  74 00 65 00 78 00 2e 00",
                 "6c 00 61 00 6e 00 03 00  38 00"
@@ -187,13 +188,13 @@
                 "2e 00"
               ]
             ],
-            ["utf16le.raw", "${netbios_dst_lower_domain_4}"],
+            ["utf16le.raw", "${netbios_dst_upper_domain_4=val.upper()}"],
             ["hex.raw", [
                 "2e 00 63 00 6f 00 72 00  74 00 65 00 78 00 2e 00",
                 "6c 00 61 00 6e 00 05 00  1e 00"
               ]
             ],
-            ["utf16le.raw", "${netbios_dst_lower_domain_4}"],
+            ["utf16le.raw", "${netbios_dst_upper_domain_4=val.upper()}"],
             ["hex.raw", [
                 "2e 00 63 00 6f 00 72 00  74 00 65 00 78 00 2e 00",
                 "6c 00 61 00 6e 00 07 00  08 00 8e 9d 52 d4 33 ed",
@@ -219,7 +220,7 @@
               ]
             ],
             ["", "## Length of Username in bytes (max:0x1a)"],
-            ["hex.raw", "10"],
+            ["hex.raw", "${username_max13=(val.length() * 2).hex_le(1)}"],
             ["hex.raw", [
                 "00 1a 00 60 00 00 00 18  00 18 00 7a 00 00 00 10",
                 "00 10 00 0c 02 00 00 15  82 88 e2 0a 00 ba 47 00",
@@ -230,7 +231,7 @@
             ["utf16le.raw", "${netbios_dst_upper_domain_4}"],
             
             ["", "## Username(13)"],
-            ["utf16le.raw", "${username_8}*****"],
+            ["utf16le.raw", "${username_max13=val.resize(13)}"],
             
             ["utf16le.raw", "${srchost_12}"],
             ["hex.raw", [
@@ -255,7 +256,7 @@
                 "04 00 1e 00"
               ]
             ],
-            ["utf16le.raw", "${netbios_dst_lower_domain_4}"],
+            ["utf16le.raw", "${netbios_dst_upper_domain_4=val.upper()}"],
             ["hex.raw", [
                 "2e 00 63 00 6f 00 72 00  74 00 65 00 78 00 2e 00",
                 "6c 00 61 00 6e 00 03 00  38 00"
@@ -266,13 +267,13 @@
                 "2e 00"
               ]
             ],
-            ["utf16le.raw", "${netbios_dst_lower_domain_4}"],
+            ["utf16le.raw", "${netbios_dst_upper_domain_4=val.upper()}"],
             ["hex.raw", [
                 "2e 00 63 00 6f 00 72 00  74 00 65 00 78 00 2e 00",
                 "6c 00 61 00 6e 00 05 00  1e 00"
               ]
             ],
-            ["utf16le.raw", "${netbios_dst_lower_domain_4}"],
+            ["utf16le.raw", "${netbios_dst_upper_domain_4=val.upper()}"],
             ["hex.raw", [
                 "2e 00 63 00 6f 00 72 00  74 00 65 00 78 00 2e 00",
                 "6c 00 61 00 6e 00 07 00  08 00 8e 9d 52 d4 33 ed",
