@@ -280,7 +280,7 @@ class ConfigureSettings : CommandBase {
         Write-Host "### Enter the syslog configuration"
         $syslog_host = ReadInput "Syslog Host" `
                                  $this.props.syslog_host `
-                                 ".+"
+                                 "^.+$"
         $syslog_port = ReadInput "Syslog Port" `
                                  $syslog_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
@@ -308,7 +308,7 @@ class ConfigureSettings : CommandBase {
         Write-Host "### Enter the rsg server configuration"
         $rsgsvr_host = ReadInput "RSG Host" `
                                  $this.props.rsgsvr_host `
-                                 ".+"
+                                 "^.+$"
         $rsgsvr_port = ReadInput "RSG Port" `
                                  $rsgsvr_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
@@ -671,7 +671,7 @@ class IptgenDnsTunneling : IptgenBase {
                                "" `
                                $script:PATTERN_IPV4_ADDR `
                                "Please retype a valid IPv4 address"
-        $domain = ReadInput "DNS tunnel domain" $null ".+"
+        $domain = ReadInput "DNS tunnel domain" $null "^.+$"
 
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
@@ -708,7 +708,7 @@ class IptgenFtpFileUpload : IptgenBase {
                                "" `
                                $script:PATTERN_IPV4_ADDR `
                                "Please retype a valid IPv4 address"
-        $upload_filename = ReadInput "Upload file name" "test.dat" ".+"
+        $upload_filename = ReadInput "Upload file name" "test.dat" "^.+$"
         $upload_filesize = ReadInputSize "Upload file size" "100MB" "Invalid file size. Please retype the size."
 
         $pasv_port = 34567
@@ -843,9 +843,13 @@ class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
                                "" `
                                $script:PATTERN_IPV4_ADDR `
                                "Please retype a valid IPv4 address"
-
+        $username = ReadInput "Username [1..13]" `
+                              (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
+                              "^.{1,13}$" `
+                              "Please retype an user name (max 13 charactors)"
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
+        $Env:username_max13 = $username
         $Env:attempt_count = 2000
 
         if (AskYesNo "Are you sure you want to run?") {
@@ -882,9 +886,14 @@ class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
                                "" `
                                $script:PATTERN_IPV4_ADDR `
                                "Please retype a valid IPv4 address"
+        $username = ReadInput "Username [1..13]" `
+                              (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
+                              "^.{1,13}$" `
+                              "Please retype an user name (max 13 charactors)"
 
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
+        $Env:username_max13 = $username
         $Env:attempt_count = 2000
 
         if (AskYesNo "Are you sure you want to run?") {
@@ -965,13 +974,13 @@ class RsgcliDnsTunneling : RsgcliBase {
         Write-Host "### Enter the DNS tunneling configuration"
         $rsgsvr_host = ReadInput "RSG Server Host" `
                                  $this.props.rsgsvr_host `
-                                 ".+"
+                                 "^.+$"
         $rsgsvr_port = ReadInput "RSG Server Port" `
                                  $this.props.rsgsvr_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
                                  "Please retype a valid port number"
 
-        $domain = ReadInput "DNS tunnel domain" $null ".+"
+        $domain = ReadInput "DNS tunnel domain" $null "^.+$"
 
         $Env:domain = $domain
         if (AskYesNo "Are you sure you want to run?") {
@@ -996,13 +1005,13 @@ class RsgcliFtpFileUpload : RsgcliBase {
         Write-Host "### Enter the FTP file upload configuration"
         $rsgsvr_host = ReadInput "RSG Server Host" `
                                  $this.props.rsgsvr_host `
-                                 ".+"
+                                 "^.+$"
         $rsgsvr_port = ReadInput "RSG Server Port" `
                                  $this.props.rsgsvr_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
                                  "Please retype a valid port number"
 
-        $upload_filename = ReadInput "Upload file name" "test.dat" ".+"
+        $upload_filename = ReadInput "Upload file name" "test.dat" "^.+$"
         $upload_filesize = ReadInputSize "Upload file size" "100MB" "Invalid file size. Please retype the size."
 
         $pasv_port = 34567
@@ -1033,7 +1042,7 @@ class RsgcliHttpFileUpload : RsgcliBase {
         Write-Host "### Enter the HTTP file upload configuration"
         $rsgsvr_host = ReadInput "RSG Server Host" `
                                  $this.props.rsgsvr_host `
-                                 ".+"
+                                 "^.+$"
         $rsgsvr_port = ReadInput "RSG Server Port" `
                                  $this.props.rsgsvr_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
@@ -1066,7 +1075,7 @@ class RsgcliHttpUnauthorizedLoginAttempts : RsgcliBase {
         Write-Host "### Enter the HTTP configuration"
         $rsgsvr_host = ReadInput "RSG Server Host" `
                                  $this.props.rsgsvr_host `
-                                 ".+"
+                                 "^.+$"
         $rsgsvr_port = ReadInput "RSG Server Port" `
                                  $this.props.rsgsvr_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
@@ -1098,12 +1107,17 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
         Write-Host "### Enter the SMB configuration"
         $rsgsvr_host = ReadInput "RSG Server Host" `
                                  $this.props.rsgsvr_host `
-                                 ".+"
+                                 "^.+$"
         $rsgsvr_port = ReadInput "RSG Server Port" `
                                  $this.props.rsgsvr_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
                                  "Please retype a valid port number"
+        $username = ReadInput "Username [1..13]" `
+                              (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
+                              "^.{1,13}$" `
+                              "Please retype an user name (max 13 charactors)"
 
+        $Env:username_max13 = $username
         $Env:attempt_count = 2000
 
         if (AskYesNo "Are you sure you want to run?") {
@@ -1130,12 +1144,17 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
         Write-Host "### Enter the SMB configuration"
         $rsgsvr_host = ReadInput "RSG Server Host" `
                                  $this.props.rsgsvr_host `
-                                 ".+"
+                                 "^.+$"
         $rsgsvr_port = ReadInput "RSG Server Port" `
                                  $this.props.rsgsvr_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
                                  "Please retype a valid port number"
+        $username = ReadInput "Username [1..13]" `
+                              (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
+                              "^.{1,13}$" `
+                              "Please retype an user name (max 13 charactors)"
 
+        $Env:username_max13 = $username
         $Env:attempt_count = 2000
 
         if (AskYesNo "Are you sure you want to run?") {
@@ -1253,7 +1272,7 @@ class FortigateLogs : CommandBase {
         Write-Host "### Enter the syslog configuration"
         $syslog_host = ReadInput "Syslog Host" `
                                  $this.props.syslog_host `
-                                 ".+"
+                                 "^.+$"
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
@@ -1298,7 +1317,7 @@ class FortigateLogs : CommandBase {
         Write-Host "### Enter the syslog configuration"
         $syslog_host = ReadInput "Syslog Host" `
                                  $this.props.syslog_host `
-                                 ".+"
+                                 "^.+$"
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
@@ -1357,7 +1376,7 @@ class FortigateLogs : CommandBase {
         Write-Host "### Enter the syslog configuration"
         $syslog_host = ReadInput "Syslog Host" `
                                  $this.props.syslog_host `
-                                 ".+"
+                                 "^.+$"
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
@@ -1374,7 +1393,7 @@ class FortigateLogs : CommandBase {
                                     "" `
                                     $script:PATTERN_IPV4_ADDR `
                                     "Please retype a valid IPv4 address"
-        $domain = ReadInput "Domain Name" "domain" ".+"
+        $domain = ReadInput "Domain Name" "domain" "^.+$"
         $numof_logs = ParseNumber(ReadInput "Number of log records" `
                                             "1000" `
                                             "^[0-9]+$" `
@@ -1462,7 +1481,7 @@ class CiscoLogs : CommandBase {
         Write-Host "### Enter the syslog configuration"
         $syslog_host = ReadInput "Syslog Host" `
                                  $this.props.syslog_host `
-                                 ".+"
+                                 "^.+$"
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
@@ -1507,7 +1526,7 @@ class CiscoLogs : CommandBase {
         Write-Host "### Enter the syslog configuration"
         $syslog_host = ReadInput "Syslog Host" `
                                  $this.props.syslog_host `
-                                 ".+"
+                                 "^.+$"
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
@@ -1565,7 +1584,7 @@ class CiscoLogs : CommandBase {
         Write-Host "### Enter the syslog configuration"
         $syslog_host = ReadInput "Syslog Host" `
                                  $this.props.syslog_host `
-                                 ".+"
+                                 "^.+$"
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
