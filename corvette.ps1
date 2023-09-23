@@ -330,7 +330,7 @@ class ConfigureSettings : CommandBase {
             Write-Host " 2) Set default RSG server"
             Write-Host " q) Exit"
             try {
-                do {
+                :retry do {
                     $cmd = Read-Host "Please choose a menu item"
                     switch ($cmd) {
                         "q" {
@@ -349,7 +349,7 @@ class ConfigureSettings : CommandBase {
                             $this.SetDefaultRsgServer()
                         }
                         default {
-                            continue
+                            continue retry
                         }
                     }
                     break
@@ -432,7 +432,7 @@ class SetupTools : CommandBase {
             Write-Host " 5) Download/Install python"
             Write-Host " q) Exit"
             try {
-                do {
+                :retry do {
                     $cmd = Read-Host "Please choose a menu item"
                     switch ($cmd) {
                         "q" {
@@ -454,7 +454,7 @@ class SetupTools : CommandBase {
                             $this.InstallPython()
                         }
                         default {
-                            continue
+                            continue retry
                         }
                     }
                     break
@@ -918,7 +918,7 @@ class IptgenMenu : CommandBase {
             Write-Host " 7) Generate LDAP NTLM unauthorized login attempts packets"
             Write-Host " q) Exit"
             try {
-                do {
+                :retry do {
                     $cmd = Read-Host "Please choose a menu item to run"
                     switch($cmd) {
                         "1" {
@@ -946,7 +946,7 @@ class IptgenMenu : CommandBase {
                             return
                         }
                         default {
-                            continue
+                            continue retry
                         }
                     }
                     break
@@ -1179,7 +1179,7 @@ class RsgcliMenu : CommandBase {
             Write-Host " q) Exit"
             
             try {
-                do {
+                :retry do {
                     $cmd = Read-Host "Please choose a menu item to run"
                     switch($cmd) {
                         "1" {
@@ -1204,7 +1204,7 @@ class RsgcliMenu : CommandBase {
                             return
                         }
                         default {
-                            continue
+                            continue retry
                         }
                     }
                     break
@@ -1229,7 +1229,7 @@ class FortigateLogs : CommandBase {
             Write-Host " q) Exit"
             
             try {
-                do {
+                :retry do {
                     $cmd = Read-Host "Please choose a menu item to run"
                     switch($cmd) {
                         "1" {
@@ -1245,7 +1245,7 @@ class FortigateLogs : CommandBase {
                             return
                         }
                         default {
-                            continue
+                            continue retry
                         }
                     }
                     break
@@ -1438,7 +1438,7 @@ class CiscoLogs : CommandBase {
             Write-Host " q) Exit"
             
             try {
-                do {
+                :retry do {
                     $cmd = Read-Host "Please choose a menu item to run"
                     switch($cmd) {
                         "1" {
@@ -1454,7 +1454,7 @@ class CiscoLogs : CommandBase {
                             return
                         }
                         default {
-                            continue
+                            continue retry
                         }
                     }
                     break
