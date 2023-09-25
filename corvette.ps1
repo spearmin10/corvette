@@ -137,15 +137,23 @@ function ReadInputByChooser([string]$message, [string]$default, [string[]]$optio
     } while ($true)
 }
 
-function AskYesNo([string]$message, [string]$default = $null) {
-    $message = "$message [Y/n]"
+function AskYesNo([string]$message, [string]$default = "") {
+    $default = $default.ToLower()
     if (![string]::IsNullOrEmpty($default)) {
-        $message += " (default: $default)"
+        if ($default -eq "yes" -Or $default -eq "y") {
+            $message += " [Y/n default=Yes]"
+        } elseif ($default -eq "no" -Or $default -eq "n") {
+            $message += " [Y/n default=No]"
+        } else {
+            $message += " [Y/n]"
+        }
+    } else {
+        $message += " [Y/n]"
     }
     do {
         $answer = Read-Host $message
         if ([string]::IsNullOrEmpty($answer)) {
-          $answer = $default
+            $answer = $default
         }
         $answer = $answer.ToLower()
         if ($answer -eq "yes" -Or $answer -eq "y") {
