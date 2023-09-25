@@ -811,10 +811,14 @@ class IptgenHttpUnauthorizedLoginAttempts : IptgenBase {
                                "" `
                                $script:PATTERN_IPV4_ADDR `
                                "Please retype a valid IPv4 address"
-
+        $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
+                                                "10000" `
+                                                "^[0-9]+$" `
+                                                "Please retype a valid number")
+        $Env:attempt_count = $numof_attempts
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
-        $Env:attempt_count = 10000
+        $Env:attempt_count = $numof_attempts
 
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
@@ -856,8 +860,13 @@ class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
                                "" `
                                $script:PATTERN_IPV4_ADDR `
                                "Please retype a valid IPv4 address"
+        $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
+                                                "2000" `
+                                                "^[0-9]+$" `
+                                                "Please retype a valid number")
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
+        $Env:attempt_count = $numof_attempts
 
         if (AskYesNo "Login attempts by random users" "N") {
             $iptgen_json = $this.iptgen_ru_json
@@ -867,17 +876,8 @@ class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
                                   (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
                                   "^.{1,13}$" `
                                   "Please retype an user name (max 13 charactors)"
-            
             $Env:username_max13 = $username
         }
-        $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
-                                                "2000" `
-                                                "^[0-9]+$" `
-                                                "Please retype a valid number")
-
-
-        $Env:attempt_count = $numof_attempts
-
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($interface.InterfaceAlias, $iptgen_json, 10)
         }
@@ -919,8 +919,13 @@ class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
                                "" `
                                $script:PATTERN_IPV4_ADDR `
                                "Please retype a valid IPv4 address"
+        $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
+                                                "2000" `
+                                                "^[0-9]+$" `
+                                                "Please retype a valid number")
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
+        $Env:attempt_count = $numof_attempts
 
         if (AskYesNo "Login attempts by random users" "N") {
             $iptgen_json = $this.iptgen_ru_json
@@ -930,17 +935,8 @@ class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
                                   (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
                                   "^.{1,13}$" `
                                   "Please retype an user name (max 13 charactors)"
-            
             $Env:username_max13 = $username
         }
-        $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
-                                                "2000" `
-                                                "^[0-9]+$" `
-                                                "Please retype a valid number")
-
-
-        $Env:attempt_count = $numof_attempts
-
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($interface.InterfaceAlias, $iptgen_json, 10)
         }
@@ -1163,6 +1159,13 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
                                  $this.props.rsgsvr_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
                                  "Please retype a valid port number"
+        $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
+                                                "2000" `
+                                                "^[0-9]+$" `
+                                                "Please retype a valid number")
+
+
+        $Env:attempt_count = $numof_attempts
 
         if (AskYesNo "Login attempts by random users" "N") {
             $rsgcli_json = $this.rsgcli_ru_json
@@ -1172,17 +1175,8 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
                                   (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
                                   "^.{1,13}$" `
                                   "Please retype an user name (max 13 charactors)"
-            
             $Env:username_max13 = $username
         }
-        $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
-                                                "2000" `
-                                                "^[0-9]+$" `
-                                                "Please retype a valid number")
-
-
-        $Env:attempt_count = $numof_attempts
-
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($rsgsvr_host, $rsgsvr_port, $rsgcli_json)
         }
@@ -1218,17 +1212,6 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
                                  $this.props.rsgsvr_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
                                  "Please retype a valid port number"
-        if (AskYesNo "Login attempts by random users" "N") {
-            $rsgcli_json = $this.rsgcli_ru_json
-        } else {
-            $rsgcli_json = $this.rsgcli_1u_json
-            $username = ReadInput "Username [1..13]" `
-                                  (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
-                                  "^.{1,13}$" `
-                                  "Please retype an user name (max 13 charactors)"
-            
-            $Env:username_max13 = $username
-        }
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
                                                 "2000" `
                                                 "^[0-9]+$" `
@@ -1237,6 +1220,16 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
 
         $Env:attempt_count = $numof_attempts
 
+        if (AskYesNo "Login attempts by random users" "N") {
+            $rsgcli_json = $this.rsgcli_ru_json
+        } else {
+            $rsgcli_json = $this.rsgcli_1u_json
+            $username = ReadInput "Username [1..13]" `
+                                  (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
+                                  "^.{1,13}$" `
+                                  "Please retype an user name (max 13 charactors)"
+            $Env:username_max13 = $username
+        }
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($rsgsvr_host, $rsgsvr_port, $rsgcli_json)
         }
