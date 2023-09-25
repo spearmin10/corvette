@@ -137,9 +137,16 @@ function ReadInputByChooser([string]$message, [string]$default, [string[]]$optio
     } while ($true)
 }
 
-function AskYesNo([string]$message) {
+function AskYesNo([string]$message, [string]$default = $null) {
+    $message = "$message [Y/n]"
+    if (![string]::IsNullOrEmpty($default)) {
+        $message += " (default: $default)"
+    }
     do {
-        $answer = Read-Host "$message [Y/n]"
+        $answer = Read-Host $message
+        if ([string]::IsNullOrEmpty($answer)) {
+          $answer = $default
+        }
         $answer = $answer.ToLower()
         if ($answer -eq "yes" -Or $answer -eq "y") {
             return $true
@@ -816,15 +823,21 @@ class IptgenHttpUnauthorizedLoginAttempts : IptgenBase {
 }
 
 class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
-    [string]$iptgen_json
+    [string]$iptgen_1u_json
+    [string]$iptgen_ru_json
 
     IptgenSmbNtlmUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "iptgen-smb-ntlm-login-attempts-template.json"
-        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
-
-        if (!(IsFile $this.iptgen_json)) {
+        $file_name = "iptgen-smb-ntlm-1u-login-attempts-template.json"
+        $this.iptgen_1u_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
+        if (!(IsFile $this.iptgen_1u_json)) {
             $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
-            DownloadFile $url $this.iptgen_json
+            DownloadFile $url $this.iptgen_1u_json
+        }
+        $file_name = "iptgen-smb-ntlm-ru-login-attempts-template.json"
+        $this.iptgen_ru_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
+        if (!(IsFile $this.iptgen_ru_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
+            DownloadFile $url $this.iptgen_ru_json
         }
     }
 
@@ -843,32 +856,52 @@ class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
                                "" `
                                $script:PATTERN_IPV4_ADDR `
                                "Please retype a valid IPv4 address"
-        $username = ReadInput "Username [1..13]" `
-                              (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
-                              "^.{1,13}$" `
-                              "Please retype an user name (max 13 charactors)"
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
-        $Env:username_max13 = $username
-        $Env:attempt_count = 2000
+
+        if (AskYesNo "Login attempts by random users" "N") {
+            $iptgen_json = $this.iptgen_ru_json
+        } else {
+            $iptgen_json = $this.iptgen_1u_json
+            $username = ReadInput "Username [1..13]" `
+                                  (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
+                                  "^.{1,13}$" `
+                                  "Please retype an user name (max 13 charactors)"
+            
+            $Env:username_max13 = $username
+        }
+        $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
+                                                "2000" `
+                                                "^[0-9]+$" `
+                                                "Please retype a valid number")
+
+
+        $Env:attempt_count = $numof_attempts
 
         if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+            $this.Run($interface.InterfaceAlias, $iptgen_json, 10)
         }
     }
 }
 
 class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
-    [string]$iptgen_json
+    [string]$iptgen_1u_json
+    [string]$iptgen_ru_json
 
     IptgenLdapNtlmUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "iptgen-ldap-ntlm-login-attempts-template.json"
-        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
-
-        if (!(IsFile $this.iptgen_json)) {
+        $file_name = "iptgen-ldap-ntlm-1u-login-attempts-template.json"
+        $this.iptgen_1u_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
+        if (!(IsFile $this.iptgen_1u_json)) {
             $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
-            DownloadFile $url $this.iptgen_json
+            DownloadFile $url $this.iptgen_1u_json
         }
+        $file_name = "iptgen-ldap-ntlm-ru-login-attempts-template.json"
+        $this.iptgen_ru_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
+        if (!(IsFile $this.iptgen_ru_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
+            DownloadFile $url $this.iptgen_ru_json
+        }
+
     }
 
     [void]Run() {
@@ -877,7 +910,7 @@ class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
             return
         }
         Write-Host ""
-        Write-Host "### Enter the SMB configuration"
+        Write-Host "### Enter the LDAP configuration"
         $client_ip = ReadInput "Client IP" `
                                $interface.IPAddress `
                                $script:PATTERN_IPV4_ADDR `
@@ -886,18 +919,30 @@ class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
                                "" `
                                $script:PATTERN_IPV4_ADDR `
                                "Please retype a valid IPv4 address"
-        $username = ReadInput "Username [1..13]" `
-                              (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
-                              "^.{1,13}$" `
-                              "Please retype an user name (max 13 charactors)"
-
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
-        $Env:username_max13 = $username
-        $Env:attempt_count = 2000
+
+        if (AskYesNo "Login attempts by random users" "N") {
+            $iptgen_json = $this.iptgen_ru_json
+        } else {
+            $iptgen_json = $this.iptgen_1u_json
+            $username = ReadInput "Username [1..13]" `
+                                  (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
+                                  "^.{1,13}$" `
+                                  "Please retype an user name (max 13 charactors)"
+            
+            $Env:username_max13 = $username
+        }
+        $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
+                                                "2000" `
+                                                "^[0-9]+$" `
+                                                "Please retype a valid number")
+
+
+        $Env:attempt_count = $numof_attempts
 
         if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+            $this.Run($interface.InterfaceAlias, $iptgen_json, 10)
         }
     }
 }
@@ -1090,15 +1135,21 @@ class RsgcliHttpUnauthorizedLoginAttempts : RsgcliBase {
 }
 
 class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
-    [string]$rsgcli_json
+    [string]$rsgcli_1u_json
+    [string]$rsgcli_ru_json
 
     RsgcliSmbNtlmUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "rsgcli-smb-ntlm-login-attempts-template.json"
-        $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
-
-        if (!(IsFile $this.rsgcli_json)) {
+        $file_name = "rsgcli-smb-ntlm-1u-login-attempts-template.json"
+        $this.rsgcli_1u_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
+        if (!(IsFile $this.rsgcli_1u_json)) {
             $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
-            DownloadFile $url $this.rsgcli_json
+            DownloadFile $url $this.rsgcli_1u_json
+        }
+        $file_name = "rsgcli-smb-ntlm-ru-login-attempts-template.json"
+        $this.rsgcli_ru_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
+        if (!(IsFile $this.rsgcli_ru_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
+            DownloadFile $url $this.rsgcli_ru_json
         }
     }
 
@@ -1112,30 +1163,48 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
                                  $this.props.rsgsvr_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
                                  "Please retype a valid port number"
-        $username = ReadInput "Username [1..13]" `
-                              (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
-                              "^.{1,13}$" `
-                              "Please retype an user name (max 13 charactors)"
 
-        $Env:username_max13 = $username
-        $Env:attempt_count = 2000
+        if (AskYesNo "Login attempts by random users" "N") {
+            $rsgcli_json = $this.rsgcli_ru_json
+        } else {
+            $rsgcli_json = $this.rsgcli_1u_json
+            $username = ReadInput "Username [1..13]" `
+                                  (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
+                                  "^.{1,13}$" `
+                                  "Please retype an user name (max 13 charactors)"
+            
+            $Env:username_max13 = $username
+        }
+        $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
+                                                "2000" `
+                                                "^[0-9]+$" `
+                                                "Please retype a valid number")
+
+
+        $Env:attempt_count = $numof_attempts
 
         if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
+            $this.Run($rsgsvr_host, $rsgsvr_port, $rsgcli_json)
         }
     }
 }
 
 class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
-    [string]$rsgcli_json
+    [string]$rsgcli_1u_json
+    [string]$rsgcli_ru_json
 
     RsgcliLdapNtlmUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "rsgcli-ldap-ntlm-login-attempts-template.json"
-        $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
-
-        if (!(IsFile $this.rsgcli_json)) {
+        $file_name = "rsgcli-ldap-ntlm-1u-login-attempts-template.json"
+        $this.rsgcli_1u_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
+        if (!(IsFile $this.rsgcli_1u_json)) {
             $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
-            DownloadFile $url $this.rsgcli_json
+            DownloadFile $url $this.rsgcli_1u_json
+        }
+        $file_name = "rsgcli-ldap-ntlm-ru-login-attempts-template.json"
+        $this.rsgcli_ru_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
+        if (!(IsFile $this.rsgcli_ru_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
+            DownloadFile $url $this.rsgcli_ru_json
         }
     }
 
@@ -1149,16 +1218,27 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
                                  $this.props.rsgsvr_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
                                  "Please retype a valid port number"
-        $username = ReadInput "Username [1..13]" `
-                              (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
-                              "^.{1,13}$" `
-                              "Please retype an user name (max 13 charactors)"
+        if (AskYesNo "Login attempts by random users" "N") {
+            $rsgcli_json = $this.rsgcli_ru_json
+        } else {
+            $rsgcli_json = $this.rsgcli_1u_json
+            $username = ReadInput "Username [1..13]" `
+                                  (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
+                                  "^.{1,13}$" `
+                                  "Please retype an user name (max 13 charactors)"
+            
+            $Env:username_max13 = $username
+        }
+        $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
+                                                "2000" `
+                                                "^[0-9]+$" `
+                                                "Please retype a valid number")
 
-        $Env:username_max13 = $username
-        $Env:attempt_count = 2000
+
+        $Env:attempt_count = $numof_attempts
 
         if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
+            $this.Run($rsgsvr_host, $rsgsvr_port, $rsgcli_json)
         }
     }
 }
