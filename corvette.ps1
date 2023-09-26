@@ -592,11 +592,11 @@ class IptgenBase : CommandBase {
     [string]$iptgen_exe
 
     IptgenBase([Properties]$props) : base($props) {
-        $this.iptgen_dir = BuildFullPath $props.home_dir ".\iptgen-0.10.0"
+        $this.iptgen_dir = BuildFullPath $props.home_dir ".\iptgen-0.11.0"
         $this.iptgen_exe = BuildFullPath $this.iptgen_dir ".\bin\iptgen.exe"
 
         if (!(IsFile $this.iptgen_exe)) {
-            $url = "https://github.com/spearmin10/iptgen/releases/download/0.10.0/iptgen.win32.zip"
+            $url = "https://github.com/spearmin10/iptgen/releases/download/0.11.0/iptgen.win32.zip"
             DownloadAndExtractArchive $url $this.iptgen_dir
         }
         if (!(IsFile $env:WINDIR\system32\Npcap\wpcap.dll)) {
@@ -731,13 +731,10 @@ class IptgenFtpFileUpload : IptgenBase {
         $upload_filename = ReadInput "Upload file name" "test.dat" "^.+$"
         $upload_filesize = ReadInputSize "Upload file size" "100MB" "Invalid file size. Please retype the size."
 
-        $pasv_port = 34567
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
         $Env:upload_filename = $upload_filename
         $Env:upload_filesize = $upload_filesize
-        $Env:pasv_port = $pasv_port
-        $Env:pasv_address = $server_ip.Replace('.', ',') + "," + [string][int][Math]::Floor($pasv_port / 256) + "," + [string]($pasv_port % 256)            
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
         }
