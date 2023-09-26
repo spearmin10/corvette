@@ -1,5 +1,8 @@
 {
-  "client": "${client_ip}:35900", 
+  "environment": {
+    "pasv_port": "${rand.number(10000,65000)}"
+  },
+  "client": "${client_ip}", 
   "server": "${server_ip}:21",
   "sequence": [
     ["sys.print", "ftp: ${client_ip} -> ${server_ip}:21"],
@@ -18,7 +21,7 @@
     ["tcp.recv", "text", ["150 Go ahead with sending the data."]],
     ["process",
       {
-        "client": "${client_ip}:24249", 
+        "client": "${client_ip}", 
         "server": "${server_ip}:${pasv_port}",
         "sequence": [
           ["sys.print", "ftp.data: ${client_ip} -> ${server_ip}:${pasv_port}"],
