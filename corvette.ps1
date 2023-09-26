@@ -516,6 +516,11 @@ class PortScan : CommandBase {
             $url = "https://github.com/spearmin10/corvette/blob/main/bin/nmap-7.92.zip?raw=true"
             DownloadAndExtractArchive $url $this.nmap_dir
         }
+        if (!(IsFile $env:WINDIR\system32\Npcap\wpcap.dll)) {
+            $url = "https://github.com/spearmin10/corvette/blob/main/bin/npcap-1.72.exe?raw=true"
+            $path = DownloadFile $url (BuildFullPath $props.home_dir ".\npcap-1.72.exe")
+            Start-Process -FilePath $path -Wait
+        }
     }
 
     [void]Run() {
