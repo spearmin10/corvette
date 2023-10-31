@@ -1364,6 +1364,8 @@ class FortigateLogs : CommandBase {
                                      $this.props.syslog_protocol `
                                      "^UDP|TCP|udp|tcp$" `
                                      "Please retype a valid protocol"
+        Write-Host ""
+        Write-Host "### Enter the port scan configuration"
         $source_ip = ReadInput "Source IP" `
                                "" `
                                $script:PATTERN_IPV4_ADDR `
@@ -1409,6 +1411,8 @@ class FortigateLogs : CommandBase {
                                      $this.props.syslog_protocol `
                                      "^UDP|TCP|udp|tcp$" `
                                      "Please retype a valid protocol"
+        Write-Host ""
+        Write-Host "### Enter the file upload configuration"
         $source_ip = ReadInput "Source IP" `
                                "" `
                                $script:PATTERN_IPV4_ADDR `
@@ -1468,6 +1472,8 @@ class FortigateLogs : CommandBase {
                                      $this.props.syslog_protocol `
                                      "^UDP|TCP|udp|tcp$" `
                                      "Please retype a valid protocol"
+        Write-Host ""
+        Write-Host "### Enter the authentication logs configuration"
         $source_ip = ReadInput "Authentication Client IP" `
                                "" `
                                $script:PATTERN_IPV4_ADDR `
@@ -1573,6 +1579,8 @@ class CiscoLogs : CommandBase {
                                      $this.props.syslog_protocol `
                                      "^UDP|TCP|udp|tcp$" `
                                      "Please retype a valid protocol"
+        Write-Host ""
+        Write-Host "### Enter the port scan configuration"
         $source_ip = ReadInput "Source IP" `
                                "" `
                                $script:PATTERN_IPV4_ADDR `
@@ -1618,6 +1626,8 @@ class CiscoLogs : CommandBase {
                                      $this.props.syslog_protocol `
                                      "^UDP|TCP|udp|tcp$" `
                                      "Please retype a valid protocol"
+        Write-Host ""
+        Write-Host "### Enter the file upload configuration"
         $source_ip = ReadInput "Source IP" `
                                "" `
                                $script:PATTERN_IPV4_ADDR `
@@ -1676,6 +1686,8 @@ class CiscoLogs : CommandBase {
                                      $this.props.syslog_protocol `
                                      "^UDP|TCP|udp|tcp$" `
                                      "Please retype a valid protocol"
+        Write-Host ""
+        Write-Host "### Enter the authentication logs configuration"
         $user_ip = ReadInput "Authentication User IP" `
                              "" `
                              $script:PATTERN_IPV4_ADDR `
@@ -1715,6 +1727,94 @@ class CiscoLogs : CommandBase {
                 $args += @("-UserID", $user_id)
             }
             $args = Quote $args
+            Start-Process -FilePath "powershell.exe" -ArgumentList $args
+        }
+    }
+}
+
+class BindLogs : CommandBase {
+    BindLogs([Properties]$props) : base($props) {
+    }
+
+    [void]Run() {
+        while ($true) {
+            Write-Host "************************************"
+            Write-Host " 1) Simulate DNS tunneling"
+            Write-Host " q) Exit"
+            
+            try {
+                :retry do {
+                    $cmd = Read-Host "Please choose a menu item to run"
+                    switch($cmd) {
+                        "1" {
+                            $this.RunDNSTunneling()
+                        }
+                        "q" {
+                            return
+                        }
+                        default {
+                            continue retry
+                        }
+                    }
+                    break
+                } while($true)
+            } catch {
+                Write-Host $_
+            }
+        }
+    }
+    
+    [void]RunDNSTunneling() {
+        $file_name = "syslog-bind-dns-tunneling.ps1"
+        $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
+        $script_file = BuildFullPath $scripts_dir $file_name
+
+        if (!(IsDirectory $scripts_dir)) {
+            New-Item -ItemType Directory -Force -Path $scripts_dir
+        }
+
+        $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/bin/$($file_name)"
+        DownloadFile $url $script_file
+
+        Write-Host ""
+        Write-Host "### Enter the syslog configuration"
+        $syslog_host = ReadInput "Syslog Host" `
+                                 $this.props.syslog_host `
+                                 "^.+$"
+        $syslog_port = ReadInput "Syslog Port" `
+                                 $this.props.syslog_port `
+                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 "Please retype a valid port number"
+        $syslog_protocol = ReadInput "Syslog Protocol" `
+                                     $this.props.syslog_protocol `
+                                     "^UDP|TCP|udp|tcp$" `
+                                     "Please retype a valid protocol"
+
+        Write-Host ""
+        Write-Host "### Enter the DNS tunneling configuration"
+        $client_ip = ReadInput "DNS client IP" `
+                               "" `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $server_ip = ReadInput "DNS server IP" `
+                               "" `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $domain = ReadInput "DNS tunnel domain" $null "^.+$"
+        $numof_queries = ParseNumber(ReadInput "Number of queries" `
+                                               "10000" `
+                                               "^[0-9]+$" `
+                                               "Please retype a valid number")
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $args = Quote @("-ExecutionPolicy", "Bypass", $script_file,
+                            "-SyslogHost", $syslog_host,
+                            "-SyslogPort", $syslog_port,
+                            "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                            "-DNSClientIP", $client_ip,
+                            "-DNSServerIP", $server_ip,
+                            "-QueryDomain", $domain,
+                            "-Count", [string]$numof_queries)
             Start-Process -FilePath "powershell.exe" -ArgumentList $args
         }
     }
@@ -1788,6 +1888,9 @@ class Menu {
             "14" {
                 [CiscoLogs]::New($this.props).Run()
             }
+            "15" {
+                [BindLogs]::New($this.props).Run()
+            }
             default {
                 return $false
             }
@@ -1815,6 +1918,7 @@ class Menu {
             Write-Host "12) Generate Network Traffic (rsgen)"
             Write-Host "13) Send Fortigate Logs"
             Write-Host "14) Send Cisco Logs"
+            Write-Host "15) Send BIND Logs"
             try {
                 while (!$this.LaunchUserModeCommand((Read-Host "Please choose a menu item to run"))) {}
             } catch {
