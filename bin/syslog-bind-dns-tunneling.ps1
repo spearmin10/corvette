@@ -13,10 +13,10 @@ Param(
 )
 
 class Syslog {
-    [int]$pri
     [string]$format
+    [int]$pri
 
-    Syslog([int]$facility, [int]$severity, [string]$format = "RFC-5424") {
+    Syslog([string]$format, [int]$facility, [int]$severity) {
         $severity = [Math]::Min($severity, 7)
         $facility = [Math]::Min($facility, 124)
         $this.format = $format
@@ -27,7 +27,7 @@ class Syslog {
         
     }
 
-    [string]Build5424([string]$message, [string]$hostname = $null, [string]$appname = $null, [string]$procid = $null) {
+    [string]Build5424([string]$message, [string]$hostname, [string]$appname, [string]$procid) {
         [string]$timestamp = $(Get-Date $(Get-Date).ToUniversalTime() -Format "yyyy-MM-ddTHH:mm:ssK")
         if ([string]::IsNullOrEmpty($hostname)) {
             $hostname = "-"
@@ -41,7 +41,7 @@ class Syslog {
         return "<" + $this.pri + ">1 ${timestamp} ${hostname} ${appname} ${procid} - - ${message}"
     }
 
-    [string]Build3164([string]$message, [string]$hostname = $null, [string]$appname = $null, [string]$procid = $null) {
+    [string]Build3164([string]$message, [string]$hostname, [string]$appname, [string]$procid) {
         [string]$payload = "<" + $this.pri + ">"
         $payload += $(Get-Date).ToString("MMM dd HH:mm:ss", [System.Globalization.CultureInfo]::CreateSpecificCulture("en-US"))
         
@@ -58,7 +58,11 @@ class Syslog {
         return $payload + " " + $message
     }
 
-    [string]Build([string]$message, [string]$hostname = $null, [string]$appname = $null, [string]$procid = $null) {
+    [string]Build([string]$message) {
+        return $this.Build($message, $null, $null, $null)
+    }
+
+    [string]Build([string]$message, [string]$hostname, [string]$appname, [string]$procid) {
         switch ($this.format) {
             "RFC-3164" {
                 return $this.Build3164($message, $hostname, $appname, $procid)
@@ -75,8 +79,8 @@ class UdpSyslog : Syslog {
     [System.Net.Sockets.UdpClient]$socket
     
     UdpSyslog([string]$sylog_host, [int]$syslog_port,
-              [int]$syslog_facility, [int]$syslog_severity, [string]$syslog_format)
-        : base($syslog_facility, $syslog_severity, $syslog_format) {
+              [string]$syslog_format, [int]$syslog_facility, [int]$syslog_severity)
+        : base($syslog_format, $syslog_facility, $syslog_severity) {
         $this.socket = New-Object System.Net.Sockets.UdpClient($sylog_host, $syslog_port)
         $this.socket.DontFragment = $true
     }
@@ -96,8 +100,8 @@ class TcpSyslog : Syslog {
     [System.Net.Sockets.NetworkStream]$stream
     
     TcpSyslog([string]$sylog_host, [int]$syslog_port,
-              [int]$syslog_facility, [int]$syslog_severity, [string]$syslog_format)
-        : base($syslog_facility, $syslog_severity, $syslog_format) {
+              [string]$syslog_format, [int]$syslog_facility, [int]$syslog_severity)
+        : base($syslog_format, $syslog_facility, $syslog_severity) {
         $this.socket = New-Object System.Net.Sockets.TcpClient
         $this.socket.SendTimeout = 10 * 1000
         $this.socket.Connect($sylog_host, $syslog_port)
@@ -118,13 +122,13 @@ class Main {
     [Syslog]$syslog
     
     Main([string]$syslog_protocol, [string]$sylog_host, [int]$syslog_port,
-         [int]$syslog_facility, [int]$syslog_severity, [string]$syslog_format) {
+         [string]$syslog_format, [int]$syslog_facility, [int]$syslog_severity) {
         switch ($syslog_protocol) {
             "UDP" {
-                $this.syslog = [UdpSyslog]::New($sylog_host, $syslog_port, $syslog_facility, $syslog_severity, $syslog_format)
+                $this.syslog = [UdpSyslog]::New($sylog_host, $syslog_port, $syslog_format, $syslog_facility, $syslog_severity)
             }
             "TCP" {
-                $this.syslog = [TcpSyslog]::New($sylog_host, $syslog_port, $syslog_facility, $syslog_severity, $syslog_format)
+                $this.syslog = [TcpSyslog]::New($sylog_host, $syslog_port, $syslog_format, $syslog_facility, $syslog_severity)
             }
             default {
                 throw "Unknown syslog protocol: " + $syslog_protocol
@@ -162,5 +166,5 @@ $log_time queries: info: client @0x${client_id} ${client_ip}#${client_port} (${q
     }
 }
 
-$main = [Main]::New($SyslogProtocol, $SyslogHost, $SyslogPort, $SyslogFacility, $SyslogSeverity, $SyslogFormat)
+$main = [Main]::New($SyslogProtocol, $SyslogHost, $SyslogPort, $SyslogFormat, $SyslogFacility, $SyslogSeverity)
 $main.Run($DNSClientIP, $DNSServerIP, $QueryDomain, $Count, $ShowLogs)
