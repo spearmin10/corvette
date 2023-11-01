@@ -1811,6 +1811,7 @@ class BindLogs : CommandBase {
                             "-SyslogHost", $syslog_host,
                             "-SyslogPort", $syslog_port,
                             "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                            "-SyslogFormat", "RFC-3164",
                             "-DNSClientIP", $client_ip,
                             "-DNSServerIP", $server_ip,
                             "-QueryDomain", $domain,
