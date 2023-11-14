@@ -325,7 +325,7 @@ class ConfigureSettings : CommandBase {
                                   $this.props.netflow_host `
                                   "^.+$"
         $netflow_port = ReadInput "RSG Port" `
-                                  $rsgsvr_port `
+                                  $netflow_port `
                                   "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
                                   "Please retype a valid port number"
 
