@@ -230,6 +230,14 @@ class Properties {
         if ($this.syslog_protocol -isnot [string] -Or [string]::IsNullOrEmpty($this.syslog_protocol)) {
             $this.syslog_protocol = "UDP"
         }
+        $this.netflow_host = $settings.netflow.host
+        $this.netflow_port = $settings.netflow.port
+        if ($this.netflow_host -isnot [string] -Or [string]::IsNullOrEmpty($this.netflow_port)) {
+            $this.netflow_port = $null
+        }
+        if ($this.netflow_port -isnot [string] -Or [string]::IsNullOrEmpty($this.netflow_port)) {
+            $this.netflow_port = "2055"
+        }
         $this.rsgsvr_host = $settings.rsgsvr.host
         $this.rsgsvr_port = $settings.rsgsvr.port
         if ($this.rsgsvr_host -isnot [string] -Or [string]::IsNullOrEmpty($this.rsgsvr_port)) {
