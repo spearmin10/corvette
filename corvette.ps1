@@ -1821,6 +1821,83 @@ class BindLogs : CommandBase {
     }
 }
 
+class NetflowLogs : CommandBase {
+    NetflowLogs([Properties]$props) : base($props) {
+    }
+
+    [void]Run() {
+        while ($true) {
+            Write-Host "************************************"
+            Write-Host " 1) Simulate port scan"
+            Write-Host " q) Exit"
+            
+            try {
+                :retry do {
+                    $cmd = Read-Host "Please choose a menu item to run"
+                    switch($cmd) {
+                        "1" {
+                            $this.RunPortScan()
+                        }
+                        "q" {
+                            return
+                        }
+                        default {
+                            continue retry
+                        }
+                    }
+                    break
+                } while($true)
+            } catch {
+                Write-Host $_
+            }
+        }
+    }
+    
+    [void]RunPortScan() {
+        $file_name = "netflow-portscan.ps1"
+        $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
+        $script_file = BuildFullPath $scripts_dir $file_name
+
+        if (!(IsDirectory $scripts_dir)) {
+            New-Item -ItemType Directory -Force -Path $scripts_dir
+        }
+
+        $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/bin/$($file_name)"
+        DownloadFile $url $script_file
+
+        Write-Host ""
+        Write-Host "### Enter the netflow configuration"
+        $netflow_host = ReadInput "Netflow Host" `
+                                  $this.props.netflow_host `
+                                  "^.+$"
+        $netflow_port = ReadInput "Netflow Port" `
+                                  $this.props.netflow_port `
+                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                  "Please retype a valid port number"
+
+        Write-Host ""
+        Write-Host "### Enter the port scan configuration"
+        $source_ip = ReadInput "Source IP" `
+                               "" `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $scan_subnet = ReadInput "Scan Subnet" `
+                                 "" `
+                                 ^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$ `
+                                 "Please retype a valid subnet"
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $args = Quote @("-ExecutionPolicy", "Bypass", $script_file,
+                            "-NetflowHost", $netflow_host,
+                            "-NetflowPort", $netflow_port,
+                            "-NetflowProtocol", "UDP",
+                            "-SourceIP", $source_ip,
+                            "-ScanSubnet", $scan_subnet)
+            Start-Process -FilePath "powershell.exe" -ArgumentList $args
+        }
+    }
+}
+
 class Menu {
     [Properties]$props
     
@@ -1892,6 +1969,9 @@ class Menu {
             "15" {
                 [BindLogs]::New($this.props).Run()
             }
+            "16" {
+                [NetflowLogs]::New($this.props).Run()
+            }
             default {
                 return $false
             }
@@ -1920,6 +2000,7 @@ class Menu {
             Write-Host "13) Send Fortigate Logs"
             Write-Host "14) Send Cisco Logs"
             Write-Host "15) Send BIND Logs"
+            Write-Host "16) Send Netflow Logs"
             try {
                 while (!$this.LaunchUserModeCommand((Read-Host "Please choose a menu item to run"))) {}
             } catch {
