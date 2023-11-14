@@ -313,6 +313,29 @@ class ConfigureSettings : CommandBase {
         }
     }
 
+    hidden [void]SetDefaultNetflowServer() {
+        
+        $netflow_port = $this.props.netflow_port
+        if ([string]::IsNullOrEmpty($netflow_port)) {
+            $netflow_port = "2055"
+        }
+        Write-Host ""
+        Write-Host "### Enter the netflow server configuration"
+        $netflow_host = ReadInput "RSG Host" `
+                                  $this.props.netflow_host `
+                                  "^.+$"
+        $netflow_port = ReadInput "RSG Port" `
+                                  $rsgsvr_port `
+                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                  "Please retype a valid port number"
+
+        if (AskYesNo "Do you want to save changes?") {
+            $this.props.netflow_host = $netflow_host
+            $this.props.netflow_port = [int]$netflow_port
+            $this.props.Save()
+        }
+    }
+
     hidden [void]SetDefaultRsgServer() {
         
         $rsgsvr_port = $this.props.rsgsvr_port
@@ -342,7 +365,8 @@ class ConfigureSettings : CommandBase {
             Write-Host "************************************"
             Write-Host " 0) Cleanup the working directory"
             Write-Host " 1) Set default syslog server"
-            Write-Host " 2) Set default RSG server"
+            Write-Host " 2) Set default netflow server"
+            Write-Host " 3) Set default RSG server"
             Write-Host " q) Exit"
             try {
                 :retry do {
@@ -361,6 +385,9 @@ class ConfigureSettings : CommandBase {
                             $this.SetDefaultSyslogServer()
                         }
                         "2" {
+                            $this.SetDefaultNetflowServer()
+                        }
+                        "3" {
                             $this.SetDefaultRsgServer()
                         }
                         default {
