@@ -259,6 +259,10 @@ class Properties {
                 "port" = $this.syslog_port
                 "protocol" = $this.syslog_protocol
             }
+            "netflow" = @{
+                "host" = $this.netflow_host
+                "port" = $this.netflow_port
+            }
             "rsgsvr" = @{
                 "host" = $this.rsgsvr_host
                 "port" = $this.rsgsvr_port
@@ -332,10 +336,10 @@ class ConfigureSettings : CommandBase {
         }
         Write-Host ""
         Write-Host "### Enter the netflow server configuration"
-        $netflow_host = ReadInput "RSG Host" `
+        $netflow_host = ReadInput "Netflow Host" `
                                   $this.props.netflow_host `
                                   "^.+$"
-        $netflow_port = ReadInput "RSG Port" `
+        $netflow_port = ReadInput "Netflow Port" `
                                   $netflow_port `
                                   "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
                                   "Please retype a valid port number"
