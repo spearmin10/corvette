@@ -192,6 +192,9 @@ class Properties {
     [string]$syslog_port
     [string]$syslog_protocol
 
+    [string]$netflow_host
+    [string]$netflow_port
+
     [string]$rsgsvr_host
     [string]$rsgsvr_port
 
@@ -1917,7 +1920,7 @@ class NetflowLogs : CommandBase {
                                $script:PATTERN_IPV4_ADDR `
                                "Please retype a valid IPv4 address"
         $scan_subnet = ReadInput "Scan Subnet" `
-                                 "" `
+                                 "$source_ip/24" `
                                  ^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$ `
                                  "Please retype a valid subnet"
 
