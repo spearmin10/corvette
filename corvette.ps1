@@ -1924,7 +1924,7 @@ class NetflowLogs : CommandBase {
                                $script:PATTERN_IPV4_ADDR `
                                "Please retype a valid IPv4 address"
         $scan_subnet = ReadInput "Scan Subnet" `
-                                 "$source_ip/24" `
+                                 ($source_ip.split(".")[0..2] -join ".") + ".0/24" `
                                  ^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$ `
                                  "Please retype a valid subnet"
 
