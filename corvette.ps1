@@ -1730,11 +1730,6 @@ class CiscoLogs : CommandBase {
                                      "Please retype a valid protocol"
         Write-Host ""
         Write-Host "### Enter the authentication logs configuration"
-        $user_ip = ReadInput "Authentication User IP" `
-                             "" `
-                             $script:PATTERN_IPV4_ADDR `
-                             "Please retype a valid IPv4 address"
-        $user_id = ReadInput "Authentication User ID (Optional)" ""
         $log_type = ReadInputByChooser "Log Type" `
                                        "all" `
                                        @("all",
@@ -1750,6 +1745,27 @@ class CiscoLogs : CommandBase {
                                          "ASA-6-716002",
                                          "ASA-6-722023") `
                                        "Please type a valid log type"
+        $public_ip = $null
+        $user_ip = $null
+        switch ($log_type) {
+            {@("all", "ASA-6-722051", "ASA-6-722055").Contains($_)} {
+                $public_ip = ReadInput "Public IP" `
+                                       "1.2.3.4" `
+                                       $script:PATTERN_IPV4_ADDR `
+                                       "Please retype a valid IPv4 address"
+                if ($_ -ne "all") {
+                    break
+                }
+            }
+            default {
+                $user_ip = ReadInput "Authentication User IP" `
+                                     "" `
+                                     $script:PATTERN_IPV4_ADDR `
+                                     "Please retype a valid IPv4 address"
+            }
+        }
+        $user_id = ReadInput "Authentication User ID (Optional)" ""
+
         $numof_logs = ParseNumber(ReadInput "Number of log records" `
                                             "100" `
                                             "^[0-9]+$" `
@@ -1762,6 +1778,7 @@ class CiscoLogs : CommandBase {
                       "-SyslogPort", $syslog_port,
                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
                       "-UserIP", $user_ip,
+                      "-PublicIP", $public_ip,
                       "-UserGroup", $user_group,
                       "-Count", [string]$numof_logs,
                       "-LogType", $log_type)
