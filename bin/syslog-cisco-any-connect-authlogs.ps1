@@ -147,7 +147,7 @@ class Main {
               [bool]$verbose) {
         $cul = New-Object system.globalization.cultureinfo("en-US")
         $orig_user_id = $user_id
-        $assigned_ip4 = "5.6.7.8"
+        $assigned_ip4 = $user_ip
         $assigned_ip6 = "2001:db8:3333:4444:5555:6666:7777:8888"
         
         1..$count | %{
