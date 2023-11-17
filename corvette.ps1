@@ -1753,7 +1753,7 @@ class CiscoLogs : CommandBase {
                                        $public_ip `
                                        $script:PATTERN_IPV4_ADDR `
                                        "Please retype a valid IPv4 address"
-                if ($_ -ne "all") {
+                if ($_ -eq "ASA-6-722055") {
                     break
                 }
             }
