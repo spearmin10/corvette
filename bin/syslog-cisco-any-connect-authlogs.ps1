@@ -206,7 +206,7 @@ class Main {
                     }
                     "ASA-6-722055" {
                         $log = @"
-%${log_id}: Group <group-policy> User <${user_id}> IP {$<public_ip>} Client Type: Cisco AnyConnect VPN Agent for Windows
+%${log_id}: Group <group-policy> User <${user_id}> IP <${public_ip}> Client Type: Cisco AnyConnect VPN Agent for Windows
 "@
                     }
                     "ASA-6-722053" {
