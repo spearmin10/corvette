@@ -31,7 +31,10 @@ class Syslog {
     [string]Build5424([string]$message, [string]$hostname, [string]$appname, [string]$procid) {
         [string]$timestamp = $(Get-Date $(Get-Date).ToUniversalTime() -Format "yyyy-MM-ddTHH:mm:ssK")
         if ([string]::IsNullOrEmpty($hostname)) {
-            $hostname = "-"
+            $hostname = $Env:Computername
+            if ([string]::IsNullOrEmpty($hostname)) {
+                $hostname = "-"
+            }
         }
         if ([string]::IsNullOrEmpty($appname)) {
             $appname = "-"
@@ -46,8 +49,11 @@ class Syslog {
         [string]$payload = "<" + $this.pri + ">"
         $payload += $(Get-Date).ToString("MMM dd HH:mm:ss", [System.Globalization.CultureInfo]::CreateSpecificCulture("en-US"))
         
-        if (![string]::IsNullOrEmpty($hostname)) {
-            $payload += " $hostname"
+        if ([string]::IsNullOrEmpty($hostname)) {
+            $hostname = $Env:Computername
+            if ([string]::IsNullOrEmpty($hostname)) {
+                $hostname = "localhost"
+            }
         }
         if (![string]::IsNullOrEmpty($appname)) {
             if (![string]::IsNullOrEmpty($procid)) {
