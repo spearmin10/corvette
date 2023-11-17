@@ -1745,12 +1745,12 @@ class CiscoLogs : CommandBase {
                                          "ASA-6-716002",
                                          "ASA-6-722023") `
                                        "Please type a valid log type"
-        $public_ip = $null
-        $user_ip = $null
+        $public_ip = "1.2.3.4"
+        $user_ip = "192.168.1.1"
         switch ($log_type) {
             {@("all", "ASA-6-722051", "ASA-6-722055").Contains($_)} {
                 $public_ip = ReadInput "Public IP" `
-                                       "1.2.3.4" `
+                                       $public_ip `
                                        $script:PATTERN_IPV4_ADDR `
                                        "Please retype a valid IPv4 address"
                 if ($_ -ne "all") {
@@ -1759,7 +1759,7 @@ class CiscoLogs : CommandBase {
             }
             default {
                 $user_ip = ReadInput "Authentication User IP" `
-                                     "" `
+                                     $user_ip `
                                      $script:PATTERN_IPV4_ADDR `
                                      "Please retype a valid IPv4 address"
             }
