@@ -6,7 +6,8 @@ Param(
   [int]$SyslogSeverity = 6,
   [string]$SyslogFormat = "RFC-5424",
   [bool]$ShowLogs = $false,
-  [parameter(mandatory=$true)][string]$UserIP,
+  [string]$UserIP = "192.168.1.1",
+  [string]$PublicIP = "1.2.3.4",
   [string]$UserID,
   [parameter(mandatory=$true)][string]$UserGroup,
   [string]$LogType = "all",
@@ -138,6 +139,7 @@ class Main {
     }
 
     [void]Run([string]$user_ip,
+              [string]$public_ip,
               [string]$user_id,
               [string]$user_group,
               [string]$log_type,
@@ -145,7 +147,6 @@ class Main {
               [bool]$verbose) {
         $cul = New-Object system.globalization.cultureinfo("en-US")
         $orig_user_id = $user_id
-        $public_ip = "1.2.3.4"
         $assigned_ip4 = "5.6.7.8"
         $assigned_ip6 = "2001:db8:3333:4444:5555:6666:7777:8888"
         
@@ -247,4 +248,4 @@ class Main {
 }
 
 $main = [Main]::New($SyslogProtocol, $SyslogHost, $SyslogPort, $SyslogFormat, $SyslogFacility, $SyslogSeverity)
-$main.Run($UserIP, $UserID, $UserGroup, $LogType, $Count, $ShowLogs)
+$main.Run($UserIP, $PublicIP, $UserID, $UserGroup, $LogType, $Count, $ShowLogs)
