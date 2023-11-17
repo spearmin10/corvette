@@ -176,42 +176,42 @@ class Main {
                 switch ($log_id) {
                     "ASA-6-113039" {
                         $log = @"
-%${log_id}: Group $user_group User $user_id IP $user_ip AnyConnect parent session started.
+%${log_id}: Group <${user_group}> User <${user_id}> IP <${user_ip}> AnyConnect parent session started.
 "@
                     }
                     "ASA-6-716001" {
                         $log = @"
-%${log_id}: Group $user_group User $user_id IP $user_ip WebVPN session started.
+%${log_id}: Group <${user_group}> User <${user_id}> IP <${user_ip}> WebVPN session started.
 "@
                     }
                     "ASA-6-722022" {
                         $log = @"
-%${log_id}: Group $user_group User $user_id IP $user_ip TCP connection established without compression
+%${log_id}: Group <${user_group}> User <${user_id}> IP <${user_ip}> TCP connection established without compression
 "@
                     }
                     "ASA-5-722033" {
                         $log = @"
-%${log_id}: Group $user_group User $user_id IP $user_ip First SVC connection established for SVC session.
+%${log_id}: Group <${user_group}> User <${user_id}> IP <${user_ip}> First SVC connection established for SVC session.
 "@
                     }
                     "ASA-5-722034" {
                         $log = @"
-%${log_id}: Group $user_group User $user_id IP $user_ip New SVC connection, no existing connection.
+%${log_id}: Group <${user_group}> User <${user_id}> IP <${user_ip}> New SVC connection, no existing connection.
 "@
                     }
                     "ASA-6-722051" {
                         $log = @"
-%${log_id}: Group group-policy User $user_id IP $public_ip IPv4 Address $assigned_ip4 IPv6 Address $assigned_ip6 assigned to session
+%${log_id}: Group <group-policy> User <${user_id}> IP <${public_ip}> IPv4 Address <${assigned_ip4}> IPv6 Address <${assigned_ip6}> assigned to session
 "@
                     }
                     "ASA-6-722055" {
                         $log = @"
-%${log_id}: Group group-policy User $user_id IP $public_ip Client Type: Cisco AnyConnect VPN Agent for Windows
+%${log_id}: Group <group-policy> User <${user_id}> IP {$<public_ip>} Client Type: Cisco AnyConnect VPN Agent for Windows
 "@
                     }
                     "ASA-6-722053" {
                         $log = @"
-%${log_id}: Group $user_group User $user_id IP $user_ip Unknown client user-agent connection.
+%${log_id}: Group <${user_group}> User <${user_id}> IP <${user_ip}> Unknown client user-agent connection.
 "@
                     }
                     "ASA-4-113019" {
@@ -223,12 +223,12 @@ class Main {
                     }
                     "ASA-6-716002" {
                         $log = @"
-%${log_id}: Group GroupPolicy User $user_id IP $user_ip WebVPN session terminated: User requested.
+%${log_id}: Group <GroupPolicy> User <${user_id}> IP <${user_ip}> WebVPN session terminated: User requested.
 "@
                     }
                     "ASA-6-722023" {
                         $log = @"
-%${log_id}: Group $user_group User $user_id IP $user_ip SVC connection terminated without compression
+%${log_id}: Group <${user_group}> User <${user_id}> IP <${user_ip}> SVC connection terminated without compression
 "@
                     }
                     default {
