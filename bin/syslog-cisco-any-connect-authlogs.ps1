@@ -56,7 +56,8 @@ class Syslog {
                 $hostname = "localhost"
             }
         }
-        $payload += " $hostname"
+        $payload += " ${hostname}"
+        
         if (![string]::IsNullOrEmpty($appname)) {
             if (![string]::IsNullOrEmpty($procid)) {
                 $payload += " ${appname}[${procid}]:"
