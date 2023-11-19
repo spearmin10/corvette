@@ -1754,7 +1754,7 @@ class CiscoLogs : CommandBase {
                                    "Please retype a valid IPv4 address"
         }
         if ($log_type -ne "ASA-6-722055") {
-            $user_ip = ReadInput "Authentication User IP" `
+            $user_ip = ReadInput "User IP" `
                                  $user_ip `
                                  $script:PATTERN_IPV4_ADDR `
                                  "Please retype a valid IPv4 address"
