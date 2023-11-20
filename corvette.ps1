@@ -1759,7 +1759,7 @@ class CiscoLogs : CommandBase {
                                  $script:PATTERN_IPV4_ADDR `
                                  "Please retype a valid IPv4 address"
         }
-        $user_id = ReadInput "Authentication User ID (Optional)" ""
+        $user_id = ReadInput "User ID (Optional)" ""
 
         $numof_logs = ParseNumber(ReadInput "Number of log records" `
                                             "100" `
