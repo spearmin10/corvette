@@ -634,11 +634,12 @@ class IptgenBase : CommandBase {
     [string]$iptgen_exe
 
     IptgenBase([Properties]$props) : base($props) {
-        $this.iptgen_dir = BuildFullPath $props.home_dir ".\iptgen-0.11.0"
+        $iptgen_ver = "0.11.0"
+        $this.iptgen_dir = BuildFullPath $props.home_dir ".\iptgen-${iptgen_ver}"
         $this.iptgen_exe = BuildFullPath $this.iptgen_dir ".\bin\iptgen.exe"
 
         if (!(IsFile $this.iptgen_exe)) {
-            $url = "https://github.com/spearmin10/iptgen/releases/download/0.11.0/iptgen.win32.zip"
+            $url = "https://github.com/spearmin10/iptgen/releases/download/${iptgen_ver}/iptgen.win32.zip"
             DownloadAndExtractArchive $url $this.iptgen_dir
         }
         if (!(IsFile $env:WINDIR\system32\Npcap\wpcap.dll)) {
@@ -688,11 +689,12 @@ class RsgcliBase : CommandBase {
     [string]$rsgcli_exe
 
     RsgcliBase([Properties]$props) : base($props) {
-        $this.rsgcli_dir = BuildFullPath $props.home_dir ".\rsgcli-0.0.2"
+        $rsgcli_ver = "0.0.2"
+        $this.rsgcli_dir = BuildFullPath $props.home_dir ".\rsgcli-$rsgcli_ver"
         $this.rsgcli_exe = BuildFullPath $this.rsgcli_dir ".\bin\rsgcli.exe"
 
         if (!(IsFile $this.rsgcli_exe)) {
-            $url = "https://github.com/spearmin10/rsgen/releases/download/0.0.1/rsgcli.win32.zip"
+            $url = "https://github.com/spearmin10/rsgen/releases/download/${rsgcli_ver}/rsgcli.win32.zip"
             DownloadAndExtractArchive $url $this.rsgcli_dir
         }
     }
