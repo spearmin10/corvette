@@ -16,7 +16,7 @@ class Netflow {
     
     Netflow() {
         $this.bootup_time = ([datetimeoffset](Get-CimInstance -ClassName Win32_OperatingSystem).LastBootUpTime).ToUnixTimeSeconds()
-        [int]$current = $(Get-Date -UFormat %s)
+        [int]$current = [DateTimeOffset]::Now.ToUnixTimeSeconds()
         [int]$sysuptime = $current - $this.bootup_time
         
         $this.flow_id = $sysuptime
@@ -52,7 +52,7 @@ class Netflow {
     }
 
     [byte[]]BuildHeader([uint16]$count) {
-        [int]$current = $(Get-Date -UFormat %s)
+        [int]$current = [DateTimeOffset]::Now.ToUnixTimeSeconds()
         [int]$sysuptime = $current - $this.bootup_time
         
         ++$this.flow_seq
