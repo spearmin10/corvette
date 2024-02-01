@@ -688,7 +688,7 @@ class RsgcliBase : CommandBase {
     [string]$rsgcli_exe
 
     RsgcliBase([Properties]$props) : base($props) {
-        $this.rsgcli_dir = BuildFullPath $props.home_dir ".\rsgcli-0.0.1"
+        $this.rsgcli_dir = BuildFullPath $props.home_dir ".\rsgcli-0.0.2"
         $this.rsgcli_exe = BuildFullPath $this.rsgcli_dir ".\bin\rsgcli.exe"
 
         if (!(IsFile $this.rsgcli_exe)) {
@@ -772,11 +772,16 @@ class IptgenFtpFileUpload : IptgenBase {
                                "Please retype a valid IPv4 address"
         $upload_filename = ReadInput "Upload file name" "test.dat" "^.+$"
         $upload_filesize = ReadInputSize "Upload file size" "100MB" "Invalid file size. Please retype the size."
+        $repeat_count = ParseNumber(ReadInput "Number of times to repeat" `
+                                              "1" `
+                                              "^[0-9]+$" `
+                                              "Please retype a valid number")
 
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
         $Env:upload_filename = $upload_filename
         $Env:upload_filesize = $upload_filesize
+        $Env:repeat_count = $repeat_count
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
         }
@@ -820,10 +825,15 @@ class IptgenHttpFileUpload : IptgenBase {
                                $script:PATTERN_IPV4_ADDR `
                                "Please retype a valid IPv4 address"
         $upload_filesize = ReadInputSize "Upload file size" "100MB" "Invalid file size. Please retype the size."
+        $repeat_count = ParseNumber(ReadInput "Number of times to repeat" `
+                                              "1" `
+                                              "^[0-9]+$" `
+                                              "Please retype a valid number")
 
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
         $Env:upload_filesize = $upload_filesize
+        $Env:repeat_count = $repeat_count
 
         if (AskYesNo "Are you sure you want to run?") {
             $response_interval = 10
@@ -1118,11 +1128,14 @@ class RsgcliFtpFileUpload : RsgcliBase {
 
         $upload_filename = ReadInput "Upload file name" "test.dat" "^.+$"
         $upload_filesize = ReadInputSize "Upload file size" "100MB" "Invalid file size. Please retype the size."
+        $repeat_count = ParseNumber(ReadInput "Number of times to repeat" `
+                                              "1" `
+                                              "^[0-9]+$" `
+                                              "Please retype a valid number")
 
-        $pasv_port = 34567
         $Env:upload_filename = $upload_filename
         $Env:upload_filesize = $upload_filesize
-        $Env:pasv_port = $pasv_port
+        $Env:repeat_count = $repeat_count
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
         }
@@ -1154,8 +1167,13 @@ class RsgcliHttpFileUpload : RsgcliBase {
                                  "Please retype a valid port number"
 
         $upload_filesize = ReadInputSize "Upload file size" "100MB" "Invalid file size. Please retype the size."
+        $repeat_count = ParseNumber(ReadInput "Number of times to repeat" `
+                                              "1" `
+                                              "^[0-9]+$" `
+                                              "Please retype a valid number")
 
         $Env:upload_filesize = $upload_filesize
+        $Env:repeat_count = $repeat_count
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
         }
