@@ -924,11 +924,17 @@ class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
             $iptgen_json = $this.iptgen_ru_json
         } else {
             $iptgen_json = $this.iptgen_1u_json
-            $username = ReadInput "Username [1..13]" `
+            $username = ReadInput "Username [1..14]" `
                                   (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
-                                  "^.{1,13}$" `
-                                  "Please retype an user name (max 13 charactors)"
-            $Env:username_max13 = $username
+                                  "^.{1,14}$" `
+                                  "Please retype an user name (max 14 charactors)"
+            $Env:user_name_max14 = $username
+
+            if ($username -in @("System", "LocalService", "NetworkService")) {
+                if (AskYesNo "Is the user domain NT AUTHORITY?" "Y") {
+                    $Env:user_domain_max12 = "NT AUTHORITY"
+                }
+            }
         }
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($interface.InterfaceAlias, $iptgen_json, 10)
@@ -983,11 +989,17 @@ class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
             $iptgen_json = $this.iptgen_ru_json
         } else {
             $iptgen_json = $this.iptgen_1u_json
-            $username = ReadInput "Username [1..13]" `
+            $username = ReadInput "Username [1..14]" `
                                   (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
-                                  "^.{1,13}$" `
-                                  "Please retype an user name (max 13 charactors)"
-            $Env:username_max13 = $username
+                                  "^.{1,14}$" `
+                                  "Please retype an user name (max 14 charactors)"
+            $Env:user_name_max14 = $username
+
+            if ($username -in @("System", "LocalService", "NetworkService")) {
+                if (AskYesNo "Is the user domain NT AUTHORITY?" "Y") {
+                    $Env:user_domain_max12 = "NT AUTHORITY"
+                }
+            }
         }
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($interface.InterfaceAlias, $iptgen_json, 10)
@@ -1223,11 +1235,17 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
             $rsgcli_json = $this.rsgcli_ru_json
         } else {
             $rsgcli_json = $this.rsgcli_1u_json
-            $username = ReadInput "Username [1..13]" `
+            $username = ReadInput "Username [1..14]" `
                                   (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
-                                  "^.{1,13}$" `
-                                  "Please retype an user name (max 13 charactors)"
-            $Env:username_max13 = $username
+                                  "^.{1,14}$" `
+                                  "Please retype an user name (max 14 charactors)"
+            $Env:user_name_max14 = $username
+
+            if ($username -in @("System", "LocalService", "NetworkService")) {
+                if (AskYesNo "Is the user domain NT AUTHORITY?" "Y") {
+                    $Env:user_domain_max12 = "NT AUTHORITY"
+                }
+            }
         }
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($rsgsvr_host, $rsgsvr_port, $rsgcli_json)
@@ -1276,11 +1294,17 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
             $rsgcli_json = $this.rsgcli_ru_json
         } else {
             $rsgcli_json = $this.rsgcli_1u_json
-            $username = ReadInput "Username [1..13]" `
+            $username = ReadInput "Username [1..14]" `
                                   (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
-                                  "^.{1,13}$" `
-                                  "Please retype an user name (max 13 charactors)"
-            $Env:username_max13 = $username
+                                  "^.{1,14}$" `
+                                  "Please retype an user name (max 14 charactors)"
+            $Env:user_name_max14 = $username
+
+            if ($username -in @("System", "LocalService", "NetworkService")) {
+                if (AskYesNo "Is the user domain NT AUTHORITY?" "Y") {
+                    $Env:user_domain_max12 = "NT AUTHORITY"
+                }
+            }
         }
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($rsgsvr_host, $rsgsvr_port, $rsgcli_json)
