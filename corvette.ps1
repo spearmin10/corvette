@@ -941,7 +941,7 @@ class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
         } else {
             $iptgen_json = $this.iptgen_1u_json
             
-            if (AskYesNo "Do you want to attempt by a service account?" "N") {
+            if (AskYesNo "Login attempts by a service account?" "N") {
                 $username = ReadInputByChooser "Service Account" `
                                                 $null `
                                                 @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
@@ -1011,7 +1011,7 @@ class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
         } else {
             $iptgen_json = $this.iptgen_1u_json
             
-            if (AskYesNo "Do you want to attempt by a service account?" "N") {
+            if (AskYesNo "Login attempts by a service account?" "N") {
                 $username = ReadInputByChooser "Service Account" `
                                                 $null `
                                                 @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
@@ -1270,7 +1270,7 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
         } else {
             $rsgcli_json = $this.rsgcli_1u_json
             
-            if (AskYesNo "Do you want to attempt by a service account?" "N") {
+            if (AskYesNo "Login attempts by a service account?" "N") {
                 $username = ReadInputByChooser "Service Account" `
                                                 $null `
                                                 @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
@@ -1334,7 +1334,7 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
         } else {
             $rsgcli_json = $this.rsgcli_1u_json
             
-            if (AskYesNo "Do you want to attempt by a service account?" "N") {
+            if (AskYesNo "Login attempts by a service account?" "N") {
                 $username = ReadInputByChooser "Service Account" `
                                                 $null `
                                                 @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
