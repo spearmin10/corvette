@@ -6,7 +6,7 @@ function IsFile ([string]$path) {
 }
 
 function IsDirectory ([string]$path) {
-    return ![string]::IsNullOrEmpty($save_as) -And (Test-Path $path) -And ((Get-Item $path) -is [IO.DirectoryInfo])
+    return ![string]::IsNullOrEmpty($path) -And (Test-Path $path) -And ((Get-Item $path) -is [IO.DirectoryInfo])
 }
 
 function BuildFullPath ([string]$parent, [string]$child) {
@@ -113,9 +113,12 @@ function ReadInputByChooser([string]$message, [string]$default, [string[]]$optio
         throw "options are empty."
     }
     $display_options = $options | select -Unique
-    $index = [array]::IndexOf($options, $default)
-    if ($index -ge 0) {
-        $display_options[$index] = $default + " (default)"
+
+    if (![string]::IsNullOrEmpty($default)) {
+        $index = [array]::IndexOf($options, $default)
+        if ($index -ge 0) {
+            $display_options[$index] = $default + " (default)"
+        }
     }
     Write-Host $message":"
     $display_options | % {
@@ -124,7 +127,7 @@ function ReadInputByChooser([string]$message, [string]$default, [string[]]$optio
     }
     do {
         $input = (Read-Host "Choose an option").Trim()
-        if ([string]::IsNullOrEmpty($input)) {
+        if ([string]::IsNullOrEmpty($input) -And ![string]::IsNullOrEmpty($default)) {
             return $default
         }
         $index = ParseNumber($input)
@@ -937,17 +940,20 @@ class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
             $iptgen_json = $this.iptgen_ru_json
         } else {
             $iptgen_json = $this.iptgen_1u_json
-            $username = ReadInput "Username [1..14]" `
-                                  (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
-                                  "^.{1,14}$" `
-                                  "Please retype an user name (max 14 charactors)"
-            $Env:user_name_max14 = $username
-
-            if ($username -in @("System", "LocalService", "NetworkService")) {
-                if (AskYesNo "Is the user domain NT AUTHORITY?" "Y") {
-                    $Env:user_domain_max12 = "NT AUTHORITY"
-                }
+            
+            if (AskYesNo "Do you want to attempt by a service account?" "N") {
+                $username = ReadInputByChooser "Service Account" `
+                                                $null `
+                                                @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
+                                                "Please type a valid service account"
+                $Env:user_domain_max12 = "NT AUTHORITY"
+            } else {
+                $username = ReadInput "Username [1..14]" `
+                                      (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
+                                      "^.{1,14}$" `
+                                      "Please retype an user name (max 14 charactors)"
             }
+            $Env:user_name_max14 = $username
         }
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($interface.InterfaceAlias, $iptgen_json, 10)
@@ -1004,17 +1010,20 @@ class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
             $iptgen_json = $this.iptgen_ru_json
         } else {
             $iptgen_json = $this.iptgen_1u_json
-            $username = ReadInput "Username [1..14]" `
-                                  (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
-                                  "^.{1,14}$" `
-                                  "Please retype an user name (max 14 charactors)"
-            $Env:user_name_max14 = $username
-
-            if ($username -in @("System", "LocalService", "NetworkService")) {
-                if (AskYesNo "Is the user domain NT AUTHORITY?" "Y") {
-                    $Env:user_domain_max12 = "NT AUTHORITY"
-                }
+            
+            if (AskYesNo "Do you want to attempt by a service account?" "N") {
+                $username = ReadInputByChooser "Service Account" `
+                                                $null `
+                                                @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
+                                                "Please type a valid service account"
+                $Env:user_domain_max12 = "NT AUTHORITY"
+            } else {
+                $username = ReadInput "Username [1..14]" `
+                                      (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
+                                      "^.{1,14}$" `
+                                      "Please retype an user name (max 14 charactors)"
             }
+            $Env:user_name_max14 = $username
         }
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($interface.InterfaceAlias, $iptgen_json, 10)
@@ -1257,20 +1266,23 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
         Remove-Item Env:user_domain_max12
 
         if (AskYesNo "Login attempts by random users" "N") {
-            $rsgcli_json = $this.rsgcli_ru_json
+            $iptgen_json = $this.rsgcli_ru_json
         } else {
-            $rsgcli_json = $this.rsgcli_1u_json
-            $username = ReadInput "Username [1..14]" `
-                                  (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
-                                  "^.{1,14}$" `
-                                  "Please retype an user name (max 14 charactors)"
-            $Env:user_name_max14 = $username
-
-            if ($username -in @("System", "LocalService", "NetworkService")) {
-                if (AskYesNo "Is the user domain NT AUTHORITY?" "Y") {
-                    $Env:user_domain_max12 = "NT AUTHORITY"
-                }
+            $iptgen_json = $this.rsgcli_1u_json
+            
+            if (AskYesNo "Do you want to attempt by a service account?" "N") {
+                $username = ReadInputByChooser "Service Account" `
+                                                $null `
+                                                @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
+                                                "Please type a valid service account"
+                $Env:user_domain_max12 = "NT AUTHORITY"
+            } else {
+                $username = ReadInput "Username [1..14]" `
+                                      (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
+                                      "^.{1,14}$" `
+                                      "Please retype an user name (max 14 charactors)"
             }
+            $Env:user_name_max14 = $username
         }
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($rsgsvr_host, $rsgsvr_port, $rsgcli_json)
@@ -1318,20 +1330,23 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
         Remove-Item Env:user_domain_max12
 
         if (AskYesNo "Login attempts by random users" "N") {
-            $rsgcli_json = $this.rsgcli_ru_json
+            $iptgen_json = $this.rsgcli_ru_json
         } else {
-            $rsgcli_json = $this.rsgcli_1u_json
-            $username = ReadInput "Username [1..14]" `
-                                  (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
-                                  "^.{1,14}$" `
-                                  "Please retype an user name (max 14 charactors)"
-            $Env:user_name_max14 = $username
-
-            if ($username -in @("System", "LocalService", "NetworkService")) {
-                if (AskYesNo "Is the user domain NT AUTHORITY?" "Y") {
-                    $Env:user_domain_max12 = "NT AUTHORITY"
-                }
+            $iptgen_json = $this.rsgcli_1u_json
+            
+            if (AskYesNo "Do you want to attempt by a service account?" "N") {
+                $username = ReadInputByChooser "Service Account" `
+                                                $null `
+                                                @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
+                                                "Please type a valid service account"
+                $Env:user_domain_max12 = "NT AUTHORITY"
+            } else {
+                $username = ReadInput "Username [1..14]" `
+                                      (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
+                                      "^.{1,14}$" `
+                                      "Please retype an user name (max 14 charactors)"
             }
+            $Env:user_name_max14 = $username
         }
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($rsgsvr_host, $rsgsvr_port, $rsgcli_json)
