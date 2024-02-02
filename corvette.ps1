@@ -879,7 +879,6 @@ class IptgenHttpUnauthorizedLoginAttempts : IptgenBase {
                                                 "10000" `
                                                 "^[0-9]+$" `
                                                 "Please retype a valid number")
-        $Env:attempt_count = $numof_attempts
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
         $Env:attempt_count = $numof_attempts
@@ -931,6 +930,8 @@ class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
         $Env:attempt_count = $numof_attempts
+        Remove-Item Env:user_name_max14
+        Remove-Item Env:user_domain_max12
 
         if (AskYesNo "Login attempts by random users" "N") {
             $iptgen_json = $this.iptgen_ru_json
@@ -996,6 +997,8 @@ class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
         $Env:attempt_count = $numof_attempts
+        Remove-Item Env:user_name_max14
+        Remove-Item Env:user_domain_max12
 
         if (AskYesNo "Login attempts by random users" "N") {
             $iptgen_json = $this.iptgen_ru_json
@@ -1250,6 +1253,8 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
 
 
         $Env:attempt_count = $numof_attempts
+        Remove-Item Env:user_name_max14
+        Remove-Item Env:user_domain_max12
 
         if (AskYesNo "Login attempts by random users" "N") {
             $rsgcli_json = $this.rsgcli_ru_json
@@ -1309,6 +1314,8 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
 
 
         $Env:attempt_count = $numof_attempts
+        Remove-Item Env:user_name_max14
+        Remove-Item Env:user_domain_max12
 
         if (AskYesNo "Login attempts by random users" "N") {
             $rsgcli_json = $this.rsgcli_ru_json
