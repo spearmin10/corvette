@@ -1266,9 +1266,9 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
         Remove-Item Env:user_domain_max12
 
         if (AskYesNo "Login attempts by random users" "N") {
-            $iptgen_json = $this.rsgcli_ru_json
+            $rsgcli_json = $this.rsgcli_ru_json
         } else {
-            $iptgen_json = $this.rsgcli_1u_json
+            $rsgcli_json = $this.rsgcli_1u_json
             
             if (AskYesNo "Do you want to attempt by a service account?" "N") {
                 $username = ReadInputByChooser "Service Account" `
@@ -1330,9 +1330,9 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
         Remove-Item Env:user_domain_max12
 
         if (AskYesNo "Login attempts by random users" "N") {
-            $iptgen_json = $this.rsgcli_ru_json
+            $rsgcli_json = $this.rsgcli_ru_json
         } else {
-            $iptgen_json = $this.rsgcli_1u_json
+            $rsgcli_json = $this.rsgcli_1u_json
             
             if (AskYesNo "Do you want to attempt by a service account?" "N") {
                 $username = ReadInputByChooser "Service Account" `
