@@ -942,10 +942,11 @@ class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
             $iptgen_json = $this.iptgen_1u_json
             
             if (AskYesNo "Login attempts by a service account?" "N") {
-                $username = ReadInputByChooser "Service Account" `
-                                                $null `
-                                                @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
-                                                "Please type a valid service account"
+                $account = ReadInputByChooser "Service Account" `
+                                               $null `
+                                               @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
+                                               "Please type a valid service account"
+                $username = $account.Split("\\")[1]
                 $Env:user_domain_max12 = "NT AUTHORITY"
             } else {
                 $username = ReadInput "Username [1..14]" `
@@ -1012,10 +1013,11 @@ class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
             $iptgen_json = $this.iptgen_1u_json
             
             if (AskYesNo "Login attempts by a service account?" "N") {
-                $username = ReadInputByChooser "Service Account" `
-                                                $null `
-                                                @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
-                                                "Please type a valid service account"
+                $account = ReadInputByChooser "Service Account" `
+                                               $null `
+                                               @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
+                                               "Please type a valid service account"
+                $username = $account.Split("\\")[1]
                 $Env:user_domain_max12 = "NT AUTHORITY"
             } else {
                 $username = ReadInput "Username [1..14]" `
@@ -1271,10 +1273,11 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
             $rsgcli_json = $this.rsgcli_1u_json
             
             if (AskYesNo "Login attempts by a service account?" "N") {
-                $username = ReadInputByChooser "Service Account" `
-                                                $null `
-                                                @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
-                                                "Please type a valid service account"
+                $account = ReadInputByChooser "Service Account" `
+                                               $null `
+                                               @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
+                                               "Please type a valid service account"
+                $username = $account.Split("\\")[1]
                 $Env:user_domain_max12 = "NT AUTHORITY"
             } else {
                 $username = ReadInput "Username [1..14]" `
@@ -1335,10 +1338,11 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
             $rsgcli_json = $this.rsgcli_1u_json
             
             if (AskYesNo "Login attempts by a service account?" "N") {
-                $username = ReadInputByChooser "Service Account" `
-                                                $null `
-                                                @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
-                                                "Please type a valid service account"
+                $account = ReadInputByChooser "Service Account" `
+                                               $null `
+                                               @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
+                                               "Please type a valid service account"
+                $username = $account.Split("\\")[1]
                 $Env:user_domain_max12 = "NT AUTHORITY"
             } else {
                 $username = ReadInput "Username [1..14]" `
