@@ -1038,7 +1038,7 @@ class IptgenKerberosUnauthorizedLoginAttempts : IptgenBase {
                                $script:PATTERN_IPV4_ADDR `
                                "Please retype a valid IPv4 address"
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
-                                                "2000" `
+                                                "100" `
                                                 "^[0-9]+$" `
                                                 "Please retype a valid number")
         $Env:client_ip = $client_ip
@@ -1389,7 +1389,7 @@ class RsgcliKerberosUnauthorizedLoginAttempts : RsgcliBase {
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
                                  "Please retype a valid port number"
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
-                                                "2000" `
+                                                "100" `
                                                 "^[0-9]+$" `
                                                 "Please retype a valid number")
 
