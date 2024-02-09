@@ -32,7 +32,6 @@
             ["hex.raw", "${user_name_max16=((17 - val.length()) + 128).hex_be(1)}"],
             ["hex.raw", "${user_name_max16=val.length().hex_be(${user_name_max16=17 - val.length()})}"],
             ["text.raw", "${user_name_max16}"],
-
             ["hex.raw", [
                 "a2 11 1b 0f 63 6f 72 70  2e 63 6f 72 74 65 78 2e",
                 "6c 61 6e a3 24 30 22 a0  03 02 01 02 a1 1b 30 19",
@@ -42,7 +41,7 @@
             ],
             ["text.raw", "${time.utcnow()=(val + (60 * 60 * 24 * 365 * 10)).timestr(YYYYMMDDHHmmssZ)}"],
             ["hex.raw", [
-                "a7 06 02 04 09 0a 33 4a  a8 15 30 13 02 01 12 02",
+                "a7 06 02 04 4c ac d4 fd  a8 15 30 13 02 01 12 02",
                 "01 11 02 01 17 02 01 18  02 02 ff 79 02 01 03"
               ]
             ]
