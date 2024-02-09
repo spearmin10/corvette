@@ -929,7 +929,7 @@ class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
         Remove-Item Env:user_name_max14
         Remove-Item Env:user_domain_max12
 
-        if (! AskYesNo "Login attempts by random users" "N") {
+        if (! (AskYesNo "Login attempts by random users" "N")) {
             if (AskYesNo "Login attempts by a service account?" "N") {
                 $account = ReadInputByChooser "Service Account" `
                                                $null `
@@ -956,56 +956,6 @@ class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
 
     IptgenLdapNtlmUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
         $file_name = "iptgen-ldap-ntlm-login-attempts-template.json"
-        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
-        if (!(IsFile $this.iptgen_json)) {
-            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
-            DownloadFile $url $this.iptgen_json
-        }
-
-    }
-
-    [void]Run() {
-        $interface = $this.SelectInterface()
-        if ([string]::IsNullOrEmpty($interface)) {
-            return
-        }
-        Write-Host ""
-        Write-Host "### Enter the kerberos configuration"
-        $client_ip = ReadInput "Client IP" `
-                               $interface.IPAddress `
-                               $script:PATTERN_IPV4_ADDR `
-                               "Please retype a valid IPv4 address"
-        $server_ip = ReadInput "Server IP" `
-                               "" `
-                               $script:PATTERN_IPV4_ADDR `
-                               "Please retype a valid IPv4 address"
-        $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
-                                                "2000" `
-                                                "^[0-9]+$" `
-                                                "Please retype a valid number")
-        $Env:client_ip = $client_ip
-        $Env:server_ip = $server_ip
-        $Env:attempt_count = $numof_attempts
-        Remove-Item Env:user_name_max16
-
-        if (! AskYesNo "Login attempts by random users" "N") {
-            $username = ReadInput "Username [1..14]" `
-                                  (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
-                                  "^.{1,14}$" `
-                                  "Please retype an user name (max 14 charactors)"
-            $Env:user_name_max16 = $username
-        }
-        if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
-        }
-    }
-}
-
-class IptgenKerberosUnauthorizedLoginAttempts : IptgenBase {
-    [string]$iptgen_json
-
-    IptgenKerberosUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "iptgen-krb5-preauth-attempts-template.json"
         $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
         if (!(IsFile $this.iptgen_json)) {
             $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
@@ -1038,7 +988,7 @@ class IptgenKerberosUnauthorizedLoginAttempts : IptgenBase {
         Remove-Item Env:user_name_max14
         Remove-Item Env:user_domain_max12
 
-        if (! AskYesNo "Login attempts by random users" "N") {
+        if (! (AskYesNo "Login attempts by random users" "N")) {
             if (AskYesNo "Login attempts by a service account?" "N") {
                 $account = ReadInputByChooser "Service Account" `
                                                $null `
@@ -1053,6 +1003,55 @@ class IptgenKerberosUnauthorizedLoginAttempts : IptgenBase {
                                       "Please retype an user name (max 14 charactors)"
             }
             $Env:user_name_max14 = $username
+        }
+        if (AskYesNo "Are you sure you want to run?") {
+            $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+        }
+    }
+}
+
+class IptgenKerberosUnauthorizedLoginAttempts : IptgenBase {
+    [string]$iptgen_json
+
+    IptgenKerberosUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
+        $file_name = "iptgen-krb5-preauth-attempts-template.json"
+        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
+        if (!(IsFile $this.iptgen_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
+            DownloadFile $url $this.iptgen_json
+        }
+    }
+
+    [void]Run() {
+        $interface = $this.SelectInterface()
+        if ([string]::IsNullOrEmpty($interface)) {
+            return
+        }
+        Write-Host ""
+        Write-Host "### Enter the kerberos configuration"
+        $client_ip = ReadInput "Client IP" `
+                               $interface.IPAddress `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $server_ip = ReadInput "Server IP" `
+                               "" `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
+                                                "2000" `
+                                                "^[0-9]+$" `
+                                                "Please retype a valid number")
+        $Env:client_ip = $client_ip
+        $Env:server_ip = $server_ip
+        $Env:attempt_count = $numof_attempts
+        Remove-Item Env:user_name_max16
+
+        if (! (AskYesNo "Login attempts by random users" "N")) {
+            $username = ReadInput "Username [1..14]" `
+                                  (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
+                                  "^.{1,14}$" `
+                                  "Please retype an user name (max 14 charactors)"
+            $Env:user_name_max16 = $username
         }
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
@@ -1291,7 +1290,7 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
         Remove-Item Env:user_name_max14
         Remove-Item Env:user_domain_max12
 
-        if (! AskYesNo "Login attempts by random users" "N") {
+        if (! (AskYesNo "Login attempts by random users" "N")) {
             if (AskYesNo "Login attempts by a service account?" "N") {
                 $account = ReadInputByChooser "Service Account" `
                                                $null `
@@ -1345,7 +1344,7 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
         Remove-Item Env:user_name_max14
         Remove-Item Env:user_domain_max12
 
-        if (! AskYesNo "Login attempts by random users" "N") {
+        if (! (AskYesNo "Login attempts by random users" "N")) {
             if (AskYesNo "Login attempts by a service account?" "N") {
                 $account = ReadInputByChooser "Service Account" `
                                                $null `
@@ -1397,7 +1396,7 @@ class RsgcliKerberosUnauthorizedLoginAttempts : RsgcliBase {
         $Env:attempt_count = $numof_attempts
         Remove-Item Env:user_name_max16
 
-        if (! AskYesNo "Login attempts by random users" "N") {
+        if (! (AskYesNo "Login attempts by random users" "N")) {
             $username = ReadInput "Username [1..14]" `
                                   (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
                                   "^.{1,14}$" `
