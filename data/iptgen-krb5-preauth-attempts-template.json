@@ -4,13 +4,11 @@
       "attempt_count": "1"
     }
   },
-  "server": {
-    "port": 88
-  },
+  "client": "${client_ip}", 
+  "server": "${server_ip}:88",
   "sequence": [
     ["for.session", [0, "${attempt_count}"], "i", [
-        ["tcp.handshake"],
-        ["sys.print", "krb5: ${RSGCLI_TCP_CLIENT_IP} -> ${RSGCLI_TCP_SERVER_IP}:${RSGCLI_TCP_SERVER_PORT}"],
+        ["sys.print", "krb5: ${client_ip} -> ${server_ip}:88"],
 
         ["env.local.default", {
           "user_name_max16": "${rand.lower_alpha(8)}"
