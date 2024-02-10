@@ -1044,14 +1044,14 @@ class IptgenKerberosUnauthorizedLoginAttempts : IptgenBase {
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
         $Env:attempt_count = $numof_attempts
-        Remove-Item Env:user_name_max16
+        Remove-Item Env:user_name
 
         if (! (AskYesNo "Login attempts by random users" "N")) {
             $username = ReadInput "Username [1..14]" `
                                   (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
                                   "^.{1,14}$" `
                                   "Please retype an user name (max 14 charactors)"
-            $Env:user_name_max16 = $username
+            $Env:user_name = $username
         }
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
@@ -1394,7 +1394,7 @@ class RsgcliKerberosUnauthorizedLoginAttempts : RsgcliBase {
                                                 "Please retype a valid number")
 
         $Env:attempt_count = $numof_attempts
-        Remove-Item Env:user_name_max16
+        Remove-Item Env:user_name
 
         if (! (AskYesNo "Login attempts by random users" "N")) {
             $username = ReadInput "Username [1..14]" `
@@ -1402,7 +1402,7 @@ class RsgcliKerberosUnauthorizedLoginAttempts : RsgcliBase {
                                   "^.{1,14}$" `
                                   "Please retype an user name (max 14 charactors)"
 
-            $Env:user_name_max16 = $username
+            $Env:user_name = $username
         }
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
