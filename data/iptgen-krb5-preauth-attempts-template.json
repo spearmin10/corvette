@@ -17,183 +17,131 @@
         ["env.local.set-payload", {
           "as_req": ["hex", "asn1.raw",
             {
-              "APPLICATION [10]:+": [
-                {
-                  "SEQUENCE:+": [
-                    {
-                      "CONTEXT [1]:+": [
-                        {
-                          "INTEGER": 5
-                        }
-                      ]
-                    },
-                    {
-                      "CONTEXT [2]:+": [
-                        {
-                          "INTEGER": 10
-                        }
-                      ]
-                    },
-                    {
-                      "CONTEXT [3]:+": [
-                        {
-                          "SEQUENCE:+": [
-                            {
-                              "SEQUENCE:+": [
-                                {
-                                  "CONTEXT [1]:+": [
-                                    {
-                                      "INTEGER": 128
-                                    }
-                                  ]
-                                },
-                                {
-                                  "CONTEXT [2]:+": [
-                                    {
-                                      "OCTET STRING": [
-                                        "hex.raw", "3005a0030101ff"
-                                      ]
-                                    }
-                                  ]
-                                }
+              "APPLICATION [10]:+": {
+                "SEQUENCE:+": [
+                  {
+                    "CONTEXT [1]:+": {
+                      "INTEGER": 5
+                    }
+                  },
+                  {
+                    "CONTEXT [2]:+": {
+                      "INTEGER": 10
+                    }
+                  },
+                  {
+                    "CONTEXT [3]:+": {
+                      "SEQUENCE:+": {
+                        "SEQUENCE:+": [
+                          {
+                            "CONTEXT [1]:+": {
+                              "INTEGER": 128
+                            }
+                          },
+                          {
+                            "CONTEXT [2]:+": {
+                              "OCTET STRING": [
+                                "hex.raw", "3005a0030101ff"
                               ]
                             }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "CONTEXT [4]:+": [
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "CONTEXT [4]:+": {
+                      "SEQUENCE:+": [
                         {
-                          "SEQUENCE:+": [
-                            {
-                              "CONTEXT [0]:+": [
-                                {
-                                  "BIT STRING": [
-                                    "hex.raw", "0040810010"
-                                  ]
+                          "CONTEXT [0]:+": {
+                            "BIT STRING": [
+                              "hex.raw", "0040810010"
+                            ]
+                          }
+                        },
+                        {
+                          "CONTEXT [1]:+": {
+                            "SEQUENCE:+": [
+                              {
+                                "CONTEXT [0]:+": {
+                                  "INTEGER": 1
                                 }
-                              ]
-                            },
-                            {
-                              "CONTEXT [1]:+": [
-                                {
+                              },
+                              {
+                                "CONTEXT [1]:+": {
+                                  "SEQUENCE:+": {
+                                    "GENERAL STRING": [
+                                      "text.raw", "${user_name}"
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "CONTEXT [2]:+": {
+                            "GENERAL STRING": [
+                              "text.raw", "corp.cortex.lan"
+                            ]
+                          }
+                        },
+                        {
+                          "CONTEXT [3]:+": {
+                            "SEQUENCE:+": [
+                              {
+                                "CONTEXT [0]:+": {
+                                  "INTEGER": 2
+                                }
+                              },
+                              {
+                                "CONTEXT [1]:+": {
                                   "SEQUENCE:+": [
                                     {
-                                      "CONTEXT [0]:+": [
-                                        {
-                                          "INTEGER": 1
-                                        }
+                                      "GENERAL STRING": [
+                                        "text.raw", "krbtgt"
                                       ]
                                     },
                                     {
-                                      "CONTEXT [1]:+": [
-                                        {
-                                          "SEQUENCE:+": [
-                                            {
-                                              "GENERAL STRING": [
-                                                "text.raw", "${user_name}"
-                                              ]
-                                            }
-                                          ]
-                                        }
+                                      "GENERAL STRING": [
+                                        "text.raw", "corp.cortex.lan"
                                       ]
                                     }
                                   ]
                                 }
-                              ]
-                            },
-                            {
-                              "CONTEXT [2]:+": [
-                                {
-                                  "GENERAL STRING": [
-                                    "text.raw", "corp.cortex.lan"
-                                  ]
-                                }
-                              ]
-                            },
-                            {
-                              "CONTEXT [3]:+": [
-                                {
-                                  "SEQUENCE:+": [
-                                    {
-                                      "CONTEXT [0]:+": [
-                                        {
-                                          "INTEGER": 2
-                                        }
-                                      ]
-                                    },
-                                    {
-                                      "CONTEXT [1]:+": [
-                                        {
-                                          "SEQUENCE:+": [
-                                            {
-                                              "GENERAL STRING": [
-                                                "text.raw", "krbtgt"
-                                              ]
-                                            },
-                                            {
-                                              "GENERAL STRING": [
-                                                "text.raw", "corp.cortex.lan"
-                                              ]
-                                            }
-                                          ]
-                                        }
-                                      ]
-                                    }
-                                  ]
-                                }
-                              ]
-                            },
-                            {
-                              "CONTEXT [5]:+": [
-                                {
-                                  "GENERALIZED TIME": [
-                                    "text.raw", "${time.utcnow()=(val + (60 * 60 * 24 * 365 * 10)).timestr(YYYYMMDDHHmmssZ)}"
-                                  ]
-                                }
-                              ]
-                            },
-                            {
-                              "CONTEXT [7]:+": [
-                                {
-                                  "INTEGER": 1286395133
-                                }
-                              ]
-                            },
-                            {
-                              "CONTEXT [8]:+": [
-                                {
-                                  "SEQUENCE:+": [
-                                    {
-                                      "INTEGER": 18
-                                    },
-                                    {
-                                      "INTEGER": 17
-                                    },
-                                    {
-                                      "INTEGER": 23
-                                    },
-                                    {
-                                      "INTEGER": 24
-                                    },
-                                    {
-                                      "INTEGER": -135
-                                    },
-                                    {
-                                      "INTEGER": 3
-                                    }
-                                  ]
-                                }
-                              ]
-                            }
-                          ]
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "CONTEXT [5]:+": {
+                            "GENERALIZED TIME": [
+                              "text.raw", "${time.utcnow()=(val + (60 * 60 * 24 * 365 * 10)).timestr(YYYYMMDDHHmmssZ)}"
+                            ]
+                          }
+                        },
+                        {
+                          "CONTEXT [7]:+": {
+                            "INTEGER": 1286395133
+                          }
+                        },
+                        {
+                          "CONTEXT [8]:+": {
+                            "SEQUENCE:+": [
+                              {"INTEGER": 18},
+                              {"INTEGER": 17},
+                              {"INTEGER": 23},
+                              {"INTEGER": 24},
+                              {"INTEGER": -135},
+                              {"INTEGER": 3}
+                            ]
+                          }
                         }
                       ]
                     }
-                  ]
-                }
-              ]
+                  }
+                ]
+              }
             }
           ]
         }],
