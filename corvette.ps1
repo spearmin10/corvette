@@ -854,7 +854,7 @@ class IptgenHttpUnauthorizedLoginAttempts : IptgenBase {
     [string]$iptgen_json
 
     IptgenHttpUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "iptgen-http-login-attempt-template.json"
+        $file_name = "iptgen-http-login-attempts-template.json"
         $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
 
         if (!(IsFile $this.iptgen_json)) {
@@ -896,7 +896,7 @@ class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
     [string]$iptgen_json
 
     IptgenSmbNtlmUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "iptgen-smb-ntlm-login-attempt-template.json"
+        $file_name = "iptgen-smb-ntlm-login-attempts-template.json"
         $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
         if (!(IsFile $this.iptgen_json)) {
             $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
@@ -929,8 +929,8 @@ class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
         Remove-Item Env:user_name_max14
         Remove-Item Env:user_domain_max12
 
-        if (! (AskYesNo "Login attempt by random users" "N")) {
-            if (AskYesNo "Login attempt by a service account?" "N") {
+        if (! (AskYesNo "Login attempts by random users" "N")) {
+            if (AskYesNo "Login attempts by a service account?" "N") {
                 $account = ReadInputByChooser "Service Account" `
                                                $null `
                                                @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
@@ -955,7 +955,7 @@ class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
     [string]$iptgen_json
 
     IptgenLdapNtlmUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "iptgen-ldap-ntlm-login-attempt-template.json"
+        $file_name = "iptgen-ldap-ntlm-login-attempts-template.json"
         $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
         if (!(IsFile $this.iptgen_json)) {
             $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
@@ -988,8 +988,8 @@ class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
         Remove-Item Env:user_name_max14
         Remove-Item Env:user_domain_max12
 
-        if (! (AskYesNo "Login attempt by random users" "N")) {
-            if (AskYesNo "Login attempt by a service account?" "N") {
+        if (! (AskYesNo "Login attempts by random users" "N")) {
+            if (AskYesNo "Login attempts by a service account?" "N") {
                 $account = ReadInputByChooser "Service Account" `
                                                $null `
                                                @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
@@ -1014,7 +1014,7 @@ class IptgenKerberosUnauthorizedLoginAttempts : IptgenBase {
     [string]$iptgen_json
 
     IptgenKerberosUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "iptgen-krb5-preauth-attempt-template.json"
+        $file_name = "iptgen-krb5-preauth-attempts-template.json"
         $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
         if (!(IsFile $this.iptgen_json)) {
             $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
@@ -1049,7 +1049,7 @@ class IptgenKerberosUnauthorizedLoginAttempts : IptgenBase {
         $Env:attempt_count = $numof_attempts
         Remove-Item Env:user_name
 
-        if (! (AskYesNo "Login attempt by random users" "N")) {
+        if (! (AskYesNo "Login attempts by random users" "N")) {
             $username = ReadInput "Username [1..14]" `
                                   (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
                                   "^.{1,14}$" `
@@ -1280,7 +1280,7 @@ class RsgcliHttpUnauthorizedLoginAttempts : RsgcliBase {
     [string]$rsgcli_json
 
     RsgcliHttpUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "rsgcli-http-login-attempt-template.json"
+        $file_name = "rsgcli-http-login-attempts-template.json"
         $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
 
         if (!(IsFile $this.rsgcli_json)) {
@@ -1312,7 +1312,7 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
     [string]$rsgcli_json
 
     RsgcliSmbNtlmUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "rsgcli-smb-ntlm-login-attempt-template.json"
+        $file_name = "rsgcli-smb-ntlm-login-attempts-template.json"
         $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
         if (!(IsFile $this.rsgcli_json)) {
             $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
@@ -1340,8 +1340,8 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
         Remove-Item Env:user_name_max14
         Remove-Item Env:user_domain_max12
 
-        if (! (AskYesNo "Login attempt by random users" "N")) {
-            if (AskYesNo "Login attempt by a service account?" "N") {
+        if (! (AskYesNo "Login attempts by random users" "N")) {
+            if (AskYesNo "Login attempts by a service account?" "N") {
                 $account = ReadInputByChooser "Service Account" `
                                                $null `
                                                @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
@@ -1366,7 +1366,7 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
     [string]$rsgcli_json
 
     RsgcliLdapNtlmUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "rsgcli-ldap-ntlm-login-attempt-template.json"
+        $file_name = "rsgcli-ldap-ntlm-login-attempts-template.json"
         $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
         if (!(IsFile $this.rsgcli_json)) {
             $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
@@ -1394,8 +1394,8 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
         Remove-Item Env:user_name_max14
         Remove-Item Env:user_domain_max12
 
-        if (! (AskYesNo "Login attempt by random users" "N")) {
-            if (AskYesNo "Login attempt by a service account?" "N") {
+        if (! (AskYesNo "Login attempts by random users" "N")) {
+            if (AskYesNo "Login attempts by a service account?" "N") {
                 $account = ReadInputByChooser "Service Account" `
                                                $null `
                                                @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
@@ -1420,7 +1420,7 @@ class RsgcliKerberosUnauthorizedLoginAttempts : RsgcliBase {
     [string]$rsgcli_json
 
     RsgcliKerberosUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "rsgcli-krb5-preauth-attempt-template.json"
+        $file_name = "rsgcli-krb5-preauth-attempts-template.json"
         $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
         if (!(IsFile $this.rsgcli_json)) {
             $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
@@ -1448,7 +1448,7 @@ class RsgcliKerberosUnauthorizedLoginAttempts : RsgcliBase {
         $Env:attempt_count = $numof_attempts
         Remove-Item Env:user_name
 
-        if (! (AskYesNo "Login attempt by random users" "N")) {
+        if (! (AskYesNo "Login attempts by random users" "N")) {
             $username = ReadInput "Username [1..14]" `
                                   (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
                                   "^.{1,14}$" `
