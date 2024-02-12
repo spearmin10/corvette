@@ -199,7 +199,7 @@
           ]
         ],
         
-        ["sys.time.sleep", 500]
+        ["sys.time.sleep", 100]
       ]
     ]
   ]
