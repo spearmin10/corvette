@@ -1,0 +1,117 @@
+{
+  "default": {
+    "environment":{
+      "repeat_count": "1",
+      "mail_from": "from@example.com",
+      "rcpt_to": "to@example.com",
+      "upload_filesize": "1048576",
+      "upload_filename": "test.dat"
+    }
+  },
+  "sequence": [
+    ["for.process", [0, "${repeat_count}"], "i",
+      {
+        "client": "${client_ip}", 
+        "server": "${server_ip}:25",
+        "sequence": [
+          ["sys.print", "smtp: ${client_ip} -> ${server_ip}:25"],
+          
+          ["tcp.recv", "text.raw", ["220 SMTP Service Ready"]],
+          ["tcp.send", "text.raw", ["EHLO [${client_ip}]"]],
+          ["tcp.recv", "text.raw", ["250 [${server_ip}]"]],
+          ["tcp.send", "text.raw", ["RSET"]],
+          ["tcp.recv", "text.raw", ["250 OK"]],
+          ["tcp.send", "text.raw", ["MAIL FROM:<${mail_from}>"]],
+          ["tcp.recv", "text.raw", ["250 OK"]],
+          ["tcp.send", "text.raw", ["RCPT TO:<${rcpt_to}>"]],
+          ["tcp.recv", "text.raw", ["250 OK"]],
+          ["tcp.send", "text.raw", ["DATA"]],
+          ["tcp.recv", "text.raw", ["354 Start mail input; end with <CRLF>.<CRLF>"]],
+          
+          ["tcp.send", "text.raw", [
+              "Date: Tue, 05 Oct 2021 23:36:09 +0900",
+              "From: ${mail_from}",
+              "To: ${rcpt_to}",
+              "Subject: test",
+              "Message-Id: <${rand.lower_alpha(8)}.${rand.lower_alpha(4)}@example.com>",
+              "MIME-Version: 1.0",
+              "Content-Type: multipart/mixed; boundary=---------------------------708960429131151983491114524",
+              "",
+              "-----------------------------708960429131151983491114524",
+              "Content-Type: text/plain; charset=\"utf-8\"",
+              "Content-Transfer-Encoding: 7bit",
+              "",
+              "test message",
+              "",
+              "-----------------------------708960429131151983491114524",
+              "Content-Type: application/octet-stream; name=\"${upload_filename}\"",
+              "Content-Type: attachment; filename=\"${upload_filename}\"",
+              "CContent-Transfer-Encoding: base64",
+              ""
+            ]
+          ],
+          ["for", [0,"${upload_filesize=val/(1024*1024)}"], "i",
+            [
+              ["for", [0,1024], "j",
+                [
+                  ["tcp.send", "text.raw", [
+                      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                    ]
+                  ]
+                ]
+              ],
+              ["sys.print", "${i=val+1} MB done."]
+            ]
+          ],
+          ["for", [0,"${upload_filesize=val%(1024*1024)/1024}"], "i",
+            [
+              ["tcp.send", "text.raw", [
+                  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                ]
+              ]
+            ]
+          ],
+          ["tcp.send", "text", [
+              "",
+              "-----------------------------708960429131151983491114524--",
+              "."
+            ]
+          ],
+          ["tcp.recv", "text.raw", ["250 OK"]],
+          ["tcp.send", "text.raw", ["QUIT"]],
+          ["tcp.recv", "text.raw", ["221 OK"]]
+        ]
+      }
+    ]
+  ]
+}
