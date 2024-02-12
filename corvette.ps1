@@ -1037,15 +1037,17 @@ class IptgenKerberosUnauthorizedLoginAttempts : IptgenBase {
                                "" `
                                $script:PATTERN_IPV4_ADDR `
                                "Please retype a valid IPv4 address"
+
+        $domain_name = ReadInput "Domain Name" "corp.example.com" "^.+$"
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
                                                 "100" `
                                                 "^[0-9]+$" `
                                                 "Please retype a valid number")
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
+        $Env:domain_name = $domain_name
         $Env:attempt_count = $numof_attempts
         Remove-Item Env:user_name
-        Remove-Item Env:domain_name
 
         if (! (AskYesNo "Login attempt by random users" "N")) {
             $username = ReadInput "Username [1..14]" `
@@ -1087,14 +1089,15 @@ class IptgenKerberosUserEnumerationBruteForce : IptgenBase {
                                "" `
                                $script:PATTERN_IPV4_ADDR `
                                "Please retype a valid IPv4 address"
+        $domain_name = ReadInput "Domain Name" "corp.example.com" "^.+$"
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
                                                 "100" `
                                                 "^[0-9]+$" `
                                                 "Please retype a valid number")
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
+        $Env:domain_name = $domain_name
         $Env:attempt_count = $numof_attempts
-        Remove-Item Env:domain_name
 
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
@@ -1435,14 +1438,15 @@ class RsgcliKerberosUnauthorizedLoginAttempts : RsgcliBase {
                                  $this.props.rsgsvr_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
                                  "Please retype a valid port number"
+        $domain_name = ReadInput "Domain Name" "corp.example.com" "^.+$"
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
                                                 "100" `
                                                 "^[0-9]+$" `
                                                 "Please retype a valid number")
 
+        $Env:domain_name = $domain_name
         $Env:attempt_count = $numof_attempts
         Remove-Item Env:user_name
-        Remove-Item Env:domain_name
 
         if (! (AskYesNo "Login attempt by random users" "N")) {
             $username = ReadInput "Username [1..14]" `
@@ -1480,13 +1484,14 @@ class RsgcliKerberosUserEnumerationBruteForce : RsgcliBase {
                                  $this.props.rsgsvr_port `
                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
                                  "Please retype a valid port number"
+        $domain_name = ReadInput "Domain Name" "corp.example.com" "^.+$"
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
                                                 "100" `
                                                 "^[0-9]+$" `
                                                 "Please retype a valid number")
 
+        $Env:domain_name = $domain_name
         $Env:attempt_count = $numof_attempts
-        Remove-Item Env:domain_name
 
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
