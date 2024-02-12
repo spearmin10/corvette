@@ -26,8 +26,8 @@ if errorlevel 1 (
         popd
       )
     )
-    move /Y "%CORVETTE_SAVE_AS_TMP%" "%CORVETTE_SAVE_AS%" > NUL 2>&1
   )
+  move /Y "%CORVETTE_SAVE_AS_TMP%" "%CORVETTE_SAVE_AS%" > NUL 2>&1
 )
 
 if not exist "%CORVETTE_SAVE_AS%" (
