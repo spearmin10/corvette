@@ -1063,7 +1063,7 @@ class IptgenKerberosUnauthorizedLoginAttempts : IptgenBase {
 class IptgenKerberosUserEnumerationBruteForce : IptgenBase {
     [string]$iptgen_json
 
-    IptgenKerberosUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
+    IptgenKerberosUserEnumerationBruteForce([Properties]$props) : base ($props) {
         $file_name = "iptgen-krb5-user-enum-bruteforce-template.json"
         $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
         if (!(IsFile $this.iptgen_json)) {
@@ -1461,7 +1461,7 @@ class RsgcliKerberosUnauthorizedLoginAttempts : RsgcliBase {
 class RsgcliKerberosUserEnumerationBruteForce : RsgcliBase {
     [string]$rsgcli_json
 
-    RsgcliKerberosUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
+    RsgcliKerberosUserEnumerationBruteForce([Properties]$props) : base ($props) {
         $file_name = "rsgcli-krb5-user-enum-bruteforce-template.json"
         $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
         if (!(IsFile $this.rsgcli_json)) {
