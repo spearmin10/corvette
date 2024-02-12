@@ -854,7 +854,7 @@ class IptgenHttpUnauthorizedLoginAttempts : IptgenBase {
     [string]$iptgen_json
 
     IptgenHttpUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "iptgen-http-login-attempts-template.json"
+        $file_name = "iptgen-http-login-attempt-template.json"
         $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
 
         if (!(IsFile $this.iptgen_json)) {
@@ -896,7 +896,7 @@ class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
     [string]$iptgen_json
 
     IptgenSmbNtlmUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "iptgen-smb-ntlm-login-attempts-template.json"
+        $file_name = "iptgen-smb-ntlm-login-attempt-template.json"
         $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
         if (!(IsFile $this.iptgen_json)) {
             $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
@@ -929,8 +929,8 @@ class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
         Remove-Item Env:user_name_max14
         Remove-Item Env:user_domain_max12
 
-        if (! (AskYesNo "Login attempts by random users" "N")) {
-            if (AskYesNo "Login attempts by a service account?" "N") {
+        if (! (AskYesNo "Login attempt by random users" "N")) {
+            if (AskYesNo "Login attempt by a service account?" "N") {
                 $account = ReadInputByChooser "Service Account" `
                                                $null `
                                                @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
@@ -955,7 +955,7 @@ class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
     [string]$iptgen_json
 
     IptgenLdapNtlmUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "iptgen-ldap-ntlm-login-attempts-template.json"
+        $file_name = "iptgen-ldap-ntlm-login-attempt-template.json"
         $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
         if (!(IsFile $this.iptgen_json)) {
             $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
@@ -988,8 +988,8 @@ class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
         Remove-Item Env:user_name_max14
         Remove-Item Env:user_domain_max12
 
-        if (! (AskYesNo "Login attempts by random users" "N")) {
-            if (AskYesNo "Login attempts by a service account?" "N") {
+        if (! (AskYesNo "Login attempt by random users" "N")) {
+            if (AskYesNo "Login attempt by a service account?" "N") {
                 $account = ReadInputByChooser "Service Account" `
                                                $null `
                                                @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
@@ -1014,7 +1014,7 @@ class IptgenKerberosUnauthorizedLoginAttempts : IptgenBase {
     [string]$iptgen_json
 
     IptgenKerberosUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "iptgen-krb5-preauth-attempts-template.json"
+        $file_name = "iptgen-krb5-preauth-attempt-template.json"
         $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
         if (!(IsFile $this.iptgen_json)) {
             $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
@@ -1045,14 +1045,57 @@ class IptgenKerberosUnauthorizedLoginAttempts : IptgenBase {
         $Env:server_ip = $server_ip
         $Env:attempt_count = $numof_attempts
         Remove-Item Env:user_name
+        Remove-Item Env:domain_name
 
-        if (! (AskYesNo "Login attempts by random users" "N")) {
+        if (! (AskYesNo "Login attempt by random users" "N")) {
             $username = ReadInput "Username [1..14]" `
                                   (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
                                   "^.{1,14}$" `
                                   "Please retype an user name (max 14 charactors)"
             $Env:user_name = $username
         }
+        if (AskYesNo "Are you sure you want to run?") {
+            $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+        }
+    }
+}
+
+class IptgenKerberosUserEnumerationBruteForce : IptgenBase {
+    [string]$iptgen_json
+
+    IptgenKerberosUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
+        $file_name = "iptgen-krb5-user-enum-bruteforce-template.json"
+        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
+        if (!(IsFile $this.iptgen_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
+            DownloadFile $url $this.iptgen_json
+        }
+    }
+
+    [void]Run() {
+        $interface = $this.SelectInterface()
+        if ([string]::IsNullOrEmpty($interface)) {
+            return
+        }
+        Write-Host ""
+        Write-Host "### Enter the kerberos configuration"
+        $client_ip = ReadInput "Client IP" `
+                               $interface.IPAddress `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $server_ip = ReadInput "Server IP" `
+                               "" `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
+                                                "100" `
+                                                "^[0-9]+$" `
+                                                "Please retype a valid number")
+        $Env:client_ip = $client_ip
+        $Env:server_ip = $server_ip
+        $Env:attempt_count = $numof_attempts
+        Remove-Item Env:domain_name
+
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
         }
@@ -1070,10 +1113,11 @@ class IptgenMenu : CommandBase {
             Write-Host " 2) Generate FTP file upload packets"
             Write-Host " 3) Generate HTTP file upload packets"
             Write-Host " 4) Generate HTTPS file upload packets"
-            Write-Host " 5) Generate HTTP unauthorized login attempts packets"
-            Write-Host " 6) Generate SMB NTLM unauthorized login attempts packets"
-            Write-Host " 7) Generate LDAP NTLM unauthorized login attempts packets"
-            Write-Host " 8) Generate Kerberos unauthorized login attempts packets"
+            Write-Host " 5) Generate HTTP unauthorized login attempt packets"
+            Write-Host " 6) Generate SMB NTLM unauthorized login attempt packets"
+            Write-Host " 7) Generate LDAP NTLM unauthorized login attempt packets"
+            Write-Host " 8) Generate Kerberos unauthorized login attempt packets"
+            Write-Host " 9) Generate Kerberos user enumeration brute-force packets"
             Write-Host " q) Exit"
             try {
                 :retry do {
@@ -1102,6 +1146,9 @@ class IptgenMenu : CommandBase {
                         }
                         "8" {
                             [IptgenKerberosUnauthorizedLoginAttempts]::New($this.props).Run()
+                        }
+                        "9" {
+                            [IptgenKerberosUserEnumerationBruteForce]::New($this.props).Run()
                         }
                         "q" {
                             return
@@ -1230,7 +1277,7 @@ class RsgcliHttpUnauthorizedLoginAttempts : RsgcliBase {
     [string]$rsgcli_json
 
     RsgcliHttpUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "rsgcli-http-login-attempts-template.json"
+        $file_name = "rsgcli-http-login-attempt-template.json"
         $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
 
         if (!(IsFile $this.rsgcli_json)) {
@@ -1262,7 +1309,7 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
     [string]$rsgcli_json
 
     RsgcliSmbNtlmUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "rsgcli-smb-ntlm-login-attempts-template.json"
+        $file_name = "rsgcli-smb-ntlm-login-attempt-template.json"
         $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
         if (!(IsFile $this.rsgcli_json)) {
             $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
@@ -1290,8 +1337,8 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
         Remove-Item Env:user_name_max14
         Remove-Item Env:user_domain_max12
 
-        if (! (AskYesNo "Login attempts by random users" "N")) {
-            if (AskYesNo "Login attempts by a service account?" "N") {
+        if (! (AskYesNo "Login attempt by random users" "N")) {
+            if (AskYesNo "Login attempt by a service account?" "N") {
                 $account = ReadInputByChooser "Service Account" `
                                                $null `
                                                @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
@@ -1316,7 +1363,7 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
     [string]$rsgcli_json
 
     RsgcliLdapNtlmUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "rsgcli-ldap-ntlm-login-attempts-template.json"
+        $file_name = "rsgcli-ldap-ntlm-login-attempt-template.json"
         $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
         if (!(IsFile $this.rsgcli_json)) {
             $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
@@ -1344,8 +1391,8 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
         Remove-Item Env:user_name_max14
         Remove-Item Env:user_domain_max12
 
-        if (! (AskYesNo "Login attempts by random users" "N")) {
-            if (AskYesNo "Login attempts by a service account?" "N") {
+        if (! (AskYesNo "Login attempt by random users" "N")) {
+            if (AskYesNo "Login attempt by a service account?" "N") {
                 $account = ReadInputByChooser "Service Account" `
                                                $null `
                                                @("NT AUTHORITY\System", "NT AUTHORITY\LocalService", "NT AUTHORITY\NetworkService") `
@@ -1370,7 +1417,7 @@ class RsgcliKerberosUnauthorizedLoginAttempts : RsgcliBase {
     [string]$rsgcli_json
 
     RsgcliKerberosUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
-        $file_name = "rsgcli-krb5-preauth-attempts-template.json"
+        $file_name = "rsgcli-krb5-preauth-attempt-template.json"
         $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
         if (!(IsFile $this.rsgcli_json)) {
             $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
@@ -1395,8 +1442,9 @@ class RsgcliKerberosUnauthorizedLoginAttempts : RsgcliBase {
 
         $Env:attempt_count = $numof_attempts
         Remove-Item Env:user_name
+        Remove-Item Env:domain_name
 
-        if (! (AskYesNo "Login attempts by random users" "N")) {
+        if (! (AskYesNo "Login attempt by random users" "N")) {
             $username = ReadInput "Username [1..14]" `
                                   (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
                                   "^.{1,14}$" `
@@ -1404,6 +1452,42 @@ class RsgcliKerberosUnauthorizedLoginAttempts : RsgcliBase {
 
             $Env:user_name = $username
         }
+        if (AskYesNo "Are you sure you want to run?") {
+            $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
+        }
+    }
+}
+
+class RsgcliKerberosUserEnumerationBruteForce : RsgcliBase {
+    [string]$rsgcli_json
+
+    RsgcliKerberosUnauthorizedLoginAttempts([Properties]$props) : base ($props) {
+        $file_name = "rsgcli-krb5-user-enum-bruteforce-template.json"
+        $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
+        if (!(IsFile $this.rsgcli_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
+            DownloadFile $url $this.rsgcli_json
+        }
+    }
+
+    [void]Run() {
+        Write-Host ""
+        Write-Host "### Enter the kerberos configuration"
+        $rsgsvr_host = ReadInput "RSG Server Host" `
+                                 $this.props.rsgsvr_host `
+                                 "^.+$"
+        $rsgsvr_port = ReadInput "RSG Server Port" `
+                                 $this.props.rsgsvr_port `
+                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 "Please retype a valid port number"
+        $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
+                                                "100" `
+                                                "^[0-9]+$" `
+                                                "Please retype a valid number")
+
+        $Env:attempt_count = $numof_attempts
+        Remove-Item Env:domain_name
+
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
         }
@@ -1420,10 +1504,11 @@ class RsgcliMenu : CommandBase {
             Write-Host " 1) Generate DNS tunneling sessions"
             Write-Host " 2) Generate FTP file upload session"
             Write-Host " 3) Generate HTTP file upload session"
-            Write-Host " 4) Generate HTTP unauthorized login attempts sessions"
-            Write-Host " 5) Generate SMB NTLM unauthorized login attempts sessions"
-            Write-Host " 6) Generate LDAP NTLM unauthorized login attempts sessions"
-            Write-Host " 7) Generate Kerberos unauthorized login attempts sessions"
+            Write-Host " 4) Generate HTTP unauthorized login attempt sessions"
+            Write-Host " 5) Generate SMB NTLM unauthorized login attempt sessions"
+            Write-Host " 6) Generate LDAP NTLM unauthorized login attempt sessions"
+            Write-Host " 7) Generate Kerberos unauthorized login attempt sessions"
+            Write-Host " 8) Generate Kerberos user enumeration brute-force sessions"
             Write-Host " q) Exit"
             
             try {
@@ -1450,6 +1535,9 @@ class RsgcliMenu : CommandBase {
                         }
                         "7" {
                             [RsgcliKerberosUnauthorizedLoginAttempts]::New($this.props).Run()
+                        }
+                        "8" {
+                            [RsgcliKerberosUserEnumerationBruteForce]::New($this.props).Run()
                         }
                         "q" {
                             return
