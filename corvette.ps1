@@ -549,40 +549,6 @@ class Mimikatz : CommandBase {
     }
 }
 
-class PortScan : CommandBase {
-    [string]$nmap_dir
-    [string]$nmap_exe
-
-    PortScan([Properties]$props) : base($props) {
-        $this.nmap_dir = BuildFullPath $props.home_dir ".\nmap"
-        $this.nmap_exe = BuildFullPath $this.nmap_dir "nmap.exe"
-
-        if (!(IsFile $this.nmap_exe)) {
-            $url = "https://github.com/spearmin10/corvette/blob/main/bin/nmap-7.92.zip?raw=true"
-            DownloadAndExtractArchive $url $this.nmap_dir
-        }
-        if (!(IsFile $env:WINDIR\system32\Npcap\wpcap.dll)) {
-            $url = "https://github.com/spearmin10/corvette/blob/main/bin/npcap-1.72.exe?raw=true"
-            $path = DownloadFile $url (BuildFullPath $props.home_dir ".\npcap-1.72.exe")
-            Start-Process -FilePath $path -Wait
-        }
-    }
-
-    [void]Run() {
-        [array]$subnet_list = Get-NetIPAddress -AddressFamily IPV4 -SuffixOrigin @("Dhcp", "Manual") `
-                            | select IPAddress, PrefixLength `
-                            | % { $_.IPAddress + '/' + $_.PrefixLength }
-        foreach ($subnet in $subnet_list) {
-            Write-Host ""
-            Write-Host "Starting a port scan: $subnet"
-
-            $cargs = @($this.nmap_exe, "-p", "1-65535", $subnet)
-            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
-            Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
-        }
-    }
-}
-
 class KerberosBruteForce : CommandBase {
     [string]$rubeus_dir
     [string]$rubeus_exe
@@ -629,6 +595,26 @@ class WildFireTestPE : CommandBase {
     [void]Run() {
         $args = @("/C,", (Quote $this.wildfire_exe), "& echo Done. & pause")
         Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
+    }
+}
+
+class NmapBase : CommandBase {
+    [string]$nmap_dir
+    [string]$nmap_exe
+
+    NmapBase([Properties]$props) : base($props) {
+        $this.nmap_dir = BuildFullPath $props.home_dir ".\nmap"
+        $this.nmap_exe = BuildFullPath $this.nmap_dir "nmap.exe"
+
+        if (!(IsFile $this.nmap_exe)) {
+            $url = "https://github.com/spearmin10/corvette/blob/main/bin/nmap-7.92.zip?raw=true"
+            DownloadAndExtractArchive $url $this.nmap_dir
+        }
+        if (!(IsFile $env:WINDIR\system32\Npcap\wpcap.dll)) {
+            $url = "https://github.com/spearmin10/corvette/blob/main/bin/npcap-1.72.exe?raw=true"
+            $path = DownloadFile $url (BuildFullPath $props.home_dir ".\npcap-1.72.exe")
+            Start-Process -FilePath $path -Wait
+        }
     }
 }
 
@@ -712,13 +698,68 @@ class RsgcliBase : CommandBase {
     }
 }
 
+
+class NmapPortScan : NmapBase {
+
+    NmapPortScan([Properties]$props) : base($props) {
+    }
+
+    [void]Run() {
+        [array]$subnet_list = Get-NetIPAddress -AddressFamily IPV4 -SuffixOrigin @("Dhcp", "Manual") `
+                            | select IPAddress, PrefixLength `
+                            | % { $_.IPAddress + '/' + $_.PrefixLength }
+        foreach ($subnet in $subnet_list) {
+            Write-Host ""
+            Write-Host "Starting a port scan: $subnet"
+
+            $cargs = @($this.nmap_exe, "-p", "1-65535", $subnet)
+            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
+            Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
+        }
+    }
+}
+
+class NmapMenu : CommandBase {
+    NmapMenu([Properties]$props) : base($props) {
+    }
+
+    [void]Run() {
+        while ($true) {
+            Write-Host "************************************"
+            Write-Host " 1) Port Scan"
+            Write-Host " q) Exit"
+            try {
+                :retry do {
+                    $cmd = Read-Host "Please choose a menu item to run"
+                    switch($cmd) {
+                        "1" {
+                            [NmapPortScan]::New($this.props).Run()
+                        }
+                        "q" {
+                            return
+                        }
+                        default {
+                            continue retry
+                        }
+                    }
+                    break
+                } while($true)
+            } catch {
+                Write-Host $_
+            }
+        }
+    }
+}
+
 class IptgenDnsTunneling : IptgenBase {
     [string]$iptgen_json
 
     IptgenDnsTunneling([Properties]$props) : base ($props) {
-        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\iptgen-dns-tunneling-template.json"
+        $file_name = "iptgen-dns-tunneling-template.json"
+        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
+
         if (!(IsFile $this.iptgen_json)) {
-            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/iptgen-dns-tunneling-template.json"
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
             DownloadFile $url $this.iptgen_json
         }
     }
@@ -749,13 +790,61 @@ class IptgenDnsTunneling : IptgenBase {
     }
 }
 
+class IptgenSmtpFileUpload : IptgenBase {
+    [string]$iptgen_json
+
+    IptgenSmtpFileUpload([Properties]$props) : base ($props) {
+        $file_name = "iptgen-smtp-upload-passive-template.json"
+        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
+
+        if (!(IsFile $this.iptgen_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
+            DownloadFile $url $this.iptgen_json
+        }
+    }
+
+    [void]Run() {
+        $interface = $this.SelectInterface()
+        if ([string]::IsNullOrEmpty($interface)) {
+            return
+        }
+        Write-Host ""
+        Write-Host "### Enter the SMTP upload configuration"
+        $client_ip = ReadInput "Client IP" `
+                               $interface.IPAddress `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $server_ip = ReadInput "Server IP" `
+                               "" `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $upload_filename = ReadInput "Upload file name" "test.dat" "^.+$"
+        $upload_filesize = ReadInputSize "Upload file size" "100MB" "Invalid file size. Please retype the size."
+        $repeat_count = ParseNumber(ReadInput "Number of times to repeat" `
+                                              "1" `
+                                              "^[0-9]+$" `
+                                              "Please retype a valid number")
+
+        $Env:client_ip = $client_ip
+        $Env:server_ip = $server_ip
+        $Env:upload_filename = $upload_filename
+        $Env:upload_filesize = $upload_filesize
+        $Env:repeat_count = $repeat_count
+        if (AskYesNo "Are you sure you want to run?") {
+            $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+        }
+    }
+}
+
 class IptgenFtpFileUpload : IptgenBase {
     [string]$iptgen_json
 
     IptgenFtpFileUpload([Properties]$props) : base ($props) {
-        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\iptgen-ftp-upload-passive-template.json"
+        $file_name = "iptgen-ftp-upload-passive-template.json"
+        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
+
         if (!(IsFile $this.iptgen_json)) {
-            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/iptgen-ftp-upload-passive-template.json"
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
             DownloadFile $url $this.iptgen_json
         }
     }
@@ -2222,7 +2311,7 @@ class Menu {
                 [Mimikatz]::New($this.props).Run($true)
             }
             "9" {
-                [PortScan]::New($this.props).Run()
+                [NmapMenu]::New($this.props).Run()
             }
             "10" {
                 [KerberosBruteForce]::New($this.props).Run()
@@ -2266,7 +2355,7 @@ class Menu {
             Write-Host " 6) Create a new powershell (Run as administrator)"
             Write-Host " 7) Run mimikatz"
             Write-Host " 8) Run mimikatz (Run as administrator)"
-            Write-Host " 9) Run port scan"
+            Write-Host " 9) Run nmap"
             Write-Host "10) Run Kerberos Brute Force"
             Write-Host "11) Run WildFire Test PE"
             Write-Host "12) Generate Network Traffic (rsgen)"
@@ -2303,7 +2392,7 @@ class Menu {
                 [Mimikatz]::New($this.props).Run($false)
             }
             "5" {
-                [PortScan]::New($this.props).Run()
+                [NmapMenu]::New($this.props).Run()
             }
             "6" {
                 [KerberosBruteForce]::New($this.props).Run()
@@ -2334,7 +2423,7 @@ class Menu {
             Write-Host " 2) Create a new command shell"
             Write-Host " 3) Create a new powershell"
             Write-Host " 4) Run mimikatz"
-            Write-Host " 5) Run port scan"
+            Write-Host " 5) Run nmap"
             Write-Host " 6) Run Kerberos Brute Force"
             Write-Host " 7) Run WildFire Test PE"
             Write-Host " 8) Generate Network Traffic (iptgen)"
