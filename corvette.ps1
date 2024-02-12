@@ -819,7 +819,7 @@ class IptgenSmtpFileUpload : IptgenBase {
                                $script:PATTERN_IPV4_ADDR `
                                "Please retype a valid IPv4 address"
         $upload_filename = ReadInput "Upload file name" "test.dat" "^.+$"
-        $upload_filesize = ReadInputSize "Upload file size" "100MB" "Invalid file size. Please retype the size."
+        $upload_filesize = ReadInputSize "Upload file size" "20MB" "Invalid file size. Please retype the size."
         $repeat_count = ParseNumber(ReadInput "Number of times to repeat" `
                                               "1" `
                                               "^[0-9]+$" `
@@ -1320,7 +1320,7 @@ class RsgcliSmtpFileUpload : RsgcliBase {
                                  "Please retype a valid port number"
 
         $upload_filename = ReadInput "Upload file name" "test.dat" "^.+$"
-        $upload_filesize = ReadInputSize "Upload file size" "100MB" "Invalid file size. Please retype the size."
+        $upload_filesize = ReadInputSize "Upload file size" "20MB" "Invalid file size. Please retype the size."
         $repeat_count = ParseNumber(ReadInput "Number of times to repeat" `
                                               "1" `
                                               "^[0-9]+$" `
