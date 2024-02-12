@@ -1,0 +1,209 @@
+{
+  "default": {
+    "environment":{
+      "attempt_count": "1",
+      "domain_name": "corp.cortex.lan"
+    }
+  },
+  "server": {
+    "port": 88
+  },
+  "sequence": [
+    ["for.session", [0, "${attempt_count}"], "i", [
+        ["tcp.handshake"],
+        ["sys.print", "krb5: ${RSGCLI_TCP_CLIENT_IP} -> ${RSGCLI_TCP_SERVER_IP}:${RSGCLI_TCP_SERVER_PORT}"],
+
+        ["env.local.default", {
+          "user_name": "${rand.lower_alpha(8)}"
+        }],
+        
+        ["env.local.set-payload", {
+          "as_req": ["hex", "asn1.raw",
+            {
+              "APPLICATION [10]:+": {
+                "SEQUENCE:+": [
+                  {
+                    "CONTEXT [1]:+": {
+                      "INTEGER": 5
+                    }
+                  },
+                  {
+                    "CONTEXT [2]:+": {
+                      "INTEGER": 10
+                    }
+                  },
+                  {
+                    "CONTEXT [4]:+": {
+                      "SEQUENCE:+": [
+                        {
+                          "CONTEXT [0]:+": {
+                            "BIT STRING": [
+                              "hex.raw", "0040000000"
+                            ]
+                          }
+                        },
+                        {
+                          "CONTEXT [1]:+": {
+                            "SEQUENCE:+": [
+                              {
+                                "CONTEXT [0]:+": {
+                                  "INTEGER": 1
+                                }
+                              },
+                              {
+                                "CONTEXT [1]:+": {
+                                  "SEQUENCE:+": {
+                                    "GENERAL STRING": [
+                                      "text.raw", "${user_name}"
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "CONTEXT [2]:+": {
+                            "GENERAL STRING": [
+                              "text.raw", "${domain_name}"
+                            ]
+                          }
+                        },
+                        {
+                          "CONTEXT [3]:+": {
+                            "SEQUENCE:+": [
+                              {
+                                "CONTEXT [0]:+": {
+                                  "INTEGER": 2
+                                }
+                              },
+                              {
+                                "CONTEXT [1]:+": {
+                                  "SEQUENCE:+": [
+                                    { "GENERAL STRING": "krbtgt"},
+                                    {
+                                      "GENERAL STRING": [
+                                        "text.raw", "${domain_name}"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "CONTEXT [5]:+": {
+                            "GENERALIZED TIME": [
+                              "text.raw", "${time.utcnow()=(val + (60 * 60 * 24 * 365 * 10)).timestr(YYYYMMDDHHmmssZ)}"
+                            ]
+                          }
+                        },
+                        {
+                          "CONTEXT [7]:+": {
+                            "INTEGER": 155874945
+                          }
+                        },
+                        {
+                          "CONTEXT [8]:+": {
+                            "SEQUENCE:+": [
+                              { "INTEGER": 18},
+                              { "INTEGER": 17},
+                              { "INTEGER": 16},
+                              { "INTEGER": 23}
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "krb_err": ["hex", "asn1.raw",
+            {
+              "APPLICATION [30]:+": {
+                "SEQUENCE:+": [
+                  {
+                    "CONTEXT [0]:+": {
+                      "INTEGER": 5
+                    }
+                  },
+                  {
+                    "CONTEXT [1]:+": {
+                      "INTEGER": 30
+                    }
+                  },
+                  {
+                    "CONTEXT [4]:+": {
+                      "GENERALIZED TIME": [
+                        "text.raw", "${time.utcnow()=val.timestr(YYYYMMDDHHmmssZ)}"
+                      ]
+                    }
+                  },
+                  {
+                    "CONTEXT [5]:+": {
+                      "INTEGER": 324230
+                    }
+                  },
+                  {
+                    "CONTEXT [6]:+": {
+                      "INTEGER": 6
+                    }
+                  },
+                  {
+                    "CONTEXT [9]:+": {
+                      "GENERAL STRING": [
+                        "text.raw", "${domain_name}"
+                      ]
+                    }
+                  },
+                  {
+                    "CONTEXT [10]:+": {
+                      "SEQUENCE:+": [
+                        {
+                          "CONTEXT [0]:+": {
+                            "INTEGER": 2
+                          }
+                        },
+                        {
+                          "CONTEXT [1]:+": {
+                            "SEQUENCE:+": [
+                              { "GENERAL STRING": "krbtgt"},
+                              {
+                                "GENERAL STRING": [
+                                  "text.raw", "${domain_name}"
+                                ]
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }],
+        
+        ["", "## AS-REQ"],
+        ["tcp.send", "multi", [
+            ["hex.raw", "${as_req=(val.length() / 2).hex_be(4)}"],
+            ["hex.raw", "${as_req}"]
+          ]
+        ],
+        
+        ["", "## KRB-ERR : KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN"],
+        ["tcp.recv", "multi", [
+            ["hex.raw", "${krb_err=(val.length() / 2).hex_be(4)}"],
+            ["hex.raw", "${krb_err}"]
+          ]
+        ],
+
+        ["sys.time.sleep", 500]
+      ]
+    ]
+  ]
+}
