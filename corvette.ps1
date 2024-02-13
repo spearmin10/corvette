@@ -394,9 +394,12 @@ class ConfigureSettings : CommandBase {
                             return
                         }
                         "0" {
+                            Get-ChildItem -Path $this.props.home_dir -Exclude @("corvette.json","corvette.ps1") | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+                            <#
                             Remove-Item -Path $this.props.home_dir -Recurse -Force -ErrorAction SilentlyContinue
                             New-Item -ItemType Directory -Force -Path $this.props.home_dir
                             $this.props.Save()
+                            #>
                             Write-Host "Done."
                         }
                         "1" {
