@@ -26,8 +26,13 @@ if errorlevel 1 (
         rmdir /S /Q "%%i" > NUL 2>&1
       )
       for /F "usebackq" %%i in (`dir /B`) do (
+	    echo %%~fi
         if not "%%i"=="corvette.json" (
-          del /S /Q "%%i" > NUL 2>&1
+          if not "%%i"=="corvette.ps1" (
+            if not "%%i"=="corvette.ps1.tmp" (
+              del /S /Q "%%i" > NUL 2>&1
+            )
+          )
         )
       )
       popd
