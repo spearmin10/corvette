@@ -393,6 +393,7 @@ class ConfigureSettings : CommandBase {
             $exec_random = @{}
         }
         $exec_random = $exec_random.clone()
+        $exec_random_orig = $exec_random.clone()
         
         $keys = @("iptgen", "rsgcli")
         
@@ -412,9 +413,15 @@ class ConfigureSettings : CommandBase {
             do {
                 $cmd = Read-Host "Please choose a menu item"
                 if ($cmd -eq "q") {
-                    if (AskYesNo "Do you want to save changes?") {
-                        $this.props.exec_random = $exec_random.clone()
-                        $this.props.Save()
+                    $modified = $false
+                    foreach ($key in $keys) {
+                        if ([bool]$exec_random[$key] -ne [bool]$exec_random_orig[$key]) {
+                            if (AskYesNo "Do you want to save changes?") {
+                                $this.props.exec_random = $exec_random
+                                $this.props.Save()
+                            }
+                            break
+                        }
                     }
                     return
                 }
