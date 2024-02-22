@@ -397,8 +397,8 @@ class ConfigureSettings : CommandBase {
         
         $keys = @("iptgen", "rsgcli")
         
-        Write-Host ""
         while ($true) {
+            Write-Host ""
             Write-Host "Execution Name Randomization"
             Write-Host "************************************"
             foreach ($key in $keys) {
