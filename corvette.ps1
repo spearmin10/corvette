@@ -200,6 +200,8 @@ class Properties {
 
     [string]$rsgsvr_host
     [string]$rsgsvr_port
+    
+    [Hashtable]$exec_random
 
     Properties([System.Management.Automation.InvocationInfo]$info) {
         $this.invocation_info = $info
@@ -252,6 +254,12 @@ class Properties {
         if ($this.rsgsvr_port -isnot [string] -Or [string]::IsNullOrEmpty($this.rsgsvr_port)) {
             $this.rsgsvr_port = "65534"
         }
+        $this.exec_random = @{}
+        if ($settings.exec_random -ne $null) {
+            foreach ($name in $settings.exec_random.psobject.properties.name ) {
+                $this.exec_random[$name] = $settings.exec_random.$name
+            }
+        }
     }
     
     [void]Save() {
@@ -270,6 +278,7 @@ class Properties {
                 "host" = $this.rsgsvr_host
                 "port" = $this.rsgsvr_port
             }
+            "exec_random" = $this.exec_random
         }
         $settings | ConvertTo-Json | Set-Content -Encoding utf8 -Path $conf_file
     }
@@ -377,6 +386,50 @@ class ConfigureSettings : CommandBase {
         }
     }
 
+    hidden [void]SetExecutableNameRandomization() {
+        
+        $exec_random = $this.props.exec_random
+        if ([string]::IsNullOrEmpty($exec_random)) {
+            $exec_random = @{}
+        }
+        $exec_random = $exec_random.clone()
+        
+        $keys = @("iptgen", "rsgcli")
+        
+        Write-Host ""
+        while ($true) {
+            Write-Host "Execution Name Randomization"
+            Write-Host "************************************"
+            foreach ($key in $keys) {
+                $num = $keys.IndexOf($key) + 1
+                if ([bool]$exec_random[$key]) {
+                    Write-Host " ${num}) Disable - ${key} [Current: Enabled]"
+                } else {
+                    Write-Host " ${num}) Enable - $key [Current: Disabled]"
+                }
+            }
+            Write-Host " q) Exit"
+            do {
+                $cmd = Read-Host "Please choose a menu item"
+                if ($cmd -eq "q") {
+                    if (AskYesNo "Do you want to save changes?") {
+                        $this.props.exec_random = $exec_random.clone()
+                        $this.props.Save()
+                    }
+                    return
+                }
+                $num = ParseNumber ($cmd)
+                if ($num -ne $null -And $num -ge 1) {
+                    $key = $keys[$num - 1]
+                    if (![string]::IsNullOrEmpty($key)) {
+                        $exec_random[$key] = ![bool]$exec_random[$key]
+                        break
+                    }
+                }
+            } while($true)
+        }
+    }
+
     [void]Run() {
         Write-Host "Settings"
         while ($true) {
@@ -385,6 +438,7 @@ class ConfigureSettings : CommandBase {
             Write-Host " 1) Set default syslog server"
             Write-Host " 2) Set default netflow server"
             Write-Host " 3) Set default RSG server"
+            Write-Host " 4) Set executable name randomization"
             Write-Host " q) Exit"
             try {
                 :retry do {
@@ -410,6 +464,9 @@ class ConfigureSettings : CommandBase {
                         }
                         "3" {
                             $this.SetDefaultRsgServer()
+                        }
+                        "4" {
+                            $this.SetExecutableNameRandomization()
                         }
                         default {
                             continue retry
@@ -623,12 +680,14 @@ class NmapBase : CommandBase {
 
 class IptgenBase : CommandBase {
     [string]$iptgen_dir
+    [string]$iptgen_bin
     [string]$iptgen_exe
 
     IptgenBase([Properties]$props) : base($props) {
         $iptgen_ver = "0.12.0"
         $this.iptgen_dir = BuildFullPath $props.home_dir ".\iptgen-${iptgen_ver}"
-        $this.iptgen_exe = BuildFullPath $this.iptgen_dir ".\bin\iptgen.exe"
+        $this.iptgen_bin = BuildFullPath $this.iptgen_dir ".\bin"
+        $this.iptgen_exe = BuildFullPath $this.iptgen_bin "iptgen.exe"
 
         if (!(IsFile $this.iptgen_exe)) {
             $url = "https://github.com/spearmin10/iptgen/releases/download/${iptgen_ver}/iptgen.win32.zip"
@@ -667,7 +726,14 @@ class IptgenBase : CommandBase {
     }
 
     [void]Run([string]$interface, [string]$iptgen_json, [int]$response_interval) {
-        $cargs = @($this.iptgen_exe, "--in.file", $iptgen_json, "--out.eth", $interface)
+        $local:iptgen_exe = $this.iptgen_exe
+        if ([bool]$this.props.exec_random["iptgen"]) {
+            $iptgen_name = (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) + ".exe"
+            $local:iptgen_exe = BuildFullPath $this.iptgen_bin $iptgen_name
+            
+            New-Item -ItemType HardLink -Path $local:iptgen_exe -Value $this.iptgen_exe
+        }
+        $cargs = @($local:iptgen_exe, "--in.file", $iptgen_json, "--out.eth", $interface)
         if ($response_interval -ne 0) {
             $cargs += @("--response.interval", [string]$response_interval)
         }
@@ -678,13 +744,15 @@ class IptgenBase : CommandBase {
 
 class RsgcliBase : CommandBase {
     [string]$rsgcli_dir
+    [string]$rsgcli_bin
     [string]$rsgcli_exe
 
     RsgcliBase([Properties]$props) : base($props) {
         $rsgcli_ver = "0.1.0"
         $this.rsgcli_dir = BuildFullPath $props.home_dir ".\rsgcli-${rsgcli_ver}"
-        $this.rsgcli_exe = BuildFullPath $this.rsgcli_dir ".\bin\rsgcli.exe"
-
+        $this.rsgcli_bin = BuildFullPath $this.rsgcli_dir ".\bin"
+        $this.rsgcli_exe = BuildFullPath $this.rsgcli_bin "rsgcli.exe"
+        
         if (!(IsFile $this.rsgcli_exe)) {
             $url = "https://github.com/spearmin10/rsgen/releases/download/${rsgcli_ver}/rsgcli.win32.zip"
             DownloadAndExtractArchive $url $this.rsgcli_dir
@@ -692,7 +760,14 @@ class RsgcliBase : CommandBase {
     }
 
     [void]Run([string]$rsgsvr_host, [int]$rsgsvr_port, [string]$rsgcli_json) {
-        $cargs = @($this.rsgcli_exe,
+        $local:rsgcli_exe = $this.rsgcli_exe
+        if ([bool]$this.props.exec_random["rsgcli"]) {
+            $rsgcli_name = (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) + ".exe"
+            $local:rsgcli_exe = BuildFullPath $this.rsgcli_bin $rsgcli_name
+            
+            New-Item -ItemType HardLink -Path $local:rsgcli_exe -Value $this.rsgcli_exe
+        }
+        $cargs = @($local:rsgcli_exe,
                    "--in.file", $rsgcli_json,
                    "--mgmt.host", $rsgsvr_host,
                    "--mgmt.port", [string]$rsgsvr_port)
