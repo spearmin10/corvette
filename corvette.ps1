@@ -186,6 +186,39 @@ function ParseNumber([string]$val) {
     }
 }
 
+function ChangeExecutableName([hashtable]$exec_random, [string]$key, [string]$path) {
+    function GenerateRandomName([string]$path) {
+        $dir = [IO.Path]::GetDirectoryName($path)
+        $name = [IO.Path]::GetFileNameWithoutExtension($path)
+        $name = (-Join (Get-Random -Count $name.length -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z))
+        $fname = $name + [IO.Path]::GetExtension($path)
+        if ([string]::IsNullOrEmpty($dir)) {
+            return $fname
+        } else {
+            return (Join-Path $dir $fname)
+        }
+    }
+    
+    $xconf = $exec_random[$key]
+    if ($xconf -eq $null) {
+        return $null
+    }
+    switch ($xconf.mode) {
+        "everytime" {
+            return GenerateRandomName($path)
+        }
+        "process" {
+            if ([string]::IsNullOrEmpty($xconf.rndname)) {
+                $xconf.rndname = GenerateRandomName($path)
+            }
+            return $xconf.rndname
+        }
+        default {
+            return $null
+        }
+    }
+}  
+
 class Properties {
     [string]$my_script
     [string]$home_dir
@@ -201,7 +234,7 @@ class Properties {
     [string]$rsgsvr_host
     [string]$rsgsvr_port
     
-    [Hashtable]$exec_random
+    [hashtable]$exec_random
 
     Properties([System.Management.Automation.InvocationInfo]$info) {
         $this.invocation_info = $info
@@ -257,13 +290,24 @@ class Properties {
         $this.exec_random = @{}
         if ($settings.exec_random -ne $null) {
             foreach ($name in $settings.exec_random.psobject.properties.name ) {
-                $this.exec_random[$name] = $settings.exec_random.$name
+                $this.exec_random[$name] = @{
+                    "mode"=$settings.exec_random.$name.mode
+                }
             }
         }
     }
     
     [void]Save() {
         $conf_file = BuildFullPath $this.home_dir ".\corvette.json"
+        $local:exec_random = @{}
+        if ($this.exec_random -ne $null) {
+            foreach ($name in $this.exec_random.keys ) {
+                $local:exec_random[$name] = @{
+                    "mode"=$this.exec_random.$name.mode
+                }
+            }
+        }
+
         $settings = @{
             "syslog" = @{
                 "host" = $this.syslog_host
@@ -278,7 +322,7 @@ class Properties {
                 "host" = $this.rsgsvr_host
                 "port" = $this.rsgsvr_port
             }
-            "exec_random" = $this.exec_random
+            "exec_random" = $local:exec_random
         }
         $settings | ConvertTo-Json | Set-Content -Encoding utf8 -Path $conf_file
     }
@@ -393,7 +437,6 @@ class ConfigureSettings : CommandBase {
             $exec_random = @{}
         }
         $exec_random = $exec_random.clone()
-        $exec_random_orig = $exec_random.clone()
         
         $keys = @("iptgen", "rsgcli")
         
@@ -403,35 +446,34 @@ class ConfigureSettings : CommandBase {
             Write-Host "************************************"
             foreach ($key in $keys) {
                 $num = $keys.IndexOf($key) + 1
-                if ([bool]$exec_random[$key]) {
-                    Write-Host " ${num}) Disable - ${key} [Current: Enabled]"
-                } else {
-                    Write-Host " ${num}) Enable - $key [Current: Disabled]"
+                $mode = "disabled"
+                if (![string]::IsNullOrEmpty($exec_random.$key.mode)) {
+                    $mode = $exec_random.$key.mode
                 }
+                Write-Host " ${num}) ${key} [Current: ${mode}]"
             }
             Write-Host " q) Exit"
             do {
                 $cmd = Read-Host "Please choose a menu item"
                 if ($cmd -eq "q") {
-                    $modified = $false
-                    foreach ($key in $keys) {
-                        if ([bool]$exec_random[$key] -ne [bool]$exec_random_orig[$key]) {
-                            if (AskYesNo "Do you want to save changes?") {
-                                $this.props.exec_random = $exec_random
-                                $this.props.Save()
-                            }
-                            break
-                        }
+                    if (AskYesNo "Do you want to save changes?") {
+                        $this.props.exec_random = $exec_random
+                        $this.props.Save()
                     }
                     return
                 }
                 $num = ParseNumber ($cmd)
                 if ($num -ne $null -And $num -ge 1) {
                     $key = $keys[$num - 1]
-                    if (![string]::IsNullOrEmpty($key)) {
-                        $exec_random[$key] = ![bool]$exec_random[$key]
-                        break
+                    
+                    if ($exec_random.$key -eq $null) {
+                        $exec_random.$key = @{}
                     }
+                    $exec_random[$key]["mode"] = ReadInputByChooser "Mode" `
+                                                                $null `
+                                                                @("disabled", "process", "everytime") `
+                                                                "Please type a valid mode"
+                    break
                 }
             } while($true)
         }
@@ -733,11 +775,10 @@ class IptgenBase : CommandBase {
     }
 
     [void]Run([string]$interface, [string]$iptgen_json, [int]$response_interval) {
-        $local:iptgen_exe = $this.iptgen_exe
-        if ([bool]$this.props.exec_random["iptgen"]) {
-            $iptgen_name = (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) + ".exe"
-            $local:iptgen_exe = BuildFullPath $this.iptgen_bin $iptgen_name
-            
+        $local:iptgen_exe = ChangeExecutableName $this.props.exec_random "iptgen" $this.iptgen_exe
+        if ([string]::IsNullOrEmpty($local:iptgen_exe)) {
+            $local:iptgen_exe = $this.iptgen_exe
+        } else {
             New-Item -ItemType HardLink -Path $local:iptgen_exe -Value $this.iptgen_exe
         }
         $cargs = @($local:iptgen_exe, "--in.file", $iptgen_json, "--out.eth", $interface)
@@ -767,11 +808,10 @@ class RsgcliBase : CommandBase {
     }
 
     [void]Run([string]$rsgsvr_host, [int]$rsgsvr_port, [string]$rsgcli_json) {
-        $local:rsgcli_exe = $this.rsgcli_exe
-        if ([bool]$this.props.exec_random["rsgcli"]) {
-            $rsgcli_name = (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) + ".exe"
-            $local:rsgcli_exe = BuildFullPath $this.rsgcli_bin $rsgcli_name
-            
+        $local:rsgcli_exe = ChangeExecutableName $this.props.exec_random "rsgcli" $this.rsgcli_exe
+        if ([string]::IsNullOrEmpty($local:rsgcli_exe)) {
+            $local:rsgcli_exe = $this.rsgcli_exe
+        } else {
             New-Item -ItemType HardLink -Path $local:rsgcli_exe -Value $this.rsgcli_exe
         }
         $cargs = @($local:rsgcli_exe,
