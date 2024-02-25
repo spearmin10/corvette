@@ -779,7 +779,10 @@ class IptgenBase : CommandBase {
         if ([string]::IsNullOrEmpty($local:iptgen_exe)) {
             $local:iptgen_exe = $this.iptgen_exe
         } else {
+            <#
             New-Item -ItemType HardLink -Path $local:iptgen_exe -Value $this.iptgen_exe
+            #>
+            Copy-Item -Destination $this.iptgen_exe -Path $local:iptgen_exe
         }
         $cargs = @($local:iptgen_exe, "--in.file", $iptgen_json, "--out.eth", $interface)
         if ($response_interval -ne 0) {
@@ -812,7 +815,10 @@ class RsgcliBase : CommandBase {
         if ([string]::IsNullOrEmpty($local:rsgcli_exe)) {
             $local:rsgcli_exe = $this.rsgcli_exe
         } else {
+            <#
             New-Item -ItemType HardLink -Path $local:rsgcli_exe -Value $this.rsgcli_exe
+            #>
+            Copy-Item -Destination $this.rsgcli_exe -Path $local:rsgcli_exe
         }
         $cargs = @($local:rsgcli_exe,
                    "--in.file", $rsgcli_json,
