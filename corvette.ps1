@@ -782,7 +782,7 @@ class IptgenBase : CommandBase {
             <#
             New-Item -ItemType HardLink -Path $local:iptgen_exe -Value $this.iptgen_exe
             #>
-            Copy-Item -Destination $this.iptgen_exe -Path $local:iptgen_exe
+            Copy-Item -Destination $local:iptgen_exe -Path $this.iptgen_exe
         }
         $cargs = @($local:iptgen_exe, "--in.file", $iptgen_json, "--out.eth", $interface)
         if ($response_interval -ne 0) {
@@ -818,7 +818,7 @@ class RsgcliBase : CommandBase {
             <#
             New-Item -ItemType HardLink -Path $local:rsgcli_exe -Value $this.rsgcli_exe
             #>
-            Copy-Item -Destination $this.rsgcli_exe -Path $local:rsgcli_exe
+            Copy-Item -Destination $local:rsgcli_exe -Path $this.rsgcli_exe
         }
         $cargs = @($local:rsgcli_exe,
                    "--in.file", $rsgcli_json,
