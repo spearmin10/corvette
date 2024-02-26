@@ -82,6 +82,31 @@ function ReadInput([string]$message, [string]$default, [string]$pattern, [string
     } while ($true)
 }
 
+function ReadPassword([string]$message, [string]$default, [string]$pattern, [string]$retry_message) {
+    if (![string]::IsNullOrEmpty($default)) {
+        $message += " (default: $default)"
+    }
+    do {
+        $input = (Read-Host $message -AsSecureString)
+        $input = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+           [Runtime.InteropServices.Marshal]::SecureStringToBSTR(
+               $input
+           )
+        )
+        $input = $input.Trim()
+
+        if ([string]::IsNullOrEmpty($input) -And ![string]::IsNullOrEmpty($default)) {
+            return $default
+        }
+        if ([string]::IsNullOrEmpty($pattern) -Or ($input -match $pattern)) {
+            return $input
+        }
+        if (![string]::IsNullOrEmpty($input) -And ![string]::IsNullOrEmpty($retry_message)) {
+            Write-Host $retry_message
+        }
+    } while ($true)
+}
+
 function ReadInputSize([string]$message, [string]$default, [string]$retry_message) {
 
     $pattern = "^(?<num>\d+(?:\.\d+)?)\s*(?<unit>[KMGT]?B)?$"
@@ -183,6 +208,49 @@ function ParseNumber([string]$val) {
         return $num
     } else {
         return $null
+    }
+}
+
+function SplitCommandLine([string]$cmdline) {
+    Begin
+    {
+        $Kernel32Definition = @'
+            [DllImport("kernel32")]
+            public static extern IntPtr LocalFree(IntPtr hMem);
+'@
+        $Kernel32 = Add-Type -MemberDefinition $Kernel32Definition -Name 'Kernel32' -Namespace 'Win32' -PassThru
+
+        $Shell32Definition = @'
+            [DllImport("shell32.dll", SetLastError = true)]
+            public static extern IntPtr CommandLineToArgvW(
+                [MarshalAs(UnmanagedType.LPWStr)] string lpCmdLine,
+                out int pNumArgs);
+'@
+        $Shell32 = Add-Type -MemberDefinition $Shell32Definition -Name 'Shell32' -Namespace 'Win32' -PassThru
+    }
+
+    Process
+    {
+        $nargs = 0
+        $argsptr = $Shell32::CommandLineToArgvW($cmdline, [ref]$nargs)
+
+        try {
+            $pargs = @()
+            if ($nargs -ge 1) {
+                0..($nargs - 1) | ForEach-Object {
+                    $pargs += [System.Runtime.InteropServices.Marshal]::PtrToStringUni(
+                        [System.Runtime.InteropServices.Marshal]::ReadIntPtr($argsptr, $_ * [IntPtr]::Size)
+                    )
+                }
+            }
+        } finally {
+            $Kernel32::LocalFree($argsptr) | Out-Null
+        }
+        $args = @()
+        foreach ($parg in $pargs) {
+            $args += $parg
+        }
+        return $args
     }
 }
 
@@ -289,7 +357,7 @@ class Properties {
         }
         $this.exec_random = @{}
         if ($settings.exec_random -ne $null) {
-            foreach ($name in $settings.exec_random.psobject.properties.name ) {
+            foreach ($name in $settings.exec_random.psobject.properties.name) {
                 $this.exec_random[$name] = @{
                     "mode"=$settings.exec_random.$name.mode
                 }
@@ -301,7 +369,7 @@ class Properties {
         $conf_file = BuildFullPath $this.home_dir ".\corvette.json"
         $local:exec_random = @{}
         if ($this.exec_random -ne $null) {
-            foreach ($name in $this.exec_random.keys ) {
+            foreach ($name in $this.exec_random.keys) {
                 $local:exec_random[$name] = @{
                     "mode"=$this.exec_random.$name.mode
                 }
@@ -535,17 +603,17 @@ class SetupTools : CommandBase {
     SetupTools([Properties]$props) : base($props) {
     }
 
-    hidden [void]DownloadPsTools() {
+    [string]DownloadPsTools() {
         $tool_dir = BuildFullPath $this.props.home_dir ".\pstools"
 
         if (!(IsDirectory $tool_dir)) {
             $url = "https://github.com/spearmin10/corvette/blob/main/bin/PSTools.zip?raw=true"
             DownloadAndExtractArchive $url $tool_dir
         }
-        Write-Host "PSTools has been installed to" $tool_dir
+        return $tool_dir
     }
 
-    hidden [void]DownloadMimikatz() {
+    [string]DownloadMimikatz() {
         $tool_dir = BuildFullPath $this.props.home_dir ".\mimikatz"
         $tool_exe = BuildFullPath $tool_dir "mimikatz.exe"
 
@@ -553,10 +621,10 @@ class SetupTools : CommandBase {
             $url = "https://github.com/spearmin10/corvette/blob/main/bin/mimikatz.zip?raw=true"
             DownloadAndExtractArchive $url $tool_dir
         }
-        Write-Host "mimikatz has been installed to" $tool_dir
+        return $tool_dir
     }
 
-    hidden [void]DownloadWildFireTestPE() {
+    [string]DownloadWildFireTestPE() {
         $tool_dir = BuildFullPath $this.props.home_dir ".\wildfire"
         $tool_exe = BuildFullPath $tool_dir "wildfire-test-pe-file.exe"
 
@@ -566,10 +634,10 @@ class SetupTools : CommandBase {
             $url = "https://wildfire.paloaltonetworks.com/publicapi/test/pe"
             DownloadFile $url $tool_exe
         }
-        Write-Host "WildFire Test PE file has been installed to" $tool_exe
+        return $tool_dir
     }
 
-    hidden [void]DownloadEmbeddablePython() {
+    [string]DownloadEmbeddablePython() {
         $tool_dir = BuildFullPath $this.props.home_dir ".\python-3.11.1"
         $tool_exe = BuildFullPath $tool_dir "python.exe"
 
@@ -577,10 +645,10 @@ class SetupTools : CommandBase {
             $url = "https://github.com/spearmin10/corvette/blob/main/bin/python-3.11.1-embed-win32.zip?raw=true"
             DownloadAndExtractArchive $url $tool_dir
         }
-        Write-Host "python has been installed to" $tool_dir
+        return $tool_dir
     }
 
-    hidden [void]InstallPython() {
+    [void]InstallPython() {
         $installer_exe = BuildFullPath $this.props.home_dir "python-3.11.1.exe"
 
         if (!(IsFile $this.python_exe)) {
@@ -608,16 +676,20 @@ class SetupTools : CommandBase {
                             return
                         }
                         "1" {
-                            $this.DownloadPsTools()
+                            $tool_dir = $this.DownloadPsTools()
+                            Write-Host "PSTools has been installed to" $tool_dir
                         }
                         "2" {
-                            $this.DownloadMimikatz()
+                            $tool_dir = $this.DownloadMimikatz()
+                            Write-Host "mimikatz has been installed to" $tool_dir
                         }
                         "3" {
-                            $this.DownloadWildFireTestPE()
+                            $tool_dir = $this.DownloadWildFireTestPE()
+                            Write-Host "WildFire Test PE file has been installed to" $tool_dir
                         }
                         "4" {
-                            $this.DownloadEmbeddablePython()
+                            $tool_dir = $this.DownloadEmbeddablePython()
+                            Write-Host "python has been installed to" $tool_dir
                         }
                         "5" {
                             $this.InstallPython()
@@ -635,18 +707,52 @@ class SetupTools : CommandBase {
     }
 }
 
+class PsExec : CommandBase {
+    [string]$pstools_dir
+    [string]$psexec_exe
+
+    PsExec([Properties]$props) : base($props) {
+        $this.pstools_dir = [SetupTools]::New($props).DownloadPsTools()
+        $this.psexec_exe = BuildFullPath $this.pstools_dir "PsExec.exe"
+    }
+
+    [void]Run() {
+        Write-Host ""
+        Write-Host "### Enter the PsExec parameters"
+        $hostname = ReadInput "Remote Host Name" "" "^.+$"
+        $userid = ReadInput "Remote User ID" "" "^.+$"
+        $password = ReadPassword "Remote User Password" "" "^.*$"
+        $cmdline = ReadInput "Remote Command Line" "" "^.+$"
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $exe_dir = [IO.Path]::GetDirectoryName($this.psexec_exe)
+            $exe_name = [IO.Path]::GetFileName($this.psexec_exe)
+            
+            Set-Item Env:Path $Env:Path.Replace($exe_dir + ";", "")
+            $Env:Path = $exe_dir + ";" + $Env:Path
+ 
+            $cargs = @($exe_name,
+                      ("\\" + $hostname),
+                      "-u", $userid,
+                      "-i")
+            if (![string]::IsNullOrEmpty($password)) {
+                $cargs += @("-p", $password)
+            }
+            $cargs += SplitCommandLine $cmdline
+
+            $args = @("/C,") + (Quote $cargs) + "& pause"
+            Start-Process -FilePath "cmd.exe" -ArgumentList $args
+        }
+    }
+}
+
 class Mimikatz : CommandBase {
     [string]$mimikatz_dir
     [string]$mimikatz_exe
 
     Mimikatz([Properties]$props) : base($props) {
-        $this.mimikatz_dir = BuildFullPath $props.home_dir ".\mimikatz"
+        $this.mimikatz_dir = [SetupTools]::New($props).DownloadMimikatz()
         $this.mimikatz_exe = BuildFullPath $this.mimikatz_dir "mimikatz.exe"
-
-        if (!(IsFile $this.mimikatz_exe)) {
-            $url = "https://github.com/spearmin10/corvette/blob/main/bin/mimikatz.zip?raw=true"
-            DownloadAndExtractArchive $url $this.mimikatz_dir
-        }
     }
 
     [void]Run([bool]$run_as) {
@@ -2539,27 +2645,30 @@ class Menu {
                 [Mimikatz]::New($this.props).Run($true)
             }
             "9" {
-                [NmapMenu]::New($this.props).Run()
+                [PsExec]::New($this.props).Run()
             }
             "10" {
-                [KerberosBruteForce]::New($this.props).Run()
+                [NmapMenu]::New($this.props).Run()
             }
             "11" {
-                [WildFireTestPE]::New($this.props).Run()
+                [KerberosBruteForce]::New($this.props).Run()
             }
             "12" {
-                [RsgcliMenu]::New($this.props).Run()
+                [WildFireTestPE]::New($this.props).Run()
             }
             "13" {
-                [FortigateLogs]::New($this.props).Run()
+                [RsgcliMenu]::New($this.props).Run()
             }
             "14" {
-                [CiscoLogs]::New($this.props).Run()
+                [FortigateLogs]::New($this.props).Run()
             }
             "15" {
-                [BindLogs]::New($this.props).Run()
+                [CiscoLogs]::New($this.props).Run()
             }
             "16" {
+                [BindLogs]::New($this.props).Run()
+            }
+            "17" {
                 [NetflowLogs]::New($this.props).Run()
             }
             default {
@@ -2583,14 +2692,15 @@ class Menu {
             Write-Host " 6) Create a new powershell (Run as administrator)"
             Write-Host " 7) Run mimikatz"
             Write-Host " 8) Run mimikatz (Run as administrator)"
-            Write-Host " 9) Run nmap"
-            Write-Host "10) Run Kerberos Brute Force"
-            Write-Host "11) Run WildFire Test PE"
-            Write-Host "12) Generate Network Traffic (rsgen)"
-            Write-Host "13) Send Fortigate Logs"
-            Write-Host "14) Send Cisco Logs"
-            Write-Host "15) Send BIND Logs"
-            Write-Host "16) Send Netflow Logs"
+            Write-Host " 9) Run PsExec"
+            Write-Host "10) Run nmap"
+            Write-Host "11) Run Kerberos Brute Force"
+            Write-Host "12) Run WildFire Test PE"
+            Write-Host "13) Generate Network Traffic (rsgen)"
+            Write-Host "14) Send Fortigate Logs"
+            Write-Host "15) Send Cisco Logs"
+            Write-Host "16) Send BIND Logs"
+            Write-Host "17) Send Netflow Logs"
             try {
                 while (!$this.LaunchUserModeCommand((Read-Host "Please choose a menu item to run"))) {}
             } catch {
@@ -2620,18 +2730,21 @@ class Menu {
                 [Mimikatz]::New($this.props).Run($false)
             }
             "5" {
-                [NmapMenu]::New($this.props).Run()
+                [PsExec]::New($this.props).Run()
             }
             "6" {
-                [KerberosBruteForce]::New($this.props).Run()
+                [NmapMenu]::New($this.props).Run()
             }
             "7" {
-                [WildFireTestPE]::New($this.props).Run()
+                [KerberosBruteForce]::New($this.props).Run()
             }
             "8" {
-                [IptgenMenu]::New($this.props).Run()
+                [WildFireTestPE]::New($this.props).Run()
             }
             "9" {
+                [IptgenMenu]::New($this.props).Run()
+            }
+            "10" {
                 [RsgcliMenu]::New($this.props).Run()
             }
             default {
@@ -2651,11 +2764,12 @@ class Menu {
             Write-Host " 2) Create a new command shell"
             Write-Host " 3) Create a new powershell"
             Write-Host " 4) Run mimikatz"
-            Write-Host " 5) Run nmap"
-            Write-Host " 6) Run Kerberos Brute Force"
-            Write-Host " 7) Run WildFire Test PE"
-            Write-Host " 8) Generate Network Traffic (iptgen)"
-            Write-Host " 9) Generate Network Traffic (rsgen)"
+            Write-Host " 5) Run PsExec"
+            Write-Host " 6) Run nmap"
+            Write-Host " 7) Run Kerberos Brute Force"
+            Write-Host " 8) Run WildFire Test PE"
+            Write-Host " 9) Generate Network Traffic (iptgen)"
+            Write-Host "10) Generate Network Traffic (rsgen)"
             try {
                 while (!$this.LaunchAdminModeCommand((Read-Host "Please choose a menu item to run"))) {}
             } catch {
