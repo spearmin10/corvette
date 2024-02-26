@@ -775,6 +775,8 @@ class IptgenBase : CommandBase {
     }
 
     [void]Run([string]$interface, [string]$iptgen_json, [int]$response_interval) {
+        $post_cmd = ""
+        
         $local:iptgen_exe = ChangeExecutableName $this.props.exec_random "iptgen" $this.iptgen_exe
         if ([string]::IsNullOrEmpty($local:iptgen_exe)) {
             $local:iptgen_exe = $this.iptgen_exe
@@ -783,12 +785,15 @@ class IptgenBase : CommandBase {
             New-Item -ItemType HardLink -Path $local:iptgen_exe -Value $this.iptgen_exe
             #>
             Copy-Item -Destination $local:iptgen_exe -Path $this.iptgen_exe
+            $post_cmd += " & del " + (Quote $local:iptgen_exe) 
         }
+        $post_cmd += " & echo Done. & pause"
+        
         $cargs = @($local:iptgen_exe, "--in.file", $iptgen_json, "--out.eth", $interface)
         if ($response_interval -ne 0) {
             $cargs += @("--response.interval", [string]$response_interval)
         }
-        $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
+        $args = @("/C,") + (Quote $cargs) + $post_cmd
         Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
     }
 }
@@ -811,6 +816,8 @@ class RsgcliBase : CommandBase {
     }
 
     [void]Run([string]$rsgsvr_host, [int]$rsgsvr_port, [string]$rsgcli_json) {
+        $post_cmd = ""
+        
         $local:rsgcli_exe = ChangeExecutableName $this.props.exec_random "rsgcli" $this.rsgcli_exe
         if ([string]::IsNullOrEmpty($local:rsgcli_exe)) {
             $local:rsgcli_exe = $this.rsgcli_exe
@@ -819,16 +826,18 @@ class RsgcliBase : CommandBase {
             New-Item -ItemType HardLink -Path $local:rsgcli_exe -Value $this.rsgcli_exe
             #>
             Copy-Item -Destination $local:rsgcli_exe -Path $this.rsgcli_exe
+            $post_cmd += " & del " + (Quote $local:rsgcli_exe) 
         }
+        $post_cmd += " & echo Done. & pause"
+
         $cargs = @($local:rsgcli_exe,
                    "--in.file", $rsgcli_json,
                    "--mgmt.host", $rsgsvr_host,
                    "--mgmt.port", [string]$rsgsvr_port)
-        $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
+        $args = @("/C,") + (Quote $cargs) + $post_cmd
         Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
     }
 }
-
 
 class NmapPortScan : NmapBase {
 
