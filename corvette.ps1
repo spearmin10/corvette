@@ -650,10 +650,16 @@ class Mimikatz : CommandBase {
     }
 
     [void]Run([bool]$run_as) {
+        $exe_dir = [IO.Path]::GetDirectoryName($this.mimikatz_exe)
+        $exe_name = [IO.Path]::GetFileName($this.mimikatz_exe)
+        
+        Set-Item Env:Path $Env:Path.Replace($exe_dir + ";", "")
+        $Env:Path = $exe_dir + ";" + $Env:Path
+        
         if ($run_as) {
-            Start-Process -FilePath $this.mimikatz_exe -WorkingDirectory $this.props.home_dir -verb runas
+            Start-Process -FilePath $exe_name -WorkingDirectory $this.props.home_dir -verb runas
         } else {
-            Start-Process -FilePath $this.mimikatz_exe -WorkingDirectory $this.props.home_dir
+            Start-Process -FilePath $exe_name -WorkingDirectory $this.props.home_dir
         }
     }
 }
@@ -679,7 +685,13 @@ class KerberosBruteForce : CommandBase {
     }
 
     [void]Run() {
-        $cargs = @($this.rubeus_exe, "brute", "/passwords:$($this.passwords_file)", "/noticket")
+        $exe_dir = [IO.Path]::GetDirectoryName($this.rubeus_exe)
+        $exe_name = [IO.Path]::GetFileName($this.rubeus_exe)
+        
+        Set-Item Env:Path $Env:Path.Replace($exe_dir + ";", "")
+        $Env:Path = $exe_dir + ";" + $Env:Path
+        
+        $cargs = @($exe_name, "brute", "/passwords:$($this.passwords_file)", "/noticket")
         $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
         Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
     }
@@ -702,7 +714,13 @@ class WildFireTestPE : CommandBase {
     }
 
     [void]Run() {
-        $args = @("/C,", (Quote $this.wildfire_exe), "& echo Done. & pause")
+        $exe_dir = [IO.Path]::GetDirectoryName($this.wildfire_exe)
+        $exe_name = [IO.Path]::GetFileName($this.wildfire_exe)
+        
+        Set-Item Env:Path $Env:Path.Replace($exe_dir + ";", "")
+        $Env:Path = $exe_dir + ";" + $Env:Path
+        
+        $args = @("/C,", (Quote $exe_name), "& echo Done. & pause")
         Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
     }
 }
@@ -731,13 +749,15 @@ class IptgenBase : CommandBase {
     [string]$iptgen_dir
     [string]$iptgen_bin
     [string]$iptgen_exe
+    [string]$iptgen_exename
 
     IptgenBase([Properties]$props) : base($props) {
         $iptgen_ver = "0.12.0"
+        $this.iptgen_exename = "iptgen.exe"
         $this.iptgen_dir = BuildFullPath $props.home_dir ".\iptgen-${iptgen_ver}"
         $this.iptgen_bin = BuildFullPath $this.iptgen_dir ".\bin"
-        $this.iptgen_exe = BuildFullPath $this.iptgen_bin "iptgen.exe"
-
+        $this.iptgen_exe = BuildFullPath $this.iptgen_bin $this.iptgen_exename
+        
         if (!(IsFile $this.iptgen_exe)) {
             $url = "https://github.com/spearmin10/iptgen/releases/download/${iptgen_ver}/iptgen.win32.zip"
             DownloadAndExtractArchive $url $this.iptgen_dir
@@ -775,25 +795,29 @@ class IptgenBase : CommandBase {
     }
 
     [void]Run([string]$interface, [string]$iptgen_json, [int]$response_interval) {
-        $post_cmd = ""
+        $post_cmds = " & echo Done. & pause"
         
-        $local:iptgen_exe = ChangeExecutableName $this.props.exec_random "iptgen" $this.iptgen_exe
-        if ([string]::IsNullOrEmpty($local:iptgen_exe)) {
-            $local:iptgen_exe = $this.iptgen_exe
+        $exe_path = ChangeExecutableName $this.props.exec_random "iptgen" $this.iptgen_exe
+        if ([string]::IsNullOrEmpty($exe_path)) {
+            $exe_path = $this.iptgen_exe
         } else {
             <#
-            New-Item -ItemType HardLink -Path $local:iptgen_exe -Value $this.iptgen_exe
+            New-Item -ItemType HardLink -Path $exe_path -Value $this.iptgen_exe
             #>
-            Copy-Item -Destination $local:iptgen_exe -Path $this.iptgen_exe
-            $post_cmd += " & del " + (Quote $local:iptgen_exe) 
+            Copy-Item -Destination $exe_path -Path $this.iptgen_exe
+            $post_cmds += " & del " + (Quote $exe_path)
         }
-        $post_cmd += " & echo Done. & pause"
+        $exe_dir = [IO.Path]::GetDirectoryName($exe_path)
+        $exe_name = [IO.Path]::GetFileName($exe_path)
         
-        $cargs = @($local:iptgen_exe, "--in.file", $iptgen_json, "--out.eth", $interface)
+        Set-Item Env:Path $Env:Path.Replace($exe_dir + ";", "")
+        $Env:Path = $exe_dir + ";" + $Env:Path
+        
+        $cargs = @($exe_name, "--in.file", $iptgen_json, "--out.eth", $interface)
         if ($response_interval -ne 0) {
             $cargs += @("--response.interval", [string]$response_interval)
         }
-        $args = @("/C,") + (Quote $cargs) + $post_cmd
+        $args = @("/C,") + (Quote $cargs) + $post_cmds
         Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
     }
 }
@@ -802,12 +826,14 @@ class RsgcliBase : CommandBase {
     [string]$rsgcli_dir
     [string]$rsgcli_bin
     [string]$rsgcli_exe
+    [string]$rsgcli_exename
 
     RsgcliBase([Properties]$props) : base($props) {
         $rsgcli_ver = "0.1.0"
+        $this.rsgcli_exename = "rsgcli.exe"
         $this.rsgcli_dir = BuildFullPath $props.home_dir ".\rsgcli-${rsgcli_ver}"
         $this.rsgcli_bin = BuildFullPath $this.rsgcli_dir ".\bin"
-        $this.rsgcli_exe = BuildFullPath $this.rsgcli_bin "rsgcli.exe"
+        $this.rsgcli_exe = BuildFullPath $this.rsgcli_bin $this.rsgcli_exename
         
         if (!(IsFile $this.rsgcli_exe)) {
             $url = "https://github.com/spearmin10/rsgen/releases/download/${rsgcli_ver}/rsgcli.win32.zip"
@@ -816,25 +842,29 @@ class RsgcliBase : CommandBase {
     }
 
     [void]Run([string]$rsgsvr_host, [int]$rsgsvr_port, [string]$rsgcli_json) {
-        $post_cmd = ""
+        $post_cmds = " & echo Done. & pause"
         
-        $local:rsgcli_exe = ChangeExecutableName $this.props.exec_random "rsgcli" $this.rsgcli_exe
-        if ([string]::IsNullOrEmpty($local:rsgcli_exe)) {
-            $local:rsgcli_exe = $this.rsgcli_exe
+        $exe_path = ChangeExecutableName $this.props.exec_random "rsgcli" $this.rsgcli_exe
+        if ([string]::IsNullOrEmpty($exe_path)) {
+            $exe_path = $this.rsgcli_exe
         } else {
             <#
-            New-Item -ItemType HardLink -Path $local:rsgcli_exe -Value $this.rsgcli_exe
+            New-Item -ItemType HardLink -Path $exe_path -Value $this.rsgcli_exe
             #>
-            Copy-Item -Destination $local:rsgcli_exe -Path $this.rsgcli_exe
-            $post_cmd += " & del " + (Quote $local:rsgcli_exe) 
+            Copy-Item -Destination $exe_path -Path $this.rsgcli_exe
+            $post_cmds += " & del " + (Quote $exe_path) 
         }
-        $post_cmd += " & echo Done. & pause"
-
-        $cargs = @($local:rsgcli_exe,
+        $exe_dir = [IO.Path]::GetDirectoryName($exe_path)
+        $exe_name = [IO.Path]::GetFileName($exe_path)
+        
+        Set-Item Env:Path $Env:Path.Replace($exe_dir + ";", "")
+        $Env:Path = $exe_dir + ";" + $Env:Path
+        
+        $cargs = @($exe_name,
                    "--in.file", $rsgcli_json,
                    "--mgmt.host", $rsgsvr_host,
                    "--mgmt.port", [string]$rsgsvr_port)
-        $args = @("/C,") + (Quote $cargs) + $post_cmd
+        $args = @("/C,") + (Quote $cargs) + $post_cmds
         Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
     }
 }
@@ -845,6 +875,12 @@ class NmapPortScan : NmapBase {
     }
 
     [void]Run() {
+        $exe_dir = [IO.Path]::GetDirectoryName($this.nmap_exe)
+        $exe_name = [IO.Path]::GetFileName($this.nmap_exe)
+        
+        Set-Item Env:Path $Env:Path.Replace($exe_dir + ";", "")
+        $Env:Path = $exe_dir + ";" + $Env:Path
+
         [array]$subnet_list = Get-NetIPAddress -AddressFamily IPV4 -SuffixOrigin @("Dhcp", "Manual") `
                             | select IPAddress, PrefixLength `
                             | % { $_.IPAddress + '/' + $_.PrefixLength }
@@ -852,7 +888,7 @@ class NmapPortScan : NmapBase {
             Write-Host ""
             Write-Host "Starting a port scan: $subnet"
 
-            $cargs = @($this.nmap_exe, "-p", "1-65535", $subnet)
+            $cargs = @($exe_name, "-p", "1-65535", $subnet)
             $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
             Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
         }
