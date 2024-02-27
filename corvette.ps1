@@ -906,7 +906,7 @@ class IptgenBase : CommandBase {
         $exe_path = ChangeExecutableName $this.props.exec_random "iptgen" $this.iptgen_exe
         if ([string]::IsNullOrEmpty($exe_path)) {
             $exe_path = $this.iptgen_exe
-        } else {
+        } elseif (!(IsFile $exe_path)) {
             <#
             New-Item -ItemType HardLink -Path $exe_path -Value $this.iptgen_exe
             #>
@@ -953,7 +953,7 @@ class RsgcliBase : CommandBase {
         $exe_path = ChangeExecutableName $this.props.exec_random "rsgcli" $this.rsgcli_exe
         if ([string]::IsNullOrEmpty($exe_path)) {
             $exe_path = $this.rsgcli_exe
-        } else {
+        } elseif (!(IsFile $exe_path)) {
             <#
             New-Item -ItemType HardLink -Path $exe_path -Value $this.rsgcli_exe
             #>
