@@ -911,7 +911,7 @@ class IptgenBase : CommandBase {
             New-Item -ItemType HardLink -Path $exe_path -Value $this.iptgen_exe
             #>
             Copy-Item -Destination $exe_path -Path $this.iptgen_exe
-            $post_cmds += " & del " + (Quote $exe_path)
+            $post_cmds += " & del " + (Quote $exe_path) + " > NUL 2>&1"
         }
         $exe_dir = [IO.Path]::GetDirectoryName($exe_path)
         $exe_name = [IO.Path]::GetFileName($exe_path)
@@ -958,7 +958,7 @@ class RsgcliBase : CommandBase {
             New-Item -ItemType HardLink -Path $exe_path -Value $this.rsgcli_exe
             #>
             Copy-Item -Destination $exe_path -Path $this.rsgcli_exe
-            $post_cmds += " & del " + (Quote $exe_path) 
+            $post_cmds += " & del " + (Quote $exe_path) + " > NUL 2>&1"
         }
         $exe_dir = [IO.Path]::GetDirectoryName($exe_path)
         $exe_name = [IO.Path]::GetFileName($exe_path)
