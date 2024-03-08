@@ -8,8 +8,7 @@ class Menu {
     hidden [bool]LaunchCommand($cmd) {
         switch ($cmd) {
             "c" {
-                Remove-Item -Path $this.props.home_dir -Recurse -Force -ErrorAction SilentlyContinue
-                New-Item -ItemType Directory -Force -Path $this.props.home_dir
+                Get-ChildItem -Path $this.props.home_dir -Exclude @("corvette.json","corvette.ps1") | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
             }
             "1" {
                 Start-Process -FilePath "explorer.exe" -ArgumentList @($this.home_dir)
