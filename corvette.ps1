@@ -2060,13 +2060,15 @@ class FortigateLogs : CommandBase {
                                     "Please retype a valid IPv4 address"
 
         if (AskYesNo "Are you sure you want to run?") {
-            $args = Quote @("-ExecutionPolicy", "Bypass", $script_file,
-                            "-SyslogHost", $syslog_host,
-                            "-SyslogPort", $syslog_port,
-                            "-SyslogProtocol", $syslog_protocol.ToUpper(),
-                            "-SourceIP", $source_ip,
-                            "-DestinationIP", $destination_ip)
-            Start-Process -FilePath "powershell.exe" -ArgumentList $args
+            $cargs = @("powershell.exe",
+			           "-ExecutionPolicy", "Bypass", $script_file,
+                       "-SyslogHost", $syslog_host,
+                       "-SyslogPort", $syslog_port,
+                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                       "-SourceIP", $source_ip,
+                       "-DestinationIP", $destination_ip)
+            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
+            Start-Process -FilePath "cmd.exe" -ArgumentList $args
         }
     }
     
@@ -2184,16 +2186,18 @@ class FortigateLogs : CommandBase {
             }
         }
         if (AskYesNo "Are you sure you want to run?") {
-            $args = Quote @("-ExecutionPolicy", "Bypass", $script_file,
-                            "-SyslogHost", $syslog_host,
-                            "-SyslogPort", $syslog_port,
-                            "-SyslogProtocol", $syslog_protocol.ToUpper(),
-                            "-SourceIP", $source_ip,
-                            "-DestinationIP", $destination_ip,
-                            "-Domain", $domain,
-                            "-Count", [string]$numof_logs,
-                            "-LogType", $log_type)
-            Start-Process -FilePath "powershell.exe" -ArgumentList $args
+            $cargs = @("powershell.exe",
+					   "-ExecutionPolicy", "Bypass", $script_file,
+                       "-SyslogHost", $syslog_host,
+                       "-SyslogPort", $syslog_port,
+                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                       "-SourceIP", $source_ip,
+                       "-DestinationIP", $destination_ip,
+                       "-Domain", $domain,
+                       "-Count", [string]$numof_logs,
+                       "-LogType", $log_type)
+            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
+            Start-Process -FilePath "cmd.exe" -ArgumentList $args
         }
     }
 }
@@ -2275,13 +2279,15 @@ class CiscoLogs : CommandBase {
                                     "Please retype a valid IPv4 address"
 
         if (AskYesNo "Are you sure you want to run?") {
-            $args = Quote @("-ExecutionPolicy", "Bypass", $script_file,
-                            "-SyslogHost", $syslog_host,
-                            "-SyslogPort", $syslog_port,
-                            "-SyslogProtocol", $syslog_protocol.ToUpper(),
-                            "-SourceIP", $source_ip,
-                            "-DestinationIP", $destination_ip)
-            Start-Process -FilePath "powershell.exe" -ArgumentList $args
+            $cargs = @("powershell.exe",
+			           "-ExecutionPolicy", "Bypass", $script_file,
+                       "-SyslogHost", $syslog_host,
+                       "-SyslogPort", $syslog_port,
+                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                       "-SourceIP", $source_ip,
+                       "-DestinationIP", $destination_ip)
+            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
+            Start-Process -FilePath "cmd.exe" -ArgumentList $args
         }
     }
     
@@ -2410,20 +2416,21 @@ class CiscoLogs : CommandBase {
         $user_group = "group"
 
         if (AskYesNo "Are you sure you want to run?") {
-            $args = @("-ExecutionPolicy", "Bypass", $script_file,
-                      "-SyslogHost", $syslog_host,
-                      "-SyslogPort", $syslog_port,
-                      "-SyslogProtocol", $syslog_protocol.ToUpper(),
-                      "-UserIP", $user_ip,
-                      "-PublicIP", $public_ip,
-                      "-UserGroup", $user_group,
-                      "-Count", [string]$numof_logs,
-                      "-LogType", $log_type)
+            $cargs = @("powershell.exe",
+			           "-ExecutionPolicy", "Bypass", $script_file,
+                       "-SyslogHost", $syslog_host,
+                       "-SyslogPort", $syslog_port,
+                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                       "-UserIP", $user_ip,
+                       "-PublicIP", $public_ip,
+                       "-UserGroup", $user_group,
+                       "-Count", [string]$numof_logs,
+                       "-LogType", $log_type)
             if (![string]::IsNullOrEmpty($user_id)) {
-                $args += @("-UserID", $user_id)
+                $cargs += @("-UserID", $user_id)
             }
-            $args = Quote $args
-            Start-Process -FilePath "powershell.exe" -ArgumentList $args
+            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
+            Start-Process -FilePath "cmd.exe" -ArgumentList $args
         }
     }
 }
@@ -2503,16 +2510,18 @@ class BindLogs : CommandBase {
                                                "Please retype a valid number")
 
         if (AskYesNo "Are you sure you want to run?") {
-            $args = Quote @("-ExecutionPolicy", "Bypass", $script_file,
-                            "-SyslogHost", $syslog_host,
-                            "-SyslogPort", $syslog_port,
-                            "-SyslogProtocol", $syslog_protocol.ToUpper(),
-                            "-SyslogFormat", "RFC-3164",
-                            "-DNSClientIP", $client_ip,
-                            "-DNSServerIP", $server_ip,
-                            "-QueryDomain", $domain,
-                            "-Count", [string]$numof_queries)
-            Start-Process -FilePath "powershell.exe" -ArgumentList $args
+            $cargs = @("powershell.exe",
+			           "-ExecutionPolicy", "Bypass", $script_file,
+                       "-SyslogHost", $syslog_host,
+                       "-SyslogPort", $syslog_port,
+                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                       "-SyslogFormat", "RFC-3164",
+                       "-DNSClientIP", $client_ip,
+                       "-DNSServerIP", $server_ip,
+                       "-QueryDomain", $domain,
+                       "-Count", [string]$numof_queries)
+            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
+            Start-Process -FilePath "cmd.exe" -ArgumentList $args
         }
     }
 }
@@ -2583,13 +2592,15 @@ class NetflowLogs : CommandBase {
                                  "Please retype a valid subnet"
 
         if (AskYesNo "Are you sure you want to run?") {
-            $args = Quote @("-ExecutionPolicy", "Bypass", $script_file,
-                            "-NetflowHost", $netflow_host,
-                            "-NetflowPort", $netflow_port,
-                            "-NetflowProtocol", "UDP",
-                            "-SourceIP", $source_ip,
-                            "-ScanSubnet", $scan_subnet)
-            Start-Process -FilePath "powershell.exe" -ArgumentList $args
+            $cargs = @("powershell.exe",
+			           "-ExecutionPolicy", "Bypass", $script_file,
+                       "-NetflowHost", $netflow_host,
+                       "-NetflowPort", $netflow_port,
+                       "-NetflowProtocol", "UDP",
+                       "-SourceIP", $source_ip,
+                       "-ScanSubnet", $scan_subnet)
+            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
+            Start-Process -FilePath "cmd.exe" -ArgumentList $args
         }
     }
 }
