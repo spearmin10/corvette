@@ -7,9 +7,6 @@ class Menu {
 
     hidden [bool]LaunchCommand($cmd) {
         switch ($cmd) {
-            "c" {
-                Get-ChildItem -Path $this.props.home_dir -Exclude @("corvette.json","corvette.ps1") | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-            }
             "1" {
                 Start-Process -FilePath "explorer.exe" -ArgumentList @($this.home_dir)
             }
@@ -38,7 +35,6 @@ class Menu {
         Write-Host "Corvette"
         while ($true) {
             Write-Host "************************************"
-            Write-Host " c) Cleanup the working directory"
             Write-Host " 1) Open an explorer"
             Write-Host " 2) Create a new command shell"
             Write-Host " 3) Create a new powershell"
