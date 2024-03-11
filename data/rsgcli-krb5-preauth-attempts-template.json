@@ -10,6 +10,9 @@
   },
   "sequence": [
     ["for.session", [0, "${attempt_count}"], "i", [
+        ["env.local.default", {
+          "cycle_start": "${time.utcnow(ms)}"
+        }],
         ["tcp.handshake"],
         ["sys.print", "krb5: ${RSGCLI_TCP_CLIENT_IP} -> ${RSGCLI_TCP_SERVER_IP}:${RSGCLI_TCP_SERVER_PORT}"],
 
@@ -224,7 +227,7 @@
           ]
         ],
 
-        ["sys.time.sleep", 500]
+        ["sys.time.sleep", "${time.utcnow(ms)=(500 - (val - ${cycle_start})).limit(0,)}"]
       ]
     ]
   ]
