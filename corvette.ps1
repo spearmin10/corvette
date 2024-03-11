@@ -858,7 +858,7 @@ class IptgenBase : CommandBase {
     [string]$iptgen_exename
 
     IptgenBase([Properties]$props) : base($props) {
-        $iptgen_ver = "0.12.0"
+        $iptgen_ver = "0.13.0"
         $this.iptgen_exename = "iptgen.exe"
         $this.iptgen_dir = BuildFullPath $props.home_dir ".\iptgen-${iptgen_ver}"
         $this.iptgen_bin = BuildFullPath $this.iptgen_dir ".\bin"
@@ -935,7 +935,7 @@ class RsgcliBase : CommandBase {
     [string]$rsgcli_exename
 
     RsgcliBase([Properties]$props) : base($props) {
-        $rsgcli_ver = "0.1.0"
+        $rsgcli_ver = "0.2.0"
         $this.rsgcli_exename = "rsgcli.exe"
         $this.rsgcli_dir = BuildFullPath $props.home_dir ".\rsgcli-${rsgcli_ver}"
         $this.rsgcli_bin = BuildFullPath $this.rsgcli_dir ".\bin"
