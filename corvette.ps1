@@ -889,10 +889,14 @@ class IptgenBase : CommandBase {
         for ($i = 0; $i -lt $interfaces.Length; $i++) {
             Write-Host " $($i+1)) $($interfaces[$i].InterfaceAlias)"
         }
-        Write-Host " 0) [Exit Menu]"
+        Write-Host " q) [Exit Menu]"
 
         for ($num = -1 ; $num -ne 0 ;){
-            $num = ParseNumber (ReadInput "Select an interface to replay packets")
+            $item = ReadInput "Select an interface to replay packets"
+            if ($item -eq "q") {
+                break
+            }
+            $num = ParseNumber $item
             if ($num -gt 0 -And $num -le $interfaces.Length) { 
                 return $interfaces[$num - 1]
             }
