@@ -891,17 +891,16 @@ class IptgenBase : CommandBase {
         }
         Write-Host " q) [Exit Menu]"
 
-        for ($num = -1 ; $num -ne 0 ;){
+        while ($true) {
             $item = ReadInput "Select an interface to replay packets"
             if ($item -eq "q") {
-                break
+                return $null
             }
             $num = ParseNumber $item
             if ($num -gt 0 -And $num -le $interfaces.Length) { 
                 return $interfaces[$num - 1]
             }
         }
-        return $null
     }
 
     [void]Run([string]$interface, [string]$iptgen_json, [int]$response_interval) {
