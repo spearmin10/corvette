@@ -894,13 +894,14 @@ class IptgenBase : CommandBase {
         while ($true) {
             $item = ReadInput "Select an interface to replay packets"
             if ($item -eq "q") {
-                return $null
+                break
             }
             $num = ParseNumber $item
             if ($num -gt 0 -And $num -le $interfaces.Length) { 
                 return $interfaces[$num - 1]
             }
         }
+        return $null
     }
 
     [void]Run([string]$interface, [string]$iptgen_json, [int]$response_interval) {
