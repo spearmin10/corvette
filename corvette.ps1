@@ -939,7 +939,7 @@ class RsgcliBase : CommandBase {
     [string]$rsgcli_exename
 
     RsgcliBase([Properties]$props) : base($props) {
-        $rsgcli_ver = "0.2.0"
+        $rsgcli_ver = "0.3.0"
         $this.rsgcli_exename = "rsgcli.exe"
         $this.rsgcli_dir = BuildFullPath $props.home_dir ".\rsgcli-${rsgcli_ver}"
         $this.rsgcli_bin = BuildFullPath $this.rsgcli_dir ".\bin"
