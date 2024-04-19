@@ -733,6 +733,7 @@ class PsExec : CommandBase {
  
             $cargs = @($exe_name,
                       ("\\" + $hostname),
+		      "-accepteula",
                       "-u", $userid,
                       "-i")
             if (![string]::IsNullOrEmpty($password)) {
