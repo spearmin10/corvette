@@ -1077,6 +1077,43 @@ class IptgenDnsTunneling : IptgenBase {
     }
 }
 
+class IptgenDnsRandomQuery : IptgenBase {
+    [string]$iptgen_json
+
+    IptgenDnsRandomQuery([Properties]$props) : base ($props) {
+        $file_name = "iptgen-dns-random-query-template.json"
+        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
+
+        if (!(IsFile $this.iptgen_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
+            DownloadFile $url $this.iptgen_json
+        }
+    }
+
+    [void]Run() {
+        $interface = $this.SelectInterface()
+        if ([string]::IsNullOrEmpty($interface)) {
+            return
+        }
+        Write-Host ""
+        Write-Host "### Enter the DNS random query configuration"
+        $client_ip = ReadInput "DNS client IP" `
+                               $interface.IPAddress `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $server_ip = ReadInput "DNS server IP" `
+                               "" `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+
+        $Env:client_ip = $client_ip
+        $Env:server_ip = $server_ip
+        if (AskYesNo "Are you sure you want to run?") {
+            $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+        }
+    }
+}
+
 class IptgenSmtpFileUpload : IptgenBase {
     [string]$iptgen_json
 
@@ -1489,15 +1526,16 @@ class IptgenMenu : CommandBase {
         while ($true) {
             Write-Host "************************************"
             Write-Host " 1) Generate DNS tunneling packets"
-            Write-Host " 2) Generate SMTP file upload packets"
-            Write-Host " 3) Generate FTP file upload packets"
-            Write-Host " 4) Generate HTTP file upload packets"
-            Write-Host " 5) Generate HTTPS file upload packets"
-            Write-Host " 6) Generate HTTP unauthorized login attempt packets"
-            Write-Host " 7) Generate SMB NTLM unauthorized login attempt packets"
-            Write-Host " 8) Generate LDAP NTLM unauthorized login attempt packets"
-            Write-Host " 9) Generate Kerberos unauthorized login attempt packets"
-            Write-Host "10) Generate Kerberos user enumeration brute-force packets"
+            Write-Host " 2) Generate DNS random query packets"
+            Write-Host " 3) Generate SMTP file upload packets"
+            Write-Host " 4) Generate FTP file upload packets"
+            Write-Host " 5) Generate HTTP file upload packets"
+            Write-Host " 6) Generate HTTPS file upload packets"
+            Write-Host " 7) Generate HTTP unauthorized login attempt packets"
+            Write-Host " 8) Generate SMB NTLM unauthorized login attempt packets"
+            Write-Host " 9) Generate LDAP NTLM unauthorized login attempt packets"
+            Write-Host "10) Generate Kerberos unauthorized login attempt packets"
+            Write-Host "11) Generate Kerberos user enumeration brute-force packets"
             Write-Host " q) Exit"
             try {
                 :retry do {
@@ -1507,30 +1545,33 @@ class IptgenMenu : CommandBase {
                             [IptgenDnsTunneling]::New($this.props).Run()
                         }
                         "2" {
-                            [IptgenSmtpFileUpload]::New($this.props).Run()
+                            [IptgenDnsRandomQuery]::New($this.props).Run()
                         }
                         "3" {
-                            [IptgenFtpFileUpload]::New($this.props).Run()
+                            [IptgenSmtpFileUpload]::New($this.props).Run()
                         }
                         "4" {
-                            [IptgenHttpFileUpload]::New($this.props, $false).Run()
+                            [IptgenFtpFileUpload]::New($this.props).Run()
                         }
                         "5" {
-                            [IptgenHttpFileUpload]::New($this.props, $true).Run()
+                            [IptgenHttpFileUpload]::New($this.props, $false).Run()
                         }
                         "6" {
-                            [IptgenHttpUnauthorizedLoginAttempts]::New($this.props).Run()
+                            [IptgenHttpFileUpload]::New($this.props, $true).Run()
                         }
                         "7" {
-                            [IptgenSmbNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
+                            [IptgenHttpUnauthorizedLoginAttempts]::New($this.props).Run()
                         }
                         "8" {
-                            [IptgenLdapNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
+                            [IptgenSmbNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
                         }
                         "9" {
-                            [IptgenKerberosUnauthorizedLoginAttempts]::New($this.props).Run()
+                            [IptgenLdapNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
                         }
                         "10" {
+                            [IptgenKerberosUnauthorizedLoginAttempts]::New($this.props).Run()
+                        }
+                        "11" {
                             [IptgenKerberosUserEnumerationBruteForce]::New($this.props).Run()
                         }
                         "q" {
@@ -1576,6 +1617,36 @@ class RsgcliDnsTunneling : RsgcliBase {
         $domain = ReadInput "DNS tunnel domain" $null "^.+$"
 
         $Env:domain = $domain
+        if (AskYesNo "Are you sure you want to run?") {
+            $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
+        }
+    }
+}
+
+class RsgcliDnsRandomQuery : RsgcliBase {
+    [string]$rsgcli_json
+
+    RsgcliDnsRandomQuery([Properties]$props) : base ($props) {
+        $file_name = "rsgcli-dns-random-query-template.json"
+        $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
+
+        if (!(IsFile $this.rsgcli_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
+            DownloadFile $url $this.rsgcli_json
+        }
+    }
+
+    [void]Run() {
+        Write-Host ""
+        Write-Host "### Enter the DNS random query configuration"
+        $rsgsvr_host = ReadInput "RSG Server Host" `
+                                 $this.props.rsgsvr_host `
+                                 "^.+$"
+        $rsgsvr_port = ReadInput "RSG Server Port" `
+                                 $this.props.rsgsvr_port `
+                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 "Please retype a valid port number"
+
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
         }
@@ -1931,14 +2002,15 @@ class RsgcliMenu : CommandBase {
         while ($true) {
             Write-Host "************************************"
             Write-Host " 1) Generate DNS tunneling sessions"
-            Write-Host " 2) Generate SMTP file upload session"
-            Write-Host " 3) Generate FTP file upload session"
-            Write-Host " 4) Generate HTTP file upload session"
-            Write-Host " 5) Generate HTTP unauthorized login attempt sessions"
-            Write-Host " 6) Generate SMB NTLM unauthorized login attempt sessions"
-            Write-Host " 7) Generate LDAP NTLM unauthorized login attempt sessions"
-            Write-Host " 8) Generate Kerberos unauthorized login attempt sessions"
-            Write-Host " 9) Generate Kerberos user enumeration brute-force sessions"
+            Write-Host " 2) Generate DNS random query sessions"
+            Write-Host " 3) Generate SMTP file upload session"
+            Write-Host " 4) Generate FTP file upload session"
+            Write-Host " 5) Generate HTTP file upload session"
+            Write-Host " 6) Generate HTTP unauthorized login attempt sessions"
+            Write-Host " 7) Generate SMB NTLM unauthorized login attempt sessions"
+            Write-Host " 8) Generate LDAP NTLM unauthorized login attempt sessions"
+            Write-Host " 9) Generate Kerberos unauthorized login attempt sessions"
+            Write-Host "10) Generate Kerberos user enumeration brute-force sessions"
             Write-Host " q) Exit"
             
             try {
@@ -1949,27 +2021,30 @@ class RsgcliMenu : CommandBase {
                             [RsgcliDnsTunneling]::New($this.props).Run()
                         }
                         "2" {
-                            [RsgcliSmtpFileUpload]::New($this.props).Run()
+                            [RsgcliDnsRandomQuery]::New($this.props).Run()
                         }
                         "3" {
-                            [RsgcliFtpFileUpload]::New($this.props).Run()
+                            [RsgcliSmtpFileUpload]::New($this.props).Run()
                         }
                         "4" {
-                            [RsgcliHttpFileUpload]::New($this.props).Run()
+                            [RsgcliFtpFileUpload]::New($this.props).Run()
                         }
                         "5" {
-                            [RsgcliHttpUnauthorizedLoginAttempts]::New($this.props).Run()
+                            [RsgcliHttpFileUpload]::New($this.props).Run()
                         }
                         "6" {
-                            [RsgcliSmbNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
+                            [RsgcliHttpUnauthorizedLoginAttempts]::New($this.props).Run()
                         }
                         "7" {
-                            [RsgcliLdapNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
+                            [RsgcliSmbNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
                         }
                         "8" {
-                            [RsgcliKerberosUnauthorizedLoginAttempts]::New($this.props).Run()
+                            [RsgcliLdapNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
                         }
                         "9" {
+                            [RsgcliKerberosUnauthorizedLoginAttempts]::New($this.props).Run()
+                        }
+                        "10" {
                             [RsgcliKerberosUserEnumerationBruteForce]::New($this.props).Run()
                         }
                         "q" {
