@@ -7,7 +7,7 @@
         ["foreach.session",["list", ["com", "info", "net", "org", "biz"]],"tld",
           [
             ["sys.print", "dns.q: ${client_ip} -> ${server_ip}:53"],
-            ["dns.q.a","${rand.lower_alnum(12)}.${tld}"],
+            ["dns.q.a","${rand.lower_alnum(16)}.${tld}"],
             ["sys.time.drift", 500]
           ]
         ]
