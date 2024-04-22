@@ -1081,7 +1081,7 @@ class IptgenDnsRandomQuery : IptgenBase {
     [string]$iptgen_json
 
     IptgenDnsRandomQuery([Properties]$props) : base ($props) {
-        $file_name = "iptgen-dns-random-query-template.json"
+        $file_name = "iptgen-dns-random-failed-query-template.json"
         $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
 
         if (!(IsFile $this.iptgen_json)) {
@@ -1627,7 +1627,7 @@ class RsgcliDnsRandomQuery : RsgcliBase {
     [string]$rsgcli_json
 
     RsgcliDnsRandomQuery([Properties]$props) : base ($props) {
-        $file_name = "rsgcli-dns-random-query-template.json"
+        $file_name = "rsgcli-dns-random-failed-query-template.json"
         $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
 
         if (!(IsFile $this.rsgcli_json)) {
