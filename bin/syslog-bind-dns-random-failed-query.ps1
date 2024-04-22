@@ -155,7 +155,7 @@ class Main {
 
         1..$count | %{
             [string]$tld = Get-Random -input $tlds
-            [string]$hostname = -Join (Get-Random -Count 12 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)
+            [string]$hostname = -Join (Get-Random -Count 16 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)
             [int]$client_port = $(Get-Random -Minimum 1025 -Maximum 65534)
             [string]$log_time = $(Get-Date).ToUniversalTime().ToString("dd-MMM-yyyy HH:mm:ss.fff", [System.Globalization.CultureInfo]::CreateSpecificCulture("en-US"))
             [string]$query_name = "${hostname}.${tld}"
