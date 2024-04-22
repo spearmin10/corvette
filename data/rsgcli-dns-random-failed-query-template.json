@@ -12,7 +12,7 @@
               "cycle_start": "${time.utcnow(ms)}"
             }],
             ["sys.print", "dns.q: ${RSGCLI_UDP_CLIENT_IP} -> ${RSGCLI_UDP_SERVER_IP}:53"],
-            ["dns.q.a","${rand.lower_alnum(12)}.${tld}"],
+            ["dns.q.a","${rand.lower_alnum(16)}.${tld}"],
             
             ["sys.time.sleep", "${time.utcnow(ms)=(300 - (val - ${cycle_start})).limit(0,)}"]
           ]
