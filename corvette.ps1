@@ -605,8 +605,9 @@ class SetupTools : CommandBase {
 
     [string]DownloadPsTools() {
         $tool_dir = BuildFullPath $this.props.home_dir ".\pstools"
+        $psexec_exe = BuildFullPath $tool_dir "PsExec.exe"
 
-        if (!(IsDirectory $tool_dir)) {
+        if (!(IsFile $psexec_exe)) {
             $url = "https://github.com/spearmin10/corvette/blob/main/bin/PSTools.zip?raw=true"
             DownloadAndExtractArchive $url $tool_dir
         }
@@ -2523,6 +2524,7 @@ class BindLogs : CommandBase {
         while ($true) {
             Write-Host "************************************"
             Write-Host " 1) Simulate DNS tunneling"
+            Write-Host " 2) Simulate DNS random query"
             Write-Host " q) Exit"
             
             try {
@@ -2531,6 +2533,9 @@ class BindLogs : CommandBase {
                     switch($cmd) {
                         "1" {
                             $this.RunDNSTunneling()
+                        }
+                        "2" {
+                            $this.RunDNSRandomQuery()
                         }
                         "q" {
                             return
@@ -2599,6 +2604,62 @@ class BindLogs : CommandBase {
                        "-DNSClientIP", $client_ip,
                        "-DNSServerIP", $server_ip,
                        "-QueryDomain", $domain,
+                       "-Count", [string]$numof_queries)
+            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
+            Start-Process -FilePath "cmd.exe" -ArgumentList $args
+        }
+    }
+    
+    [void]RunDNSRandomQuery() {
+        $file_name = "syslog-bind-dns-random-failed-query.ps1"
+        $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
+        $script_file = BuildFullPath $scripts_dir $file_name
+
+        if (!(IsDirectory $scripts_dir)) {
+            New-Item -ItemType Directory -Force -Path $scripts_dir
+        }
+
+        $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/bin/$($file_name)"
+        DownloadFile $url $script_file
+
+        Write-Host ""
+        Write-Host "### Enter the syslog configuration"
+        $syslog_host = ReadInput "Syslog Host" `
+                                 $this.props.syslog_host `
+                                 "^.+$"
+        $syslog_port = ReadInput "Syslog Port" `
+                                 $this.props.syslog_port `
+                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 "Please retype a valid port number"
+        $syslog_protocol = ReadInput "Syslog Protocol" `
+                                     $this.props.syslog_protocol `
+                                     "^UDP|TCP|udp|tcp$" `
+                                     "Please retype a valid protocol"
+
+        Write-Host ""
+        Write-Host "### Enter the DNS random query configuration"
+        $client_ip = ReadInput "DNS client IP" `
+                               "" `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $server_ip = ReadInput "DNS server IP" `
+                               "" `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $numof_queries = ParseNumber(ReadInput "Number of queries" `
+                                               "10000" `
+                                               "^[0-9]+$" `
+                                               "Please retype a valid number")
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $cargs = @("powershell.exe",
+			           "-ExecutionPolicy", "Bypass", $script_file,
+                       "-SyslogHost", $syslog_host,
+                       "-SyslogPort", $syslog_port,
+                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                       "-SyslogFormat", "RFC-3164",
+                       "-DNSClientIP", $client_ip,
+                       "-DNSServerIP", $server_ip,
                        "-Count", [string]$numof_queries)
             $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
             Start-Process -FilePath "cmd.exe" -ArgumentList $args
