@@ -1,0 +1,17 @@
+{
+  "client": "${client_ip}",
+  "server": "${server_ip}:53",
+  "sequence": [
+    ["for",[0,1000],"i",
+      [
+        ["foreach.session",["list", ["com", "info", "net", "org", "biz"]],"tld",
+          [
+            ["sys.print", "dns.q: ${client_ip} -> ${server_ip}:53"],
+            ["dns.q.a","${rand.lower_alnum(8)}.${tld}","${rand.number(1,9)}.${rand.number(0,250)}.${rand.number(0,250)}.${rand.number(1,250)}"],
+            ["sys.time.drift", 500]
+          ]
+        ]
+      ]
+    ]
+  ]
+}
