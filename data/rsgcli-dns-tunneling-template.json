@@ -11,7 +11,7 @@
           "query_name": "${rand.lower_alnum(32)}.${domain}",
           "query_resp": "${rand.lower_alnum(120)}"
         }],
-        ["sys.print", "dns.q: ${RSGCLI_UDP_CLIENT_IP} -> ${RSGCLI_UDP_SERVER_IP}:53"],
+        ["sys.print", "dns.q: ${RSGCLI_UDP_CLIENT_IP} -> ${RSGCLI_UDP_SERVER_IP}:53: ${query_name}"],
         ["dns.q.txt","${query_name}","${query_resp}"],
         
         ["sys.time.sleep", "${time.utcnow(ms)=(300 - (val - ${cycle_start})).limit(0,)}"]
