@@ -6,8 +6,11 @@
       [
         ["foreach.session",["list", ["com", "info", "net", "org", "biz"]],"tld",
           [
-            ["sys.print", "dns.q: ${client_ip} -> ${server_ip}:53"],
-            ["dns.q.a","${rand.lower_alnum(16)}.${tld}"],
+            ["env.local.set-payload", {
+              "query_name": "${rand.lower_alnum(16)}.${tld}"
+            }],
+            ["sys.print", "dns.q: ${client_ip} -> ${server_ip}:53: ${query_name}"],
+            ["dns.q.a","${query_name}"],
             ["sys.time.drift", 500]
           ]
         ]
