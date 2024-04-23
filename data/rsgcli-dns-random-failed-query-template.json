@@ -8,7 +8,7 @@
       [
         ["foreach",["list", ["com", "info", "net", "org", "biz"]],"tld",
           [
-            ["env.local.set-payload", {
+            ["env.local.set", {
               "cycle_start": "${time.utcnow(ms)}",
               "query_name": "${rand.lower_alnum(16)}.${tld}"
             }],
