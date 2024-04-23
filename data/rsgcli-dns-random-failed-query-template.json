@@ -8,11 +8,12 @@
       [
         ["foreach",["list", ["com", "info", "net", "org", "biz"]],"tld",
           [
-            ["env.local.default", {
-              "cycle_start": "${time.utcnow(ms)}"
+            ["env.local.set-payload", {
+              "cycle_start": "${time.utcnow(ms)}",
+              "query_name": "${rand.lower_alnum(16)}.${tld}"
             }],
-            ["sys.print", "dns.q: ${RSGCLI_UDP_CLIENT_IP} -> ${RSGCLI_UDP_SERVER_IP}:53"],
-            ["dns.q.a","${rand.lower_alnum(16)}.${tld}"],
+            ["sys.print", "dns.q: ${RSGCLI_UDP_CLIENT_IP} -> ${RSGCLI_UDP_SERVER_IP}:53: ${query_name}"],
+            ["dns.q.a","${query_name"],
             
             ["sys.time.sleep", "${time.utcnow(ms)=(300 - (val - ${cycle_start})).limit(0,)}"]
           ]
