@@ -6,7 +6,7 @@
       [
         ["foreach.session",["list", ["com", "info", "net", "org", "biz"]],"tld",
           [
-            ["env.local.set-payload", {
+            ["env.local.set", {
               "query_name": "${rand.lower_alnum(16)}.${tld}"
             }],
             ["sys.print", "dns.q: ${client_ip} -> ${server_ip}:53: ${query_name}"],
