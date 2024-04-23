@@ -4,8 +4,12 @@
   "sequence": [
     ["for.session",[0,10000],"i",
       [
-        ["sys.print", "dns.q: ${client_ip} -> ${server_ip}:53"],
-        ["dns.q.txt","${rand.lower_alnum(32)}.${domain}","${rand.lower_alnum(120)}"],
+        ["env.local.set", {
+          "query_name": "${rand.lower_alnum(32)}.${domain}",
+          "query_resp": "${rand.lower_alnum(120)}"
+        }],
+        ["sys.print", "dns.q: ${client_ip} -> ${server_ip}:53: ${query_name}"],
+        ["dns.q.txt","${query_name}","${query_resp}"],
         ["sys.time.drift", 500]
       ]
     ]
