@@ -1872,7 +1872,7 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
 
     [void]Run() {
         Write-Host ""
-        Write-Host "### Enter the SMB configuration"
+        Write-Host "### Enter the LDAP configuration"
         $rsgsvr_host = ReadInput "RSG Server Host" `
                                  $this.props.rsgsvr_host `
                                  "^.+$"
