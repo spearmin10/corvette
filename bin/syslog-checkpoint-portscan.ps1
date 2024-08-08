@@ -149,7 +149,7 @@ class Main {
 		  [int]$client_port = $(Get-Random -Minimum 1025 -Maximum 65534)
 
           $log = @"
-CEF:0|Check Point|VPN-1 & FireWall-1|Check Point|Log|$app|informational|act=accept spt=$client_port dpt=$target_port dst=$target_ip src=$client_ip app=$app proto=TCP
+CEF:0|Check Point|VPN-1 & FireWall-1|Check Point|Log|$app|informational|act=drop spt=$client_port dpt=$target_port dst=$target_ip src=$client_ip app=$app proto=TCP
 "@
           $this.syslog.Send($this.syslog.Build($log))
           if ($verbose) {
