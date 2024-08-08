@@ -2902,7 +2902,7 @@ class Menu {
                 [FortigateLogs]::New($this.props).Run()
             }
             "15" {
-                [CheckPointLog]::New($this.props).Run()
+                [CheckPointLogs]::New($this.props).Run()
             }
             "16" {
                 [CiscoLogs]::New($this.props).Run()
