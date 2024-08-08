@@ -2283,6 +2283,93 @@ class FortigateLogs : CommandBase {
     }
 }
 
+class CheckPointLogs : CommandBase {
+    CheckPointLogs([Properties]$props) : base($props) {
+    }
+
+    [void]Run() {
+        while ($true) {
+            Write-Host "************************************"
+            Write-Host " 1) Simulate port scan"
+            Write-Host " q) Exit"
+            
+            try {
+                :retry do {
+                    $cmd = Read-Host "Please choose a menu item to run"
+                    switch($cmd) {
+                        "1" {
+                            $this.RunPortScan()
+                        }
+                        "q" {
+                            return
+                        }
+                        default {
+                            continue retry
+                        }
+                    }
+                    break
+                } while($true)
+            } catch {
+                Write-Host $_
+            }
+        }
+    }
+    
+    [void]RunPortScan() {
+        $file_name = "syslog-checkpoint-portscan.ps1"
+        $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
+        $script_file = BuildFullPath $scripts_dir $file_name
+
+        if (!(IsDirectory $scripts_dir)) {
+            New-Item -ItemType Directory -Force -Path $scripts_dir
+        }
+
+        $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/bin/$($file_name)"
+        DownloadFile $url $script_file
+
+        Write-Host ""
+        Write-Host "### Enter the syslog configuration"
+        $syslog_host = ReadInput "Syslog Host" `
+                                 $this.props.syslog_host `
+                                 "^.+$"
+        $syslog_port = ReadInput "Syslog Port" `
+                                 $this.props.syslog_port `
+                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 "Please retype a valid port number"
+        $syslog_protocol = ReadInput "Syslog Protocol" `
+                                     $this.props.syslog_protocol `
+                                     "^UDP|TCP|udp|tcp$" `
+                                     "Please retype a valid protocol"
+        Write-Host ""
+        Write-Host "### Enter the port scan configuration"
+        $source_ip = ReadInput "Source IP" `
+                               "" `
+                               $script:PATTERN_IPV4_ADDR `
+                               "Please retype a valid IPv4 address"
+        $destination_ip = ReadInput "Destination IP" `
+                                    "" `
+                                    $script:PATTERN_IPV4_ADDR `
+                                    "Please retype a valid IPv4 address"
+
+        $app = ReadInput "Application" `
+                         "HTTP" `
+                         "^.+$"
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $cargs = @("powershell.exe",
+			           "-ExecutionPolicy", "Bypass", $script_file,
+                       "-SyslogHost", $syslog_host,
+                       "-SyslogPort", $syslog_port,
+                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                       "-App", $app,
+                       "-SourceIP", $source_ip,
+                       "-DestinationIP", $destination_ip)
+            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
+            Start-Process -FilePath "cmd.exe" -ArgumentList $args
+        }
+    }
+}
+
 class CiscoLogs : CommandBase {
     CiscoLogs([Properties]$props) : base($props) {
     }
@@ -2815,12 +2902,15 @@ class Menu {
                 [FortigateLogs]::New($this.props).Run()
             }
             "15" {
-                [CiscoLogs]::New($this.props).Run()
+                [CheckPointLog]::New($this.props).Run()
             }
             "16" {
-                [BindLogs]::New($this.props).Run()
+                [CiscoLogs]::New($this.props).Run()
             }
             "17" {
+                [BindLogs]::New($this.props).Run()
+            }
+            "18" {
                 [NetflowLogs]::New($this.props).Run()
             }
             default {
@@ -2850,9 +2940,10 @@ class Menu {
             Write-Host "12) Run WildFire Test PE"
             Write-Host "13) Generate Network Traffic (rsgen)"
             Write-Host "14) Send Fortigate Logs"
-            Write-Host "15) Send Cisco Logs"
-            Write-Host "16) Send BIND Logs"
-            Write-Host "17) Send Netflow Logs"
+            Write-Host "15) Send CheckPoint Logs"
+            Write-Host "16) Send Cisco Logs"
+            Write-Host "17) Send BIND Logs"
+            Write-Host "18) Send Netflow Logs"
             try {
                 while (!$this.LaunchUserModeCommand((Read-Host "Please choose a menu item to run"))) {}
             } catch {
