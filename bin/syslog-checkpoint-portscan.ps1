@@ -145,18 +145,18 @@ class Main {
 
     [void]Run([string]$client_ip, [string]$target_ip, [string]$app, [bool]$verbose){
         for ($target_port = 1; $target_port -lt 65536; $target_port++){
-          [int64]$timestamp = ($(Get-Date).ToUniversalTime().ToFileTime() - 116444736000000000) * 100
-		  [int]$client_port = $(Get-Random -Minimum 1025 -Maximum 65534)
+            [int64]$timestamp = ($(Get-Date).ToUniversalTime().ToFileTime() - 116444736000000000) * 100
+            [int]$client_port = $(Get-Random -Minimum 1025 -Maximum 65534)
 
-          $log = @"
+            $log = @"
 CEF:0|Check Point|VPN-1 & FireWall-1|Check Point|Log|$app|informational|act=drop spt=$client_port dpt=$target_port dst=$target_ip src=$client_ip app=$app proto=TCP
 "@
-          $this.syslog.Send($this.syslog.Build($log))
-          if ($verbose) {
-              Write-Host $log
-          } else {
-              Write-Host "log: ${client_ip} > ${target_ip}:${target_port}"
-          }
+            $this.syslog.Send($this.syslog.Build($log))
+            if ($verbose) {
+                Write-Host $log
+            } else {
+                Write-Host "log: ${client_ip} > ${target_ip}:${target_port}"
+            }
         }
     }
 }
