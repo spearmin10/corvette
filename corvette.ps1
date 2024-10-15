@@ -2991,7 +2991,7 @@ class Menu {
                 [CiscoLogs]::New($this.props).Run()
             }
             "17" {
-                [PaloAltoNGFWLogs]::($this.props).Run()
+                [PaloAltoNGFWLogs]::New($this.props).Run()
             }
             "18" {
                 [BindLogs]::New($this.props).Run()
