@@ -117,8 +117,10 @@ class TcpSyslog : Syslog {
     }
 
     [void]Send([string]$log) {
-        $payload = [System.Text.Encoding]::UTF8.GetBytes($log + "`r`n")
-        [void]$this.stream.Write($payload, 0, $payload.Length)
+        $payload = [System.Text.Encoding]::UTF8.GetBytes($log)
+        $header = [System.Text.Encoding]::UTF8.GetBytes([string]$payload.Length + " ")
+        $record = $header + $payload
+        [void]$this.stream.Write($record, 0, $record.Length)
     }
 
     [void]Close() {
