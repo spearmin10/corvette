@@ -2581,7 +2581,7 @@ class CiscoLogs : CommandBase {
                                             "100" `
                                             "^[0-9]+$" `
                                             "Please retype a valid number")
-        $user_group = "group"
+        $group_policy = "group"
 
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("powershell.exe",
@@ -2591,7 +2591,7 @@ class CiscoLogs : CommandBase {
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
                        "-UserIP", $user_ip,
                        "-PublicIP", $public_ip,
-                       "-UserGroup", $user_group,
+                       "-GroupPolicy", $group_policy,
                        "-Count", [string]$numof_logs,
                        "-LogType", $log_type)
             if (![string]::IsNullOrEmpty($user_id)) {
