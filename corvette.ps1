@@ -2142,7 +2142,7 @@ class FortigateLogs : CommandBase {
 
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("powershell.exe",
-			           "-ExecutionPolicy", "Bypass", $script_file,
+                       "-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog_host,
                        "-SyslogPort", $syslog_port,
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
@@ -2268,7 +2268,7 @@ class FortigateLogs : CommandBase {
         }
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("powershell.exe",
-					   "-ExecutionPolicy", "Bypass", $script_file,
+                       "-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog_host,
                        "-SyslogPort", $syslog_port,
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
@@ -2357,7 +2357,7 @@ class CheckPointLogs : CommandBase {
 
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("powershell.exe",
-			           "-ExecutionPolicy", "Bypass", $script_file,
+                       "-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog_host,
                        "-SyslogPort", $syslog_port,
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
@@ -2448,7 +2448,7 @@ class CiscoLogs : CommandBase {
 
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("powershell.exe",
-			           "-ExecutionPolicy", "Bypass", $script_file,
+                       "-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog_host,
                        "-SyslogPort", $syslog_port,
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
@@ -2585,7 +2585,7 @@ class CiscoLogs : CommandBase {
 
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("powershell.exe",
-			           "-ExecutionPolicy", "Bypass", $script_file,
+                       "-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog_host,
                        "-SyslogPort", $syslog_port,
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
@@ -2674,7 +2674,7 @@ class PaloAltoNGFWLogs : CommandBase {
 
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("powershell.exe",
-			           "-ExecutionPolicy", "Bypass", $script_file,
+                       "-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog_host,
                        "-SyslogPort", $syslog_port,
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
@@ -2766,7 +2766,7 @@ class BindLogs : CommandBase {
 
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("powershell.exe",
-			           "-ExecutionPolicy", "Bypass", $script_file,
+                       "-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog_host,
                        "-SyslogPort", $syslog_port,
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
@@ -2823,7 +2823,7 @@ class BindLogs : CommandBase {
 
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("powershell.exe",
-			           "-ExecutionPolicy", "Bypass", $script_file,
+                       "-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog_host,
                        "-SyslogPort", $syslog_port,
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
@@ -2904,7 +2904,7 @@ class NetflowLogs : CommandBase {
 
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("powershell.exe",
-			           "-ExecutionPolicy", "Bypass", $script_file,
+                       "-ExecutionPolicy", "Bypass", $script_file,
                        "-NetflowHost", $netflow_host,
                        "-NetflowPort", $netflow_port,
                        "-NetflowProtocol", "UDP",
@@ -2935,7 +2935,8 @@ class Menu {
                 Start-Process -FilePath "powershell.exe" -verb runas -ArgumentList $args
                 #>
                 $path = $this.props.MakeSureScriptFileExists()
-                $args = Quote @("-ExecutionPolicy", "Bypass", $path)
+                $script = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes("powershell.exe " + (Quote @("-ExecutionPolicy", "Bypass", $path))))
+                $args = @("-NoExit", "-e", $script)
                 Start-Process -FilePath "powershell.exe" -verb runas -ArgumentList $args
             }
             "1" {
