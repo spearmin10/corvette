@@ -1,7 +1,7 @@
 corvette
 ===========
 
-corvette is a test tool for endpoint protection tools or network security tools by invoking suspicious activities so that they can detect the risks and generate alerts.
+corvette is a test tool for endpoint protection tools or network security tools that invokes suspicious activities to allow them to detect risks and generate alerts.
 
 Disclaimer
 ----------
