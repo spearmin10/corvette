@@ -238,8 +238,8 @@ function SplitCommandLine([string]$cmdline) {
             $pargs = @()
             if ($nargs -ge 1) {
                 0..($nargs - 1) | ForEach-Object {
-                    $pargs += [System.Runtime.InteropServices.Marshal]::PtrToStringUni(
-                        [System.Runtime.InteropServices.Marshal]::ReadIntPtr($argsptr, $_ * [IntPtr]::Size)
+                    $pargs += [Runtime.InteropServices.Marshal]::PtrToStringUni(
+                        [Runtime.InteropServices.Marshal]::ReadIntPtr($argsptr, $_ * [IntPtr]::Size)
                     )
                 }
             }
@@ -290,7 +290,7 @@ function ChangeExecutableName([hashtable]$exec_random, [string]$key, [string]$pa
 class Properties {
     [string]$my_script
     [string]$home_dir
-    [System.Management.Automation.InvocationInfo]$invocation_info
+    [Management.Automation.InvocationInfo]$invocation_info
     
     [string]$syslog_host
     [string]$syslog_port
@@ -304,14 +304,14 @@ class Properties {
     
     [hashtable]$exec_random
 
-    Properties([System.Management.Automation.InvocationInfo]$info) {
+    Properties([Management.Automation.InvocationInfo]$info) {
         $this.invocation_info = $info
         $this.home_dir = BuildFullPath ([IO.Path]::GetTempPath()) ".\corvette"
 
         if ([string]::IsNullOrEmpty($info.MyCommand.Path)) {
             $this.my_script = $info.MyCommand
         } else {
-            $this.my_script = [System.IO.File]::ReadAllText($info.MyCommand.Path)
+            $this.my_script = [IO.File]::ReadAllText($info.MyCommand.Path)
         }
         $this.Load()
     }
@@ -394,17 +394,24 @@ class Properties {
         }
         $settings | ConvertTo-Json | Set-Content -Encoding utf8 -Path $conf_file
     }
-    
-    [string]MakeSureScriptFileExists() {
-        $path = $myInvocation.MyCommand.Path
-        if ([string]::IsNullOrEmpty($path)) {
-            $path = BuildFullPath $this.home_dir ".\corvette.ps1"
-            $utf8n = New-Object System.Text.UTF8Encoding($false)
-            [System.IO.File]::WriteAllText($path, $this.my_script, $utf8n)
+
+    [string]MakeSureGzScriptFileExists() {
+        $script = [Text.Encoding]::UTF8.GetBytes($this.my_script)        
+        $gzs = New-Object IO.MemoryStream
+        $gz = New-Object IO.Compression.GZipStream($gzs, [IO.Compression.CompressionMode]::Compress)
+        $gz.Write($script, 0, $script.Length)
+        $gz.Close()
+        $script_gz = $gzs.ToArray()
+
+        $path = BuildFullPath $this.home_dir ".\corvette.ps1.gz"
+        if (
+            !(IsFile $path) -Or
+            ![Linq.Enumerable]::SequenceEqual($script_gz, [IO.File]::ReadAllBytes($path))
+        ) {
+            [IO.File]::WriteAllBytes($path, $script_gz)
         }
         return $path
     }
-
 }
 
 class CommandBase {
@@ -2929,15 +2936,25 @@ class Menu {
                 [ConfigureSettings]::New($this.props).Run()
             }
             "0" {
-                <#
-                $script = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($this.props.my_script))
-                $args = Quote @("-e", $script)
-                Start-Process -FilePath "powershell.exe" -verb runas -ArgumentList $args
-                #>
-                $path = $this.props.MakeSureScriptFileExists()
-                $script = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes("powershell.exe " + (Quote @("-ExecutionPolicy", "Bypass", $path))))
-                $args = @("-NoExit", "-e", $script)
-                Start-Process -FilePath "powershell.exe" -verb runas -ArgumentList $args
+                $gzpath = $this.props.MakeSureGzScriptFileExists()
+                $script =
+@"
+                  & ([ScriptBlock]::Create(
+                    [IO.StreamReader]::New(
+                      [IO.Compression.GzipStream]::New(
+                        [IO.MemoryStream]::New(
+                          [IO.File]::ReadAllBytes(
+                            [IO.Path]::GetFullPath("$gzpath")
+                          )
+                        ),
+                        [IO.Compression.CompressionMode]::Decompress
+                      ),
+                      [Text.Encoding]::UTF8
+                    ).ReadToEnd()
+                  ))
+"@
+                $script_b64 = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($script))
+                Start-Process -FilePath "powershell.exe" -verb runas -ArgumentList @("-e", $script_b64)
             }
             "1" {
                 [SetupTools]::New($this.props).Run()
@@ -2957,7 +2974,7 @@ class Menu {
                 Start-Process -FilePath "cmd.exe" -verb runas -ArgumentList $args
             }
             "6" {
-                $script = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes("cd " + (Quote $this.props.home_dir)))
+                $script = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes("cd " + (Quote $this.props.home_dir)))
                 $args = @("-NoExit", "-e", $script)
                 Start-Process -FilePath "powershell.exe" -verb runas -ArgumentList $args
             }
