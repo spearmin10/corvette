@@ -2939,19 +2939,19 @@ class Menu {
                 $gzpath = $this.props.MakeSureGzScriptFileExists()
                 $script =
 @"
-                  & ([ScriptBlock]::Create(
-                    [IO.StreamReader]::New(
-                      [IO.Compression.GzipStream]::New(
-                        [IO.MemoryStream]::New(
-                          [IO.File]::ReadAllBytes(
-                            [IO.Path]::GetFullPath("$gzpath")
-                          )
-                        ),
-                        [IO.Compression.CompressionMode]::Decompress
-                      ),
-                      [Text.Encoding]::UTF8
-                    ).ReadToEnd()
-                  ))
+& ([ScriptBlock]::Create(
+  [IO.StreamReader]::New(
+    [IO.Compression.GzipStream]::New(
+      [IO.MemoryStream]::New(
+        [IO.File]::ReadAllBytes(
+          [IO.Path]::GetFullPath("$gzpath")
+        )
+      ),
+      [IO.Compression.CompressionMode]::Decompress
+    ),
+    [Text.Encoding]::UTF8
+  ).ReadToEnd()
+))
 "@
                 $script_b64 = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($script))
                 Start-Process -FilePath "powershell.exe" -verb runas -ArgumentList @("-e", $script_b64)
