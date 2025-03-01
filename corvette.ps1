@@ -2974,8 +2974,7 @@ class Menu {
                 Start-Process -FilePath "cmd.exe" -verb runas -ArgumentList $args
             }
             "6" {
-                $script = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes("cd " + (Quote $this.props.home_dir)))
-                $args = @("-NoExit", "-e", $script)
+                $args = @("-NoExit", "-c", "Set-Location", "-LiteralPath", $this.props.home_dir)
                 Start-Process -FilePath "powershell.exe" -verb runas -ArgumentList $args
             }
             "7" {
