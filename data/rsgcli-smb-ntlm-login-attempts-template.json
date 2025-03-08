@@ -222,7 +222,7 @@
                 "24 af 14 7c 55 a0 cc 20  97 c4"
               ]
             ],
-            ["utf16le.raw", "${user_domain_max46=val.resize(46)}"],
+            ["utf16le.raw", "${user_domain_max46=val.upper().resize(46)}"],
             ["utf16le.raw", "${user_name_max14=val.resize(14)}"],
             ["utf16le.raw", "${user_host_max12=val.resize(12)}"],
             ["hex.raw", [
