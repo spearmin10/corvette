@@ -1,13 +1,19 @@
 {
   "default": {
-    "environment":{
-      "user_domain_max12": "CORP",
-      "netbios_src_upper_domain_4": "CORP",
-      "netbios_dst_upper_domain_4": "CORP",
-      "srchost_12": "WIN-${rand.digit(4)}${rand.upper_alpha(4)}",
-      "dsthost_12": "WIN-${rand.digit(4)}${rand.upper_alpha(4)}",
-      "target_name_4": "cifs"
-    }
+    "environment": [
+      {
+        "target_name_4": "cifs",
+        "user_domain_max12": "corp",
+        "user_host_max12": "WIN-${rand.digit(4)}${rand.upper_alpha(4)}",
+        "dest_host_max12": "WIN-${rand.digit(4)}${rand.upper_alpha(4)}",
+        "dest_dns_domain_max46": "corp.cortex.lan"
+      },
+      {
+        "user_domain_max46": "${user_domain_max12}",
+        "user_netbios_domain_max12": "${user_domain_max12=val.regex_match('[^\\.]+')}",
+        "dest_dns_computer_name_max59": "${dest_host_max12}.${dest_dns_domain_max46}"
+      }
+    ]
   },
   "server": {
     "port": 389
@@ -16,7 +22,7 @@
     ["for.session", [0, "${attempt_count}"], "i", [
         ["tcp.handshake"],
         ["sys.print", "ldap: ${RSGCLI_TCP_CLIENT_IP} -> ${RSGCLI_TCP_SERVER_IP}:${RSGCLI_TCP_SERVER_PORT}"],
-
+        
         ["env.local.default", {
           "user_name_max14": "${rand.lower_alpha(8)}"
         }],
@@ -33,157 +39,197 @@
         
         ["", "## bindResponse - saslBindInProgress - NTLMSSP_CHALLENGE"],
         ["tcp.recv", "multi", [
-            ["hex.raw", [
-                "30 82 01 0a 02 02 04 fd  61 82 01 02 0a 01 0e 04",
-                "00 04 00 87 81 f8 4e 54  4c 4d 53 53 50 00 02 00",
-                "00 00 08 00 08 00 38 00  00 00 15 82 89 e2 7f 4e",
-                "2d 6e d2 65 1f e8 00 00  00 00 00 00 00 00 b8 00",
-                "b8 00 40 00 00 00 0a 00  ba 47 00 00 00 0f"
-              ]
-            ],
-            ["utf16le.raw", "${netbios_src_upper_domain_4}"],
-            ["hex.raw", [
-                "02 00 08 00"
-              ]
-            ],
-            ["utf16le.raw", "${netbios_src_upper_domain_4}"],
-            ["hex.raw", [
-                "01 00 18 00"
-              ]
-            ],
-            ["utf16le.raw", "${dsthost_12}"],
-            ["hex.raw", [
-                "04 00 1e 00"
-              ]
-            ],
-            ["utf16le.raw", "${netbios_dst_upper_domain_4=val.upper()}"],
-            ["hex.raw", [
-                "2e 00 63 00 6f 00 72 00  74 00 65 00 78 00 2e 00",
-                "6c 00 61 00 6e 00 03 00  38 00"
-              ]
-            ],
-            ["utf16le.raw", "${dsthost_12}"],
-            ["hex.raw", [
-                "2e 00"
-              ]
-            ],
-            ["utf16le.raw", "${netbios_dst_upper_domain_4=val.upper()}"],
-            ["hex.raw", [
-                "2e 00 63 00 6f 00 72 00  74 00 65 00 78 00 2e 00",
-                "6c 00 61 00 6e 00 05 00  1e 00"
-              ]
-            ],
-            ["utf16le.raw", "${netbios_dst_upper_domain_4=val.upper()}"],
-            ["hex.raw", [
-                "2e 00 63 00 6f 00 72 00  74 00 65 00 78 00 2e 00",
-                "6c 00 61 00 6e 00 07 00  08 00 8e 9d 52 d4 33 ed",
-                "d9 01 00 00 00 00"
-              ]
+            ["asn1.raw",
+              {
+                "SEQUENCE:+": [
+                  { "INTEGER": 1277},
+                  {
+                    "APPLICATION [1]:+": [
+                      { "ENUMERATED": 14},
+                      { "OCTET STRING": null},
+                      { "OCTET STRING": null},
+                      {
+                        "CONTEXT [7]": [
+                          "multi", [
+                            ["hex.raw", [
+                                "4e 54 4c 4d 53 53 50 00  02 00 00 00"
+                              ]
+                            ],
+                            ["", "## Length of User Domain in bytes (max:0x18)"],
+                            ["hex.raw", "${user_netbios_domain_max12=(val.length() * 2).hex_le(2)}"],
+                            ["hex.raw", [
+                                "18 00 38 00 00 00 15 82  89 e2 83 c5 ac 61 2c 61",
+                                "1a b0 00 00 00 00 00 00  00 00 82 01 82 01 50 00",
+                                "00 00 0a 00 5d 58 00 00  00 0f"
+                              ]
+                            ],
+                            ["utf16le.raw", "${user_netbios_domain_max12=val.upper().resize(12)}"],
+
+                            ["", "## Attribute: NetBIOS domain name"],
+                            ["hex.raw", [
+                                "02 00 18 00"
+                              ]
+                            ],
+                            ["utf16le.raw", "${user_netbios_domain_max12=val.upper().resize(12)}"],
+
+                            ["", "## Attribute: NetBIOS computer name"],
+                            ["hex.raw", [
+                                "01 00 18 00"
+                              ]
+                            ],
+                            ["utf16le.raw", "${dest_host_max12=val.upper().resize(12)}"],
+
+                            ["", "## Attribute: DNS domain name"],
+                            ["hex.raw", [
+                                "04 00 5c 00"
+                              ]
+                            ],
+                            ["utf16le.raw", "${dest_dns_domain_max46=val.lower().resize(46)}"],
+
+                            ["", "## Attribute: DNS computer name"],
+                            ["hex.raw", [
+                                "03 00 76 00"
+                              ]
+                            ],
+                            ["utf16le.raw", "${dest_dns_computer_name_max59=val.lower().resize(59)}"],
+
+                            ["", "## Attribute: DNS tree name"],
+                            ["hex.raw", [
+                                "05 00 5c 00"
+                              ]
+                            ],
+                            ["utf16le.raw", "${dest_dns_domain_max46=val.lower().resize(46)}"],
+
+                            ["hex.raw", [
+                                "07 00 08 00 9a b6 9a df  00 8d db 01 00 00 00 00"
+                              ]
+                            ]
+                          ]
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
             ]
           ]
         ],
 
         ["", "## bindRequest - NTLMSSP_AUTH"],
         ["tcp.send", "multi", [
-            ["hex.raw", [
-                "30 82 02 29 02 02 04 fe  60 82 02 21 02 01 03 04",
-                "00 a3 82 02 18 04 0a 47  53 53 2d 53 50 4e 45 47",
-                "4f 04 82 02 08"
-              ]
-            ],
-            ["hex.raw", [
-                "4e 54 4c 4d 53 53 50 00  03 00 00 00 18 00 18 00",
-                "a4 00 00 00 3c 01 3c 01  bc 00 00 00"
-              ]
-            ],
-            ["", "## Length of User Domain in bytes (max:0x18)"],
-            ["hex.raw", "${user_domain_max12=(val.length() * 2).hex_le(1)}"],
-            ["hex.raw", [
-                "00 18 00 58 00 00 00"
-              ]
-            ],
-            ["", "## Length of Username in bytes (max:0x1c)"],
-            ["hex.raw", "${user_name_max14=(val.length() * 2).hex_le(1)}"],
-            ["hex.raw", [
-                "00 1c 00 70 00 00 00"
-              ]
-            ],
-            ["", "## Length of Source Hostname in bytes (max:0x18)"],
-            ["hex.raw", "${srchost_12=(val.length() * 2).hex_le(1)}"],
-            ["hex.raw", [
-                "00 18 00 8c 00 00 00"
-              ]
-            ],
-            ["hex.raw", [
-                "10 00 10 00 f8 01 00 00 15 82 88",
-                "e2 0a 00 5d 58 00 00 00 0f 20 d3 29 5d b5 b7 76",
-                "e7 f2 9e 12 12 4b d8 a4 3a"
-              ]
-            ],
-            ["", "## User Domain(12)"],
-            ["utf16le.raw", "${user_domain_max12=val.resize(12)}"],
-            
-            ["", "## User Name(14)"],
-            ["utf16le.raw", "${user_name_max14=val.resize(14)}"],
-            
-            ["utf16le.raw", "${srchost_12}"],
-            ["hex.raw", [
-                "00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00",
-                "00 00 00 00 00 00 00 00"
-              ]
-            ],
-            
-            ["", "## NTProofStr"],
-            ["hex.raw", "${rand.hex(32)}"],
-            
-            ["hex.raw", [
-                "01 01 00 00 00 00 00 00  66 c3 ae f0 c5 54 da 01",
-                "8f ab 46 3d 57 4e 98 e6  00 00 00 00 02 00 08 00"
-              ]
-            ],
-            ["utf16le.raw", "${netbios_src_upper_domain_4}"],
-            ["hex.raw", [
-                "01 00 18 00"
-              ]
-            ],
-            ["utf16le.raw", "${dsthost_12}"],
-            ["hex.raw", [
-                "04 00 1e 00"
-              ]
-            ],
-            ["utf16le.raw", "${netbios_dst_upper_domain_4=val.lower()}"],
-            ["hex.raw", [
-                "2e 00 63 00 6f 00 72 00  74 00 65 00 78 00 2e 00",
-                "6c 00 61 00 6e 00 03 00  38 00"
-              ]
-            ],
-            ["utf16le.raw", "${dsthost_12}"],
-            ["hex.raw", [
-                "2e 00"
-              ]
-            ],
-            ["utf16le.raw", "${netbios_dst_upper_domain_4=val.lower()}"],
-            ["hex.raw", [
-                "2e 00 63 00 6f 00 72 00  74 00 65 00 78 00 2e 00",
-                "6c 00 61 00 6e 00"
-              ]
-            ],
-            ["hex.raw", [
-                "07 00 08 00 66 c3 ae f0  c5 54 da 01 06 00 04 00",
-                "02 00 00 00 08 00 30 00  30 00 00 00 00 00 00 00",
-                "01 00 00 00 00 20 00 00  bc 79 11 84 b5 e5 ce 37",
-                "95 57 3f 4b a1 08 06 c6  c5 e3 8e 0f 67 b1 62 ee",
-                "99 a6 c7 70 a0 9f 8c 16  0a 00 10 00 00 00 00 00",
-                "00 00 00 00 00 00 00 00  00 00 00 00 09 00 22 00"
-              ]
-            ],
-            ["utf16le.raw", "${target_name_4}"],
-            ["hex.raw", [
-                "2f 00 31 00 39 00 32 00  2e 00 31 00 36 00 38 00",
-                "2e 00 31 00 2e 00 34 00  34 00 00 00 00 00 00 00",
-                "00 00 b6 66 e0 57 84 48  99 a9 e2 19 1d ab ed af",
-                "3f 95"
-              ]
+            ["asn1.raw",
+              {
+                "SEQUENCE:+": [
+                  { "INTEGER": 1278},
+                  {
+                    "APPLICATION [0]:+": [
+                      { "INTEGER": 3},
+                      { "OCTET STRING": null},
+                      {
+                        "CONTEXT [3]:+": [
+                          { "OCTET STRING": "GSS-SPNEGO"},
+                          {
+                            "OCTET STRING": [
+                              "multi", [
+                                ["hex.raw", [
+                                    "4e 54 4c 4d 53 53 50 00  03 00 00 00 18 00 18 00",
+                                    "e8 00 00 00 2a 02 2a 02  00 01 00 00"
+                                  ]
+                                ],
+                                ["hex.raw", "${user_domain_max46=(val.length() * 2).hex_le(2)}"],
+                                ["hex.raw", [
+                                    "5c 00 58 00 00 00"
+                                  ]
+                                ],
+                                ["hex.raw", "${user_name_max14=(val.length() * 2).hex_le(2)}"],
+                                ["hex.raw", [
+                                    "1c 00 b4 00 00 00"
+                                  ]
+                                ],
+                                ["hex.raw", "${user_host_max12=(val.length() * 2).hex_le(2)}"],
+                                ["hex.raw", [
+                                    "18 00 d0 00 00 00 10 00  10 00 2a 03 00 00 15 82",
+                                    "88 e2 0a 00 5d 58 00 00  00 0f 29 5a 89 d8 0a 69",
+                                    "24 af 14 7c 55 a0 cc 20  97 c4"
+                                  ]
+                                ],
+                                ["utf16le.raw", "${user_domain_max46=val.resize(46)}"],
+                                ["utf16le.raw", "${user_name_max14=val.resize(14)}"],
+                                ["utf16le.raw", "${user_host_max12=val.resize(12)}"],
+                                ["hex.raw", [
+                                    "00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00",
+                                    "00 00 00 00 00 00 00 00"
+                                  ]
+                                ],
+                                ["", "## NTProofStr"],
+                                ["hex.raw", "${rand.hex(32)}"],
+
+                                ["hex.raw", [
+                                    "01 01 00 00 00 00 00 00  9a b6 9a df 00 8d db 01",
+                                    "f4 94 20 dd da 7c 04 11  00 00 00 00"
+                                  ]
+                                ],
+                                ["", "## Attribute: NetBIOS domain name"],
+                                ["hex.raw", [
+                                    "02 00 18 00"
+                                  ]
+                                ],
+                                ["utf16le.raw", "${user_netbios_domain_max12=val.upper().resize(12)}"],
+
+                                ["", "## Attribute: NetBIOS computer name"],
+                                ["hex.raw", [
+                                    "01 00 18 00"
+                                  ]
+                                ],
+                                ["utf16le.raw", "${dest_host_max12=val.upper().resize(12)}"],
+
+                                ["", "## Attribute: DNS domain name"],
+                                ["hex.raw", [
+                                    "04 00 5c 00"
+                                  ]
+                                ],
+                                ["utf16le.raw", "${dest_dns_domain_max46=val.lower().resize(46)}"],
+
+                                ["", "## Attribute: DNS computer name"],
+                                ["hex.raw", [
+                                    "03 00 76 00"
+                                  ]
+                                ],
+                                ["utf16le.raw", "${dest_dns_computer_name_max59=val.lower().resize(59)}"],
+
+                                ["", "## Attribute: DNS tree name"],
+                                ["hex.raw", [
+                                    "05 00 5c 00"
+                                  ]
+                                ],
+                                ["utf16le.raw", "${dest_dns_domain_max46=val.lower().resize(46)}"],
+                                ["hex.raw", [
+                                    "07 00 08 00 9a b6 9a df  00 8d db 01 06 00 04 00",
+                                    "02 00 00 00 08 00 30 00  30 00 00 00 00 00 00 00",
+                                    "00 00 00 00 00 20 00 00  c1 9b b2 80 d6 10 2a d6",
+                                    "50 80 29 3f 05 bb 9c d2  fe be 59 5b 75 62 f5 e5",
+                                    "b2 d9 58 5d 10 bb 2b 82  0a 00 10 00 00 00 00 00",
+                                    "00 00 00 00 00 00 00 00  00 00 00 00 09 00 24 00"
+                                  ]
+                                ],
+                                ["utf16le.raw", "${target_name_4}"],
+                                ["hex.raw", [
+                                    "2f 00 31 00 39 00 32 00  2e 00 31 00 36 00 38 00",
+                                    "2e 00 31 00 2e 00 31 00  30 00 32 00 00 00 00 00",
+                                    "00 00 00 00 de db f4 c6  03 34 51 71 60 01 8e cd",
+                                    "a7 a2 ab 3b a3 12 04 10  01 00 00 00 50 51 10 5e",
+                                    "9a 3f 37 65 00 00 00 00"
+                                  ]
+                                ]
+                              ]
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
             ]
           ]
         ],
@@ -209,3 +255,4 @@
     ]
   ]
 }
+
