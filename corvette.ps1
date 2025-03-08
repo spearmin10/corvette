@@ -1369,7 +1369,7 @@ class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
                                "Please retype a valid IPv4 address"
         $domain_name = ReadInput "Domain Name [1..46]" `
                                  "corp.example.com" `
-                                 @("^[^.]{1,12}\\.", "^.{1,46}$") `
+                                 @("^[^.]{1,12}\.[^.]", "^.{1,46}$") `
                                  "Please retype a domain name (max 12 characters for NETBIOS domain part, max 46 characters in total)"
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
                                                 "2000" `
@@ -1434,7 +1434,7 @@ class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
                                "Please retype a valid IPv4 address"
         $domain_name = ReadInput "Domain Name [1..46]" `
                                  "corp.example.com" `
-                                 @("^[^.]{1,12}", "^.{1,46}$") `
+                                 @("^[^.]{1,12}\.[^.]", "^.{1,46}$") `
                                  "Please retype a domain name (max 46 charactors)"
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
                                                 "2000" `
@@ -1872,7 +1872,7 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
                                  "Please retype a valid port number"
         $domain_name = ReadInput "Domain Name [1..46]" `
                                  "corp.example.com" `
-                                 @("^[^.]{1,12}\\.", "^.{1,46}$") `
+                                 @("^[^.]{1,12}\.[^.]", "^.{1,46}$") `
                                  "Please retype a domain name (max 12 characters for NETBIOS domain part, max 46 characters in total)"
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
                                                 "2000" `
@@ -1930,7 +1930,7 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
                                  "Please retype a valid port number"
         $domain_name = ReadInput "Domain Name [1..46]" `
                                  "corp.example.com" `
-                                 @("^[^.]{1,12}\\.", "^.{1,46}$") `
+                                 @("^[^.]{1,12}\.[^.]", "^.{1,46}$") `
                                  "Please retype a domain name (max 12 characters for NETBIOS domain part, max 46 characters in total)"
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
                                                 "2000" `
