@@ -64,7 +64,7 @@ function DownloadAndExtractArchive ([string]$url, [string]$directory) {
     Remove-Item $file
 }
 
-function ReadInput([string]$message, [string]$default, [string]$pattern, [string]$retry_message) {
+function ReadInput([string]$message, [string]$default, [string[]]$and_patterns, [string]$retry_message) {
     if (![string]::IsNullOrEmpty($default)) {
         $message += " (default: $default)"
     }
@@ -73,7 +73,16 @@ function ReadInput([string]$message, [string]$default, [string]$pattern, [string
         if ([string]::IsNullOrEmpty($input) -And ![string]::IsNullOrEmpty($default)) {
             return $default
         }
-        if ([string]::IsNullOrEmpty($pattern) -Or ($input -match $pattern)) {
+        $match = $true
+        if (![string]::IsNullOrEmpty($and_patterns)) {
+            foreach ($pattern in $and_patterns) {
+                if ($input -notmatch $pattern) {
+                    $match = $false
+                    break
+                }
+            }
+        }
+        if ($match) {
             return $input
         }
         if (![string]::IsNullOrEmpty($input) -And ![string]::IsNullOrEmpty($retry_message)) {
@@ -112,7 +121,7 @@ function ReadInputSize([string]$message, [string]$default, [string]$retry_messag
     $pattern = "^(?<num>\d+(?:\.\d+)?)\s*(?<unit>[KMGT]?B)?$"
     $size_unit = $null
     do {
-        $size = ReadInput $message $default $pattern $retry_message
+        $size = ReadInput $message $default @($pattern) $retry_message
         if ($size -match $pattern) {
             if ($matches.unit -eq $null){
                 return $size
@@ -441,14 +450,14 @@ class ConfigureSettings : CommandBase {
         Write-Host "### Enter the syslog configuration"
         $syslog_host = ReadInput "Syslog Host" `
                                  $this.props.syslog_host `
-                                 "^.+$"
+                                 @("^.+$")
         $syslog_port = ReadInput "Syslog Port" `
                                  $syslog_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
         $syslog_protocol = ReadInput "Syslog Protocol" `
                                      $syslog_protocol `
-                                     "^UDP|TCP|udp|tcp$" `
+                                     @("^UDP|TCP|udp|tcp$") `
                                      "Please retype a valid protocol"
 
         if (AskYesNo "Do you want to save changes?") {
@@ -469,10 +478,10 @@ class ConfigureSettings : CommandBase {
         Write-Host "### Enter the netflow server configuration"
         $netflow_host = ReadInput "Netflow Host" `
                                   $this.props.netflow_host `
-                                  "^.+$"
+                                  @("^.+$")
         $netflow_port = ReadInput "Netflow Port" `
                                   $netflow_port `
-                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                  @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                   "Please retype a valid port number"
 
         if (AskYesNo "Do you want to save changes?") {
@@ -492,10 +501,10 @@ class ConfigureSettings : CommandBase {
         Write-Host "### Enter the rsg server configuration"
         $rsgsvr_host = ReadInput "RSG Host" `
                                  $this.props.rsgsvr_host `
-                                 "^.+$"
+                                 @("^.+$")
         $rsgsvr_port = ReadInput "RSG Port" `
                                  $rsgsvr_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
 
         if (AskYesNo "Do you want to save changes?") {
@@ -545,9 +554,9 @@ class ConfigureSettings : CommandBase {
                         $exec_random.$key = @{}
                     }
                     $exec_random[$key]["mode"] = ReadInputByChooser "Mode" `
-                                                                $null `
-                                                                @("disabled", "process", "everytime") `
-                                                                "Please type a valid mode"
+                                                                    $null `
+                                                                    @("disabled", "process", "everytime") `
+                                                                    "Please type a valid mode"
                     break
                 }
             } while($true)
@@ -727,10 +736,10 @@ class PsExec : CommandBase {
     [void]Run() {
         Write-Host ""
         Write-Host "### Enter the PsExec parameters"
-        $hostname = ReadInput "Remote Host Name" "" "^.+$"
-        $userid = ReadInput "Remote User ID" "" "^.+$"
-        $password = ReadPassword "Remote User Password" "" "^.*$"
-        $cmdline = ReadInput "Remote Command Line" "" "^.+$"
+        $hostname = ReadInput "Remote Host Name" "" @("^.+$")
+        $userid = ReadInput "Remote User ID" "" @("^.+$")
+        $password = ReadPassword "Remote User Password" "" @("^.*$")
+        $cmdline = ReadInput "Remote Command Line" "" @("^.+$")
 
         if (AskYesNo "Are you sure you want to run?") {
             $exe_dir = [IO.Path]::GetDirectoryName($this.psexec_exe)
@@ -867,7 +876,7 @@ class IptgenBase : CommandBase {
     [string]$iptgen_exename
 
     IptgenBase([Properties]$props) : base($props) {
-        $iptgen_ver = "0.13.0"
+        $iptgen_ver = "0.14.0"
         $this.iptgen_exename = "iptgen.exe"
         $this.iptgen_dir = BuildFullPath $props.home_dir ".\iptgen-${iptgen_ver}"
         $this.iptgen_bin = BuildFullPath $this.iptgen_dir ".\bin"
@@ -948,7 +957,7 @@ class RsgcliBase : CommandBase {
     [string]$rsgcli_exename
 
     RsgcliBase([Properties]$props) : base($props) {
-        $rsgcli_ver = "0.3.1"
+        $rsgcli_ver = "0.4.0"
         $this.rsgcli_exename = "rsgcli.exe"
         $this.rsgcli_dir = BuildFullPath $props.home_dir ".\rsgcli-${rsgcli_ver}"
         $this.rsgcli_bin = BuildFullPath $this.rsgcli_dir ".\bin"
@@ -1068,13 +1077,13 @@ class IptgenDnsTunneling : IptgenBase {
         Write-Host "### Enter the DNS tunneling configuration"
         $client_ip = ReadInput "DNS client IP" `
                                $interface.IPAddress `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $server_ip = ReadInput "DNS server IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
-        $domain = ReadInput "DNS tunnel domain" $null "^.+$"
+        $domain = ReadInput "DNS tunnel domain" $null @("^.+$")
 
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
@@ -1107,11 +1116,11 @@ class IptgenDnsRandomQuery : IptgenBase {
         Write-Host "### Enter the DNS random query configuration"
         $client_ip = ReadInput "DNS client IP" `
                                $interface.IPAddress `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $server_ip = ReadInput "DNS server IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
 
         $Env:client_ip = $client_ip
@@ -1144,17 +1153,17 @@ class IptgenSmtpFileUpload : IptgenBase {
         Write-Host "### Enter the SMTP upload configuration"
         $client_ip = ReadInput "Client IP" `
                                $interface.IPAddress `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $server_ip = ReadInput "Server IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
-        $upload_filename = ReadInput "Upload file name" "test.dat" "^.+$"
+        $upload_filename = ReadInput "Upload file name" "test.dat" @("^.+$")
         $upload_filesize = ReadInputSize "Upload file size" "20MB" "Invalid file size. Please retype the size."
         $repeat_count = ParseNumber(ReadInput "Number of times to repeat" `
                                               "1" `
-                                              "^[0-9]+$" `
+                                              @("^[0-9]+$") `
                                               "Please retype a valid number")
 
         $Env:client_ip = $client_ip
@@ -1190,17 +1199,17 @@ class IptgenFtpFileUpload : IptgenBase {
         Write-Host "### Enter the FTP file upload configuration"
         $client_ip = ReadInput "Client IP" `
                                $interface.IPAddress `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $server_ip = ReadInput "Server IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
-        $upload_filename = ReadInput "Upload file name" "test.dat" "^.+$"
+        $upload_filename = ReadInput "Upload file name" "test.dat" @("^.+$")
         $upload_filesize = ReadInputSize "Upload file size" "100MB" "Invalid file size. Please retype the size."
         $repeat_count = ParseNumber(ReadInput "Number of times to repeat" `
                                               "1" `
-                                              "^[0-9]+$" `
+                                              @("^[0-9]+$") `
                                               "Please retype a valid number")
 
         $Env:client_ip = $client_ip
@@ -1244,16 +1253,16 @@ class IptgenHttpFileUpload : IptgenBase {
         Write-Host "### Enter the HTTP file upload configuration"
         $client_ip = ReadInput "Client IP" `
                                $interface.IPAddress `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $server_ip = ReadInput "Server IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $upload_filesize = ReadInputSize "Upload file size" "100MB" "Invalid file size. Please retype the size."
         $repeat_count = ParseNumber(ReadInput "Number of times to repeat" `
                                               "1" `
-                                              "^[0-9]+$" `
+                                              @("^[0-9]+$") `
                                               "Please retype a valid number")
 
         $Env:client_ip = $client_ip
@@ -1293,15 +1302,15 @@ class IptgenHttpUnauthorizedLoginAttempts : IptgenBase {
         Write-Host "### Enter the HTTP configuration"
         $client_ip = ReadInput "Client IP" `
                                $interface.IPAddress `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $server_ip = ReadInput "Server IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
                                                 "10000" `
-                                                "^[0-9]+$" `
+                                                @("^[0-9]+$") `
                                                 "Please retype a valid number")
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
@@ -1334,21 +1343,27 @@ class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
         Write-Host "### Enter the SMB configuration"
         $client_ip = ReadInput "Client IP" `
                                $interface.IPAddress `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $server_ip = ReadInput "Server IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
+        $domain_name = ReadInput "Domain Name [1..46]" `
+                                 "corp.example.com" `
+                                 @("^[^.]{1,12}\\.", "^.{1,46}$") `
+                                 "Please retype a domain name (max 12 characters for NETBIOS domain part, max 46 characters in total)"
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
                                                 "2000" `
-                                                "^[0-9]+$" `
+                                                @("^[0-9]+$") `
                                                 "Please retype a valid number")
+
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
+        $Env:dest_dns_domain_max46 = $domain_name
         $Env:attempt_count = $numof_attempts
+        $Env:user_domain_max12 = $domain_name.Split(".")[0]
         Remove-Item Env:user_name_max14
-        Remove-Item Env:user_domain_max12
 
         if (! (AskYesNo "Login attempts by random users" "N")) {
             if (AskYesNo "Login attempts by a service account?" "N") {
@@ -1361,8 +1376,8 @@ class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
             } else {
                 $username = ReadInput "Username [1..14]" `
                                       (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
-                                      "^.{1,14}$" `
-                                      "Please retype an user name (max 14 charactors)"
+                                      @("^.{1,14}$") `
+                                      "Please retype a user name (max 14 charactors)"
             }
             $Env:user_name_max14 = $username
         }
@@ -1393,21 +1408,26 @@ class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
         Write-Host "### Enter the LDAP configuration"
         $client_ip = ReadInput "Client IP" `
                                $interface.IPAddress `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $server_ip = ReadInput "Server IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
+        $domain_name = ReadInput "Domain Name [1..46]" `
+                                 "corp.example.com" `
+                                 @("^[^.]{1,12}", "^.{1,46}$") `
+                                 "Please retype a domain name (max 46 charactors)"
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
                                                 "2000" `
-                                                "^[0-9]+$" `
+                                                @("^[0-9]+$") `
                                                 "Please retype a valid number")
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
+        $Env:dest_dns_domain_max46 = $domain_name
+        $Env:user_domain_max12 = $domain_name.Split(".")[0]
         $Env:attempt_count = $numof_attempts
         Remove-Item Env:user_name_max14
-        Remove-Item Env:user_domain_max12
 
         if (! (AskYesNo "Login attempts by random users" "N")) {
             if (AskYesNo "Login attempts by a service account?" "N") {
@@ -1420,8 +1440,8 @@ class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
             } else {
                 $username = ReadInput "Username [1..14]" `
                                       (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
-                                      "^.{1,14}$" `
-                                      "Please retype an user name (max 14 charactors)"
+                                      @("^.{1,14}$") `
+                                      "Please retype a user name (max 14 charactors)"
             }
             $Env:user_name_max14 = $username
         }
@@ -1452,17 +1472,17 @@ class IptgenKerberosUnauthorizedLoginAttempts : IptgenBase {
         Write-Host "### Enter the kerberos configuration"
         $client_ip = ReadInput "Client IP" `
                                $interface.IPAddress `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $server_ip = ReadInput "Server IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
 
-        $domain_name = ReadInput "Domain Name" "corp.example.com" "^.+$"
+        $domain_name = ReadInput "Domain Name" "corp.example.com" @("^.+$")
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
                                                 "100" `
-                                                "^[0-9]+$" `
+                                                @("^[0-9]+$") `
                                                 "Please retype a valid number")
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
@@ -1473,8 +1493,8 @@ class IptgenKerberosUnauthorizedLoginAttempts : IptgenBase {
         if (! (AskYesNo "Login attempts by random users" "N")) {
             $username = ReadInput "Username [1..14]" `
                                   (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
-                                  "^.{1,14}$" `
-                                  "Please retype an user name (max 14 charactors)"
+                                  @("^.{1,14}$") `
+                                  "Please retype a user name (max 14 charactors)"
             $Env:user_name = $username
         }
         if (AskYesNo "Are you sure you want to run?") {
@@ -1504,16 +1524,16 @@ class IptgenKerberosUserEnumerationBruteForce : IptgenBase {
         Write-Host "### Enter the kerberos configuration"
         $client_ip = ReadInput "Client IP" `
                                $interface.IPAddress `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $server_ip = ReadInput "Server IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
-        $domain_name = ReadInput "Domain Name" "corp.example.com" "^.+$"
+        $domain_name = ReadInput "Domain Name" "corp.example.com" @("^.+$")
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
                                                 "100" `
-                                                "^[0-9]+$" `
+                                                @("^[0-9]+$") `
                                                 "Please retype a valid number")
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
@@ -1616,13 +1636,12 @@ class RsgcliDnsTunneling : RsgcliBase {
         Write-Host "### Enter the DNS tunneling configuration"
         $rsgsvr_host = ReadInput "RSG Server Host" `
                                  $this.props.rsgsvr_host `
-                                 "^.+$"
+                                 @("^.+$")
         $rsgsvr_port = ReadInput "RSG Server Port" `
                                  $this.props.rsgsvr_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
-
-        $domain = ReadInput "DNS tunnel domain" $null "^.+$"
+        $domain = ReadInput "DNS tunnel domain" $null @("^.+$")
 
         $Env:domain = $domain
         if (AskYesNo "Are you sure you want to run?") {
@@ -1649,10 +1668,10 @@ class RsgcliDnsRandomQuery : RsgcliBase {
         Write-Host "### Enter the DNS random query configuration"
         $rsgsvr_host = ReadInput "RSG Server Host" `
                                  $this.props.rsgsvr_host `
-                                 "^.+$"
+                                 @("^.+$")
         $rsgsvr_port = ReadInput "RSG Server Port" `
                                  $this.props.rsgsvr_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
 
         if (AskYesNo "Are you sure you want to run?") {
@@ -1679,17 +1698,17 @@ class RsgcliSmtpFileUpload : RsgcliBase {
         Write-Host "### Enter the SMTP file upload configuration"
         $rsgsvr_host = ReadInput "RSG Server Host" `
                                  $this.props.rsgsvr_host `
-                                 "^.+$"
+                                 @("^.+$")
         $rsgsvr_port = ReadInput "RSG Server Port" `
                                  $this.props.rsgsvr_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
 
-        $upload_filename = ReadInput "Upload file name" "test.dat" "^.+$"
+        $upload_filename = ReadInput "Upload file name" "test.dat" @("^.+$")
         $upload_filesize = ReadInputSize "Upload file size" "20MB" "Invalid file size. Please retype the size."
         $repeat_count = ParseNumber(ReadInput "Number of times to repeat" `
                                               "1" `
-                                              "^[0-9]+$" `
+                                              @("^[0-9]+$") `
                                               "Please retype a valid number")
 
         $Env:upload_filename = $upload_filename
@@ -1719,17 +1738,17 @@ class RsgcliFtpFileUpload : RsgcliBase {
         Write-Host "### Enter the FTP file upload configuration"
         $rsgsvr_host = ReadInput "RSG Server Host" `
                                  $this.props.rsgsvr_host `
-                                 "^.+$"
+                                 @("^.+$")
         $rsgsvr_port = ReadInput "RSG Server Port" `
                                  $this.props.rsgsvr_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
 
-        $upload_filename = ReadInput "Upload file name" "test.dat" "^.+$"
+        $upload_filename = ReadInput "Upload file name" "test.dat" @("^.+$")
         $upload_filesize = ReadInputSize "Upload file size" "100MB" "Invalid file size. Please retype the size."
         $repeat_count = ParseNumber(ReadInput "Number of times to repeat" `
                                               "1" `
-                                              "^[0-9]+$" `
+                                              @("^[0-9]+$") `
                                               "Please retype a valid number")
 
         $Env:upload_filename = $upload_filename
@@ -1759,16 +1778,16 @@ class RsgcliHttpFileUpload : RsgcliBase {
         Write-Host "### Enter the HTTP file upload configuration"
         $rsgsvr_host = ReadInput "RSG Server Host" `
                                  $this.props.rsgsvr_host `
-                                 "^.+$"
+                                 @("^.+$")
         $rsgsvr_port = ReadInput "RSG Server Port" `
                                  $this.props.rsgsvr_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
 
         $upload_filesize = ReadInputSize "Upload file size" "100MB" "Invalid file size. Please retype the size."
         $repeat_count = ParseNumber(ReadInput "Number of times to repeat" `
                                               "1" `
-                                              "^[0-9]+$" `
+                                              @("^[0-9]+$") `
                                               "Please retype a valid number")
 
         $Env:upload_filesize = $upload_filesize
@@ -1797,10 +1816,10 @@ class RsgcliHttpUnauthorizedLoginAttempts : RsgcliBase {
         Write-Host "### Enter the HTTP configuration"
         $rsgsvr_host = ReadInput "RSG Server Host" `
                                  $this.props.rsgsvr_host `
-                                 "^.+$"
+                                 @("^.+$")
         $rsgsvr_port = ReadInput "RSG Server Port" `
                                  $this.props.rsgsvr_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
 
         $Env:attempt_count = 10000
@@ -1828,20 +1847,24 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
         Write-Host "### Enter the SMB configuration"
         $rsgsvr_host = ReadInput "RSG Server Host" `
                                  $this.props.rsgsvr_host `
-                                 "^.+$"
+                                 @("^.+$")
         $rsgsvr_port = ReadInput "RSG Server Port" `
                                  $this.props.rsgsvr_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
+        $domain_name = ReadInput "Domain Name [1..46]" `
+                                 "corp.example.com" `
+                                 @("^[^.]{1,12}\\.", "^.{1,46}$") `
+                                 "Please retype a domain name (max 12 characters for NETBIOS domain part, max 46 characters in total)"
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
                                                 "2000" `
-                                                "^[0-9]+$" `
+                                                @("^[0-9]+$") `
                                                 "Please retype a valid number")
 
-
+        $Env:dest_dns_domain_max46 = $domain_name
         $Env:attempt_count = $numof_attempts
+        $Env:user_domain_max12 = $domain_name.Split(".")[0]
         Remove-Item Env:user_name_max14
-        Remove-Item Env:user_domain_max12
 
         if (! (AskYesNo "Login attempts by random users" "N")) {
             if (AskYesNo "Login attempts by a service account?" "N") {
@@ -1854,8 +1877,8 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
             } else {
                 $username = ReadInput "Username [1..14]" `
                                       (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
-                                      "^.{1,14}$" `
-                                      "Please retype an user name (max 14 charactors)"
+                                      @("^.{1,14}$") `
+                                      "Please retype a user name (max 14 charactors)"
             }
             $Env:user_name_max14 = $username
         }
@@ -1882,20 +1905,25 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
         Write-Host "### Enter the LDAP configuration"
         $rsgsvr_host = ReadInput "RSG Server Host" `
                                  $this.props.rsgsvr_host `
-                                 "^.+$"
+                                 @("^.+$")
         $rsgsvr_port = ReadInput "RSG Server Port" `
                                  $this.props.rsgsvr_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
+        $domain_name = ReadInput "Domain Name [1..46]" `
+                                 "corp.example.com" `
+                                 @("^[^.]{1,12}\\.", "^.{1,46}$") `
+                                 "Please retype a domain name (max 12 characters for NETBIOS domain part, max 46 characters in total)"
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
                                                 "2000" `
-                                                "^[0-9]+$" `
+                                                @("^[0-9]+$") `
                                                 "Please retype a valid number")
 
 
+        $Env:dest_dns_domain_max46 = $domain_name
         $Env:attempt_count = $numof_attempts
+        $Env:user_domain_max12 = $domain_name.Split(".")[0]
         Remove-Item Env:user_name_max14
-        Remove-Item Env:user_domain_max12
 
         if (! (AskYesNo "Login attempts by random users" "N")) {
             if (AskYesNo "Login attempts by a service account?" "N") {
@@ -1908,8 +1936,8 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
             } else {
                 $username = ReadInput "Username [1..14]" `
                                       (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
-                                      "^.{1,14}$" `
-                                      "Please retype an user name (max 14 charactors)"
+                                      @("^.{1,14}$") `
+                                      "Please retype a user name (max 14 charactors)"
             }
             $Env:user_name_max14 = $username
         }
@@ -1936,15 +1964,15 @@ class RsgcliKerberosUnauthorizedLoginAttempts : RsgcliBase {
         Write-Host "### Enter the kerberos configuration"
         $rsgsvr_host = ReadInput "RSG Server Host" `
                                  $this.props.rsgsvr_host `
-                                 "^.+$"
+                                 @("^.+$")
         $rsgsvr_port = ReadInput "RSG Server Port" `
                                  $this.props.rsgsvr_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
-        $domain_name = ReadInput "Domain Name" "corp.example.com" "^.+$"
+        $domain_name = ReadInput "Domain Name" "corp.example.com" @("^.+$")
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
                                                 "100" `
-                                                "^[0-9]+$" `
+                                                @("^[0-9]+$") `
                                                 "Please retype a valid number")
 
         $Env:domain_name = $domain_name
@@ -1954,8 +1982,8 @@ class RsgcliKerberosUnauthorizedLoginAttempts : RsgcliBase {
         if (! (AskYesNo "Login attempts by random users" "N")) {
             $username = ReadInput "Username [1..14]" `
                                   (-Join (Get-Random -Count 8 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)) `
-                                  "^.{1,14}$" `
-                                  "Please retype an user name (max 14 charactors)"
+                                  @("^.{1,14}$") `
+                                  "Please retype a user name (max 14 charactors)"
 
             $Env:user_name = $username
         }
@@ -1982,15 +2010,15 @@ class RsgcliKerberosUserEnumerationBruteForce : RsgcliBase {
         Write-Host "### Enter the kerberos configuration"
         $rsgsvr_host = ReadInput "RSG Server Host" `
                                  $this.props.rsgsvr_host `
-                                 "^.+$"
+                                 @("^.+$")
         $rsgsvr_port = ReadInput "RSG Server Port" `
                                  $this.props.rsgsvr_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
-        $domain_name = ReadInput "Domain Name" "corp.example.com" "^.+$"
+        $domain_name = ReadInput "Domain Name" "corp.example.com" @("^.+$")
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
                                                 "100" `
-                                                "^[0-9]+$" `
+                                                @("^[0-9]+$") `
                                                 "Please retype a valid number")
 
         $Env:domain_name = $domain_name
@@ -2127,24 +2155,24 @@ class FortigateLogs : CommandBase {
         Write-Host "### Enter the syslog configuration"
         $syslog_host = ReadInput "Syslog Host" `
                                  $this.props.syslog_host `
-                                 "^.+$"
+                                 @("^.+$")
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
         $syslog_protocol = ReadInput "Syslog Protocol" `
                                      $this.props.syslog_protocol `
-                                     "^UDP|TCP|udp|tcp$" `
+                                     @("^UDP|TCP|udp|tcp$") `
                                      "Please retype a valid protocol"
         Write-Host ""
         Write-Host "### Enter the port scan configuration"
         $source_ip = ReadInput "Source IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $destination_ip = ReadInput "Destination IP" `
                                     "" `
-                                    $script:PATTERN_IPV4_ADDR `
+                                    @($script:PATTERN_IPV4_ADDR) `
                                     "Please retype a valid IPv4 address"
 
         if (AskYesNo "Are you sure you want to run?") {
@@ -2176,24 +2204,24 @@ class FortigateLogs : CommandBase {
         Write-Host "### Enter the syslog configuration"
         $syslog_host = ReadInput "Syslog Host" `
                                  $this.props.syslog_host `
-                                 "^.+$"
+                                 @("^.+$")
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
         $syslog_protocol = ReadInput "Syslog Protocol" `
                                      $this.props.syslog_protocol `
-                                     "^UDP|TCP|udp|tcp$" `
+                                     @("^UDP|TCP|udp|tcp$") `
                                      "Please retype a valid protocol"
         Write-Host ""
         Write-Host "### Enter the file upload configuration"
         $source_ip = ReadInput "Source IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $destination_ip = ReadInput "Destination IP" `
                                     "" `
-                                    $script:PATTERN_IPV4_ADDR `
+                                    @($script:PATTERN_IPV4_ADDR) `
                                     "Please retype a valid IPv4 address"
         $session_type = ReadInputByChooser "Session Type" `
                                            "https" `
@@ -2202,7 +2230,7 @@ class FortigateLogs : CommandBase {
         $upload_size = ReadInputSize "Total upload size" "1GB" "Invalid size. Please retype the size."
         $numof_session = ParseNumber(ReadInput "Number of sessions" `
                                                "100" `
-                                               "^[0-9]+$" `
+                                               @("^[0-9]+$") `
                                                "Please retype a valid number")
 
         if (AskYesNo "Are you sure you want to run?") {
@@ -2237,29 +2265,29 @@ class FortigateLogs : CommandBase {
         Write-Host "### Enter the syslog configuration"
         $syslog_host = ReadInput "Syslog Host" `
                                  $this.props.syslog_host `
-                                 "^.+$"
+                                 @("^.+$")
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
         $syslog_protocol = ReadInput "Syslog Protocol" `
                                      $this.props.syslog_protocol `
-                                     "^UDP|TCP|udp|tcp$" `
+                                     @("^UDP|TCP|udp|tcp$") `
                                      "Please retype a valid protocol"
         Write-Host ""
         Write-Host "### Enter the authentication logs configuration"
         $source_ip = ReadInput "Authentication Client IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $destination_ip = ReadInput "Active Directory Server IP" `
                                     "" `
-                                    $script:PATTERN_IPV4_ADDR `
+                                    @($script:PATTERN_IPV4_ADDR) `
                                     "Please retype a valid IPv4 address"
-        $domain = ReadInput "Domain Name" "domain" "^.+$"
+        $domain = ReadInput "Domain Name" "domain" @("^.+$")
         $numof_logs = ParseNumber(ReadInput "Number of log records" `
                                             "1000" `
-                                            "^[0-9]+$" `
+                                            @("^[0-9]+$") `
                                             "Please retype a valid number")
         $log_type = ReadInputByChooser "Log Type" `
                                        "success" `
@@ -2338,29 +2366,29 @@ class CheckPointLogs : CommandBase {
         Write-Host "### Enter the syslog configuration"
         $syslog_host = ReadInput "Syslog Host" `
                                  $this.props.syslog_host `
-                                 "^.+$"
+                                 @("^.+$")
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
         $syslog_protocol = ReadInput "Syslog Protocol" `
                                      $this.props.syslog_protocol `
-                                     "^UDP|TCP|udp|tcp$" `
+                                     @("^UDP|TCP|udp|tcp$") `
                                      "Please retype a valid protocol"
         Write-Host ""
         Write-Host "### Enter the port scan configuration"
         $source_ip = ReadInput "Source IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $destination_ip = ReadInput "Destination IP" `
                                     "" `
-                                    $script:PATTERN_IPV4_ADDR `
+                                    @($script:PATTERN_IPV4_ADDR) `
                                     "Please retype a valid IPv4 address"
 
         $app = ReadInput "Application" `
                          "HTTP" `
-                         "^.+$"
+                         @("^.+$")
 
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("powershell.exe",
@@ -2433,24 +2461,24 @@ class CiscoLogs : CommandBase {
         Write-Host "### Enter the syslog configuration"
         $syslog_host = ReadInput "Syslog Host" `
                                  $this.props.syslog_host `
-                                 "^.+$"
+                                 @("^.+$")
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
         $syslog_protocol = ReadInput "Syslog Protocol" `
                                      $this.props.syslog_protocol `
-                                     "^UDP|TCP|udp|tcp$" `
+                                     @("^UDP|TCP|udp|tcp$") `
                                      "Please retype a valid protocol"
         Write-Host ""
         Write-Host "### Enter the port scan configuration"
         $source_ip = ReadInput "Source IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $destination_ip = ReadInput "Destination IP" `
                                     "" `
-                                    $script:PATTERN_IPV4_ADDR `
+                                    @($script:PATTERN_IPV4_ADDR) `
                                     "Please retype a valid IPv4 address"
 
         if (AskYesNo "Are you sure you want to run?") {
@@ -2482,33 +2510,33 @@ class CiscoLogs : CommandBase {
         Write-Host "### Enter the syslog configuration"
         $syslog_host = ReadInput "Syslog Host" `
                                  $this.props.syslog_host `
-                                 "^.+$"
+                                 @("^.+$")
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
         $syslog_protocol = ReadInput "Syslog Protocol" `
                                      $this.props.syslog_protocol `
-                                     "^UDP|TCP|udp|tcp$" `
+                                     @("^UDP|TCP|udp|tcp$") `
                                      "Please retype a valid protocol"
         Write-Host ""
         Write-Host "### Enter the file upload configuration"
         $source_ip = ReadInput "Source IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $destination_ip = ReadInput "Destination IP" `
                                     "" `
-                                    $script:PATTERN_IPV4_ADDR `
+                                    @($script:PATTERN_IPV4_ADDR) `
                                     "Please retype a valid IPv4 address"
         $destination_port = ReadInput "Destination Port" `
                                       $null `
-                                      "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                      @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                       "Please retype a valid port number"
         $upload_size = ReadInputSize "Total upload size" "1GB" "Invalid size. Please retype the size."
         $numof_session = ParseNumber(ReadInput "Number of sessions" `
                                                "100" `
-                                               "^[0-9]+$" `
+                                               @("^[0-9]+$") `
                                                "Please retype a valid number")
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("powershell.exe",
@@ -2542,14 +2570,14 @@ class CiscoLogs : CommandBase {
         Write-Host "### Enter the syslog configuration"
         $syslog_host = ReadInput "Syslog Host" `
                                  $this.props.syslog_host `
-                                 "^.+$"
+                                 @("^.+$")
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
         $syslog_protocol = ReadInput "Syslog Protocol" `
                                      $this.props.syslog_protocol `
-                                     "^UDP|TCP|udp|tcp$" `
+                                     @("^UDP|TCP|udp|tcp$") `
                                      "Please retype a valid protocol"
         Write-Host ""
         Write-Host "### Enter the authentication logs configuration"
@@ -2573,20 +2601,20 @@ class CiscoLogs : CommandBase {
         if (@("all", "ASA-6-722051", "ASA-6-722055").Contains($log_type)) {
             $public_ip = ReadInput "Public IP" `
                                    $public_ip `
-                                   $script:PATTERN_IPV4_ADDR `
+                                   @($script:PATTERN_IPV4_ADDR) `
                                    "Please retype a valid IPv4 address"
         }
         if ($log_type -ne "ASA-6-722055") {
             $user_ip = ReadInput "User IP" `
                                  $user_ip `
-                                 $script:PATTERN_IPV4_ADDR `
+                                 @($script:PATTERN_IPV4_ADDR) `
                                  "Please retype a valid IPv4 address"
         }
         $user_id = ReadInput "User ID (Optional)" ""
 
         $numof_logs = ParseNumber(ReadInput "Number of log records" `
                                             "100" `
-                                            "^[0-9]+$" `
+                                            @("^[0-9]+$") `
                                             "Please retype a valid number")
         $group_policy = "group"
 
@@ -2659,24 +2687,24 @@ class PaloAltoNGFWLogs : CommandBase {
         Write-Host "### Enter the syslog configuration"
         $syslog_host = ReadInput "Syslog Host" `
                                  $this.props.syslog_host `
-                                 "^.+$"
+                                 @("^.+$")
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
         $syslog_protocol = ReadInput "Syslog Protocol" `
                                      $this.props.syslog_protocol `
-                                     "^UDP|TCP|udp|tcp$" `
+                                     @("^UDP|TCP|udp|tcp$") `
                                      "Please retype a valid protocol"
         Write-Host ""
         Write-Host "### Enter the port scan configuration"
         $source_ip = ReadInput "Source IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $destination_ip = ReadInput "Destination IP" `
                                     "" `
-                                    $script:PATTERN_IPV4_ADDR `
+                                    @($script:PATTERN_IPV4_ADDR) `
                                     "Please retype a valid IPv4 address"
 
         if (AskYesNo "Are you sure you want to run?") {
@@ -2745,30 +2773,30 @@ class BindLogs : CommandBase {
         Write-Host "### Enter the syslog configuration"
         $syslog_host = ReadInput "Syslog Host" `
                                  $this.props.syslog_host `
-                                 "^.+$"
+                                 @("^.+$")
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
         $syslog_protocol = ReadInput "Syslog Protocol" `
                                      $this.props.syslog_protocol `
-                                     "^UDP|TCP|udp|tcp$" `
+                                     @("^UDP|TCP|udp|tcp$") `
                                      "Please retype a valid protocol"
 
         Write-Host ""
         Write-Host "### Enter the DNS tunneling configuration"
         $client_ip = ReadInput "DNS client IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $server_ip = ReadInput "DNS server IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
-        $domain = ReadInput "DNS tunnel domain" $null "^.+$"
+        $domain = ReadInput "DNS tunnel domain" $null @("^.+$")
         $numof_queries = ParseNumber(ReadInput "Number of queries" `
                                                "10000" `
-                                               "^[0-9]+$" `
+                                               @("^[0-9]+$") `
                                                "Please retype a valid number")
 
         if (AskYesNo "Are you sure you want to run?") {
@@ -2803,29 +2831,29 @@ class BindLogs : CommandBase {
         Write-Host "### Enter the syslog configuration"
         $syslog_host = ReadInput "Syslog Host" `
                                  $this.props.syslog_host `
-                                 "^.+$"
+                                 @("^.+$")
         $syslog_port = ReadInput "Syslog Port" `
                                  $this.props.syslog_port `
-                                 "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
         $syslog_protocol = ReadInput "Syslog Protocol" `
                                      $this.props.syslog_protocol `
-                                     "^UDP|TCP|udp|tcp$" `
+                                     @("^UDP|TCP|udp|tcp$") `
                                      "Please retype a valid protocol"
 
         Write-Host ""
         Write-Host "### Enter the DNS random query configuration"
         $client_ip = ReadInput "DNS client IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $server_ip = ReadInput "DNS server IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $numof_queries = ParseNumber(ReadInput "Number of queries" `
                                                "10000" `
-                                               "^[0-9]+$" `
+                                               @("^[0-9]+$") `
                                                "Please retype a valid number")
 
         if (AskYesNo "Are you sure you want to run?") {
@@ -2892,21 +2920,21 @@ class NetflowLogs : CommandBase {
         Write-Host "### Enter the netflow configuration"
         $netflow_host = ReadInput "Netflow Host" `
                                   $this.props.netflow_host `
-                                  "^.+$"
+                                  @("^.+$")
         $netflow_port = ReadInput "Netflow Port" `
                                   $this.props.netflow_port `
-                                  "^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$" `
+                                  @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                   "Please retype a valid port number"
 
         Write-Host ""
         Write-Host "### Enter the port scan configuration"
         $source_ip = ReadInput "Source IP" `
                                "" `
-                               $script:PATTERN_IPV4_ADDR `
+                               @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $scan_subnet = ReadInput "Scan Subnet" `
                                  (($source_ip.split(".")[0..2] -join ".") + ".0/24") `
-                                 ^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$ `
+                                 @("^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$") `
                                  "Please retype a valid subnet"
 
         if (AskYesNo "Are you sure you want to run?") {
