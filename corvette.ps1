@@ -40,7 +40,7 @@ function DownloadBytes ([string]$url) {
 function DownloadFile ([string]$url, [string]$save_as) {
     $cli = New-Object Net.WebClient
     $cli.Headers.Add("Cache-Control", "no-cache, no-store")
-    
+
     if ([string]::IsNullOrEmpty($save_as) -Or (IsDirectory $save_as)) {
         $uri = New-Object System.Uri($url)
         if (!$uri.AbsolutePath.EndsWith("/")) {
@@ -64,7 +64,7 @@ function DownloadAndExtractArchive ([string]$url, [string]$directory) {
     Remove-Item $file
 }
 
-function ReadInput([string]$message, [string]$default, [string[]]$and_patterns, [string]$retry_message) {
+function ReadInput ([string]$message, [string]$default, [string[]]$and_patterns, [string]$retry_message) {
     if (![string]::IsNullOrEmpty($default)) {
         $message += " (default: $default)"
     }
@@ -91,7 +91,7 @@ function ReadInput([string]$message, [string]$default, [string[]]$and_patterns, 
     } while ($true)
 }
 
-function ReadPassword([string]$message, [string]$default, [string]$pattern, [string]$retry_message) {
+function ReadPassword ([string]$message, [string]$default, [string]$pattern, [string]$retry_message) {
     if (![string]::IsNullOrEmpty($default)) {
         $message += " (default: $default)"
     }
@@ -116,7 +116,7 @@ function ReadPassword([string]$message, [string]$default, [string]$pattern, [str
     } while ($true)
 }
 
-function ReadInputSize([string]$message, [string]$default, [string]$retry_message) {
+function ReadInputSize ([string]$message, [string]$default, [string]$retry_message) {
 
     $pattern = "^(?<num>\d+(?:\.\d+)?)\s*(?<unit>[KMGT]?B)?$"
     $size_unit = $null
@@ -142,7 +142,7 @@ function ReadInputSize([string]$message, [string]$default, [string]$retry_messag
     } while ($true)
 }
 
-function ReadInputByChooser([string]$message, [string]$default, [string[]]$options, [string]$retry_message) {
+function ReadInputByChooser ([string]$message, [string]$default, [string[]]$options, [string]$retry_message) {
     if (!$options) {
         throw "options are empty."
     }
@@ -174,7 +174,7 @@ function ReadInputByChooser([string]$message, [string]$default, [string[]]$optio
     } while ($true)
 }
 
-function AskYesNo([string]$message, [string]$default = "") {
+function AskYesNo ([string]$message, [string]$default = "") {
     $default = $default.ToLower()
     if (![string]::IsNullOrEmpty($default)) {
         if ($default -eq "yes" -Or $default -eq "y") {
@@ -202,7 +202,7 @@ function AskYesNo([string]$message, [string]$default = "") {
     return $false
 }
 
-function Quote($value) {
+function Quote ($value) {
     if ($value -is [array]) {
         return $value | % { (Quote $_) }
     } else {
@@ -211,16 +211,23 @@ function Quote($value) {
     }
 }
 
-function ParseNumber([string]$val) {
+function HexDigestSha256 ([byte[]]$data) {
+    $sha256 = [BitConverter]::ToString(
+        [Security.Cryptography.SHA256]::Create().ComputeHash($data)
+    ) -replace "-"
+    return $sha256.ToLower()
+}
+
+function ParseNumber ([string]$val) {
     $num = 0
-    if ([int]::TryParse($val, [ref]$num)) { 
+    if ([int]::TryParse($val, [ref]$num)) {
         return $num
     } else {
         return $null
     }
 }
 
-function SplitCommandLine([string]$cmdline) {
+function SplitCommandLine ([string]$cmdline) {
     Begin
     {
         $Kernel32Definition = @'
@@ -263,7 +270,7 @@ function SplitCommandLine([string]$cmdline) {
     }
 }
 
-function ChangeExecutableName([hashtable]$exec_random, [string]$key, [string]$path) {
+function ChangeExecutableName ([hashtable]$exec_random, [string]$key, [string]$path) {
     function GenerateRandomName([string]$path) {
         $dir = [IO.Path]::GetDirectoryName($path)
         $name = [IO.Path]::GetFileNameWithoutExtension($path)
@@ -275,7 +282,7 @@ function ChangeExecutableName([hashtable]$exec_random, [string]$key, [string]$pa
             return (Join-Path $dir $fname)
         }
     }
-    
+
     $xconf = $exec_random[$key]
     if ($xconf -eq $null) {
         return $null
@@ -294,13 +301,17 @@ function ChangeExecutableName([hashtable]$exec_random, [string]$key, [string]$pa
             return $null
         }
     }
-}  
+}
+
+function CleanupHome ([string]$home_dir) {
+    Get-ChildItem -Path $home_dir -Exclude @("corvette.json", "corvette.sha256") | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+}
 
 class Properties {
     [string]$my_script
     [string]$home_dir
     [Management.Automation.InvocationInfo]$invocation_info
-    
+
     [string]$syslog_host
     [string]$syslog_port
     [string]$syslog_protocol
@@ -310,7 +321,7 @@ class Properties {
 
     [string]$rsgsvr_host
     [string]$rsgsvr_port
-    
+
     [hashtable]$exec_random
 
     Properties([Management.Automation.InvocationInfo]$info) {
@@ -327,8 +338,20 @@ class Properties {
 
     hidden [void]Initialize() {
         New-Item -ItemType Directory -Force -Path $this.home_dir
+
+        # Remove outdated files in the home directory when a newer version is run.
+        $old_sha256 = ""
+        $new_sha256 = HexDigestSha256([Text.Encoding]::UTF8.GetBytes($this.my_script))
+        $path = BuildFullPath $this.home_dir ".\corvette.sha256"
+        if (IsFile $path) {
+            $old_sha256 = [IO.File]::ReadAllText($path).Trim()
+        }
+        if ($new_sha256 -ne $old_sha256) {
+            [IO.File]::WriteAllText($path, $new_sha256)
+            CleanupHome $this.home_dir
+        }
     }
-    
+
     hidden [void]Load() {
         $conf_file = BuildFullPath $this.home_dir ".\corvette.json"
         if (IsFile $conf_file) {
@@ -373,7 +396,7 @@ class Properties {
             }
         }
     }
-    
+
     [void]Save() {
         $conf_file = BuildFullPath $this.home_dir ".\corvette.json"
         $local:exec_random = @{}
@@ -405,7 +428,7 @@ class Properties {
     }
 
     [string]MakeSureGzScriptFileExists() {
-        $script = [Text.Encoding]::UTF8.GetBytes($this.my_script)        
+        $script = [Text.Encoding]::UTF8.GetBytes($this.my_script)
         $gzs = New-Object IO.MemoryStream
         $gz = New-Object IO.Compression.GZipStream($gzs, [IO.Compression.CompressionMode]::Compress)
         $gz.Write($script, 0, $script.Length)
@@ -437,7 +460,7 @@ class ConfigureSettings : CommandBase {
     }
 
     hidden [void]SetDefaultSyslogServer() {
-        
+
         $syslog_port = $this.props.syslog_port
         if ([string]::IsNullOrEmpty($syslog_port)) {
             $syslog_port = "514"
@@ -469,7 +492,7 @@ class ConfigureSettings : CommandBase {
     }
 
     hidden [void]SetDefaultNetflowServer() {
-        
+
         $netflow_port = $this.props.netflow_port
         if ([string]::IsNullOrEmpty($netflow_port)) {
             $netflow_port = "2055"
@@ -492,7 +515,7 @@ class ConfigureSettings : CommandBase {
     }
 
     hidden [void]SetDefaultRsgServer() {
-        
+
         $rsgsvr_port = $this.props.rsgsvr_port
         if ([string]::IsNullOrEmpty($rsgsvr_port)) {
             $rsgsvr_port = "65534"
@@ -515,15 +538,15 @@ class ConfigureSettings : CommandBase {
     }
 
     hidden [void]SetExecutableNameRandomization() {
-        
+
         $exec_random = $this.props.exec_random
         if ([string]::IsNullOrEmpty($exec_random)) {
             $exec_random = @{}
         }
         $exec_random = $exec_random.clone()
-        
+
         $keys = @("iptgen", "rsgcli")
-        
+
         while ($true) {
             Write-Host ""
             Write-Host "Execution Name Randomization"
@@ -549,7 +572,7 @@ class ConfigureSettings : CommandBase {
                 $num = ParseNumber ($cmd)
                 if ($num -ne $null -And $num -ge 1) {
                     $key = $keys[$num - 1]
-                    
+
                     if ($exec_random.$key -eq $null) {
                         $exec_random.$key = @{}
                     }
@@ -581,12 +604,7 @@ class ConfigureSettings : CommandBase {
                             return
                         }
                         "0" {
-                            Get-ChildItem -Path $this.props.home_dir -Exclude @("corvette.json") | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-                            <#
-                            Remove-Item -Path $this.props.home_dir -Recurse -Force -ErrorAction SilentlyContinue
-                            New-Item -ItemType Directory -Force -Path $this.props.home_dir
-                            $this.props.Save()
-                            #>
+                            CleanupHome $this.props.home_dir
                             Write-Host "Done."
                         }
                         "1" {
@@ -744,10 +762,10 @@ class PsExec : CommandBase {
         if (AskYesNo "Are you sure you want to run?") {
             $exe_dir = [IO.Path]::GetDirectoryName($this.psexec_exe)
             $exe_name = [IO.Path]::GetFileName($this.psexec_exe)
-            
+
             Set-Item Env:Path $Env:Path.Replace($exe_dir + ";", "")
             $Env:Path = $exe_dir + ";" + $Env:Path
- 
+
             $cargs = @($exe_name,
                       ("\\" + $hostname),
                       "-accepteula",
@@ -776,10 +794,10 @@ class Mimikatz : CommandBase {
     [void]Run([bool]$run_as) {
         $exe_dir = [IO.Path]::GetDirectoryName($this.mimikatz_exe)
         $exe_name = [IO.Path]::GetFileName($this.mimikatz_exe)
-        
+
         Set-Item Env:Path $Env:Path.Replace($exe_dir + ";", "")
         $Env:Path = $exe_dir + ";" + $Env:Path
-        
+
         if ($run_as) {
             Start-Process -FilePath $exe_name -WorkingDirectory $this.props.home_dir -verb runas
         } else {
@@ -811,10 +829,10 @@ class KerberosBruteForce : CommandBase {
     [void]Run() {
         $exe_dir = [IO.Path]::GetDirectoryName($this.rubeus_exe)
         $exe_name = [IO.Path]::GetFileName($this.rubeus_exe)
-        
+
         Set-Item Env:Path $Env:Path.Replace($exe_dir + ";", "")
         $Env:Path = $exe_dir + ";" + $Env:Path
-        
+
         $cargs = @($exe_name, "brute", "/passwords:$($this.passwords_file)", "/noticket")
         $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
         Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
@@ -840,10 +858,10 @@ class WildFireTestPE : CommandBase {
     [void]Run() {
         $exe_dir = [IO.Path]::GetDirectoryName($this.wildfire_exe)
         $exe_name = [IO.Path]::GetFileName($this.wildfire_exe)
-        
+
         Set-Item Env:Path $Env:Path.Replace($exe_dir + ";", "")
         $Env:Path = $exe_dir + ";" + $Env:Path
-        
+
         $args = @("/C,", (Quote $exe_name), "& echo Done. & pause")
         Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
     }
@@ -881,7 +899,7 @@ class IptgenBase : CommandBase {
         $this.iptgen_dir = BuildFullPath $props.home_dir ".\iptgen-${iptgen_ver}"
         $this.iptgen_bin = BuildFullPath $this.iptgen_dir ".\bin"
         $this.iptgen_exe = BuildFullPath $this.iptgen_bin $this.iptgen_exename
-        
+
         if (!(IsFile $this.iptgen_exe)) {
             $url = "https://github.com/spearmin10/iptgen/releases/download/${iptgen_ver}/iptgen.win32.zip"
             DownloadAndExtractArchive $url $this.iptgen_dir
@@ -915,7 +933,7 @@ class IptgenBase : CommandBase {
                 break
             }
             $num = ParseNumber $item
-            if ($num -gt 0 -And $num -le $interfaces.Length) { 
+            if ($num -gt 0 -And $num -le $interfaces.Length) {
                 return $interfaces[$num - 1]
             }
         }
@@ -924,7 +942,7 @@ class IptgenBase : CommandBase {
 
     [void]Run([string]$interface, [string]$iptgen_json, [int]$response_interval) {
         $post_cmds = " & echo Done. & pause"
-        
+
         $exe_path = ChangeExecutableName $this.props.exec_random "iptgen" $this.iptgen_exe
         if ([string]::IsNullOrEmpty($exe_path)) {
             $exe_path = $this.iptgen_exe
@@ -937,10 +955,10 @@ class IptgenBase : CommandBase {
         }
         $exe_dir = [IO.Path]::GetDirectoryName($exe_path)
         $exe_name = [IO.Path]::GetFileName($exe_path)
-        
+
         Set-Item Env:Path $Env:Path.Replace($exe_dir + ";", "")
         $Env:Path = $exe_dir + ";" + $Env:Path
-        
+
         $cargs = @($exe_name, "--in.file", $iptgen_json, "--out.eth", $interface)
         if ($response_interval -ne 0) {
             $cargs += @("--response.interval", [string]$response_interval)
@@ -962,7 +980,7 @@ class RsgcliBase : CommandBase {
         $this.rsgcli_dir = BuildFullPath $props.home_dir ".\rsgcli-${rsgcli_ver}"
         $this.rsgcli_bin = BuildFullPath $this.rsgcli_dir ".\bin"
         $this.rsgcli_exe = BuildFullPath $this.rsgcli_bin $this.rsgcli_exename
-        
+
         if (!(IsFile $this.rsgcli_exe)) {
             $url = "https://github.com/spearmin10/rsgen/releases/download/${rsgcli_ver}/rsgcli.win32.zip"
             DownloadAndExtractArchive $url $this.rsgcli_dir
@@ -971,7 +989,7 @@ class RsgcliBase : CommandBase {
 
     [void]Run([string]$rsgsvr_host, [int]$rsgsvr_port, [string]$rsgcli_json) {
         $post_cmds = " & echo Done. & pause"
-        
+
         $exe_path = ChangeExecutableName $this.props.exec_random "rsgcli" $this.rsgcli_exe
         if ([string]::IsNullOrEmpty($exe_path)) {
             $exe_path = $this.rsgcli_exe
@@ -984,10 +1002,10 @@ class RsgcliBase : CommandBase {
         }
         $exe_dir = [IO.Path]::GetDirectoryName($exe_path)
         $exe_name = [IO.Path]::GetFileName($exe_path)
-        
+
         Set-Item Env:Path $Env:Path.Replace($exe_dir + ";", "")
         $Env:Path = $exe_dir + ";" + $Env:Path
-        
+
         $cargs = @($exe_name,
                    "--in.file", $rsgcli_json,
                    "--mgmt.host", $rsgsvr_host,
@@ -1005,7 +1023,7 @@ class NmapPortScan : NmapBase {
     [void]Run() {
         $exe_dir = [IO.Path]::GetDirectoryName($this.nmap_exe)
         $exe_name = [IO.Path]::GetFileName($this.nmap_exe)
-        
+
         Set-Item Env:Path $Env:Path.Replace($exe_dir + ";", "")
         $Env:Path = $exe_dir + ";" + $Env:Path
 
@@ -1229,7 +1247,7 @@ class IptgenHttpFileUpload : IptgenBase {
 
     IptgenHttpFileUpload([Properties]$props, [bool]$https) : base ($props) {
         $file_name = $null
-        
+
         if ($https) {
           $file_name = "iptgen-https-upload-template.json"
         } else {
@@ -2048,7 +2066,7 @@ class RsgcliMenu : CommandBase {
             Write-Host " 9) Generate Kerberos unauthorized login attempt sessions"
             Write-Host "10) Generate Kerberos user enumeration brute-force sessions"
             Write-Host " q) Exit"
-            
+
             try {
                 :retry do {
                     $cmd = Read-Host "Please choose a menu item to run"
@@ -2110,7 +2128,7 @@ class FortigateLogs : CommandBase {
             Write-Host " 2) Simulate large upload"
             Write-Host " 3) Send NTLM-auth logs"
             Write-Host " q) Exit"
-            
+
             try {
                 :retry do {
                     $cmd = Read-Host "Please choose a menu item to run"
@@ -2138,7 +2156,7 @@ class FortigateLogs : CommandBase {
             }
         }
     }
-    
+
     [void]RunPortScan() {
         $file_name = "syslog-fortigate-portscan.ps1"
         $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
@@ -2187,7 +2205,7 @@ class FortigateLogs : CommandBase {
             Start-Process -FilePath "cmd.exe" -ArgumentList $args
         }
     }
-    
+
     [void]RunLargeUpload() {
         $file_name = "syslog-fortigate-large-upload.ps1"
         $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
@@ -2248,7 +2266,7 @@ class FortigateLogs : CommandBase {
             Start-Process -FilePath "cmd.exe" -ArgumentList $args
         }
     }
-    
+
     [void]RunNTLMAuth() {
         $file_name = "syslog-fortigate-authlogs.ps1"
         $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
@@ -2327,7 +2345,7 @@ class CheckPointLogs : CommandBase {
             Write-Host "************************************"
             Write-Host " 1) Simulate port scan"
             Write-Host " q) Exit"
-            
+
             try {
                 :retry do {
                     $cmd = Read-Host "Please choose a menu item to run"
@@ -2349,7 +2367,7 @@ class CheckPointLogs : CommandBase {
             }
         }
     }
-    
+
     [void]RunPortScan() {
         $file_name = "syslog-checkpoint-portscan.ps1"
         $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
@@ -2416,7 +2434,7 @@ class CiscoLogs : CommandBase {
             Write-Host " 2) Simulate large upload"
             Write-Host " 3) Send AnyConnect auth logs"
             Write-Host " q) Exit"
-            
+
             try {
                 :retry do {
                     $cmd = Read-Host "Please choose a menu item to run"
@@ -2444,7 +2462,7 @@ class CiscoLogs : CommandBase {
             }
         }
     }
-    
+
     [void]RunPortScan() {
         $file_name = "syslog-cisco-asa-portscan.ps1"
         $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
@@ -2493,7 +2511,7 @@ class CiscoLogs : CommandBase {
             Start-Process -FilePath "cmd.exe" -ArgumentList $args
         }
     }
-    
+
     [void]RunLargeUpload() {
         $file_name = "syslog-cisco-asa-large-upload.ps1"
         $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
@@ -2553,7 +2571,7 @@ class CiscoLogs : CommandBase {
             Start-Process -FilePath "cmd.exe" -ArgumentList $args
         }
     }
-    
+
     [void]RunAnyConnectAuth() {
         $file_name = "syslog-cisco-any-connect-authlogs.ps1"
         $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
@@ -2648,7 +2666,7 @@ class PaloAltoNGFWLogs : CommandBase {
             Write-Host "************************************"
             Write-Host " 1) Simulate port scan"
             Write-Host " q) Exit"
-            
+
             try {
                 :retry do {
                     $cmd = Read-Host "Please choose a menu item to run"
@@ -2670,7 +2688,7 @@ class PaloAltoNGFWLogs : CommandBase {
             }
         }
     }
-    
+
     [void]RunPortScan() {
         $file_name = "syslog-palo-alto-ngfw-portscan.ps1"
         $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
@@ -2731,7 +2749,7 @@ class BindLogs : CommandBase {
             Write-Host " 1) Simulate DNS tunneling"
             Write-Host " 2) Simulate DNS random query"
             Write-Host " q) Exit"
-            
+
             try {
                 :retry do {
                     $cmd = Read-Host "Please choose a menu item to run"
@@ -2756,7 +2774,7 @@ class BindLogs : CommandBase {
             }
         }
     }
-    
+
     [void]RunDNSTunneling() {
         $file_name = "syslog-bind-dns-tunneling.ps1"
         $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
@@ -2814,7 +2832,7 @@ class BindLogs : CommandBase {
             Start-Process -FilePath "cmd.exe" -ArgumentList $args
         }
     }
-    
+
     [void]RunDNSRandomQuery() {
         $file_name = "syslog-bind-dns-random-failed-query.ps1"
         $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
@@ -2881,7 +2899,7 @@ class NetflowLogs : CommandBase {
             Write-Host "************************************"
             Write-Host " 1) Simulate port scan"
             Write-Host " q) Exit"
-            
+
             try {
                 :retry do {
                     $cmd = Read-Host "Please choose a menu item to run"
@@ -2903,7 +2921,7 @@ class NetflowLogs : CommandBase {
             }
         }
     }
-    
+
     [void]RunPortScan() {
         $file_name = "netflow-portscan.ps1"
         $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
@@ -2953,7 +2971,7 @@ class NetflowLogs : CommandBase {
 
 class Menu {
     [Properties]$props
-    
+
     Menu([Properties]$props) {
         $this.props = $props
     }
