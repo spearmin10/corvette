@@ -146,7 +146,7 @@ function ReadInputByChooser ([string]$message, [string]$default, [string[]]$opti
     if (!$options) {
         throw "options are empty."
     }
-    $display_options = $options | select -Unique
+    $display_options = @($options | select -Unique)
 
     if (![string]::IsNullOrEmpty($default)) {
         $index = [array]::IndexOf($options, $default)
@@ -2665,6 +2665,7 @@ class PaloAltoNGFWLogs : CommandBase {
         while ($true) {
             Write-Host "************************************"
             Write-Host " 1) Simulate port scan"
+            Write-Host " 2) Send a threat log"
             Write-Host " q) Exit"
 
             try {
@@ -2673,6 +2674,9 @@ class PaloAltoNGFWLogs : CommandBase {
                     switch($cmd) {
                         "1" {
                             $this.RunPortScan()
+                        }
+                        "2" {
+                            $this.RunSendingThreatLog()
                         }
                         "q" {
                             return
@@ -2733,6 +2737,186 @@ class PaloAltoNGFWLogs : CommandBase {
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
                        "-SourceIP", $source_ip,
                        "-DestinationIP", $destination_ip)
+            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
+            Start-Process -FilePath "cmd.exe" -ArgumentList $args
+        }
+    }
+
+    [void]RunSendingThreatLog() {
+        $file_name = "syslog-custom.ps1"
+        $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
+        $script_file = BuildFullPath $scripts_dir $file_name
+
+        if (!(IsDirectory $scripts_dir)) {
+            New-Item -ItemType Directory -Force -Path $scripts_dir
+        }
+
+        $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/bin/$($file_name)"
+        DownloadFile $url $script_file
+
+        Write-Host ""
+        Write-Host "### Enter the syslog configuration"
+        $syslog_host = ReadInput "Syslog Host" `
+                                 $this.props.syslog_host `
+                                 @("^.+$")
+        $syslog_port = ReadInput "Syslog Port" `
+                                 $this.props.syslog_port `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                 "Please retype a valid port number"
+        $syslog_protocol = ReadInput "Syslog Protocol" `
+                                     $this.props.syslog_protocol `
+                                     @("^UDP|TCP|udp|tcp$") `
+                                     "Please retype a valid protocol"
+
+        Write-Host ""
+        Write-Host "### Enter the threat log template"
+        $threat_template = ReadInputByChooser "Threat Log Template" `
+                                              "Malicious PowerShell Script" `
+                                              @("Malicious PowerShell Script") `
+                                              "Please type a valid log template"
+
+        $log_params = @{
+            __firewall_type="firewall.threat"
+            __timestamp=$(Get-Date $(Get-Date).ToUniversalTime() -Format "yyyy/MM/dd HH:mm:ss")
+            __tz=$(Get-Date $(Get-Date).ToUniversalTime() -Format "yyyy-MM-ddTHH:mm:ssK")
+            action="alert"
+            app="unknown-tcp"
+            app_category=""
+            app_sub_category=""
+            dest_device_category=""
+            dest_device_mac=""
+            dest_device_model=""
+            dest_device_osfamily=""
+            dest_device_osversion=""
+            dest_device_profile=""
+            dest_device_vendor=""
+            dest_ip=""
+            dest_port=""
+            dest_user=""
+            direction="client-to-server"
+            from_zone="corvette"
+            inbound_if="ethernet1/2"
+            log_source_id="012345678901234"
+            log_source_name="panw-ngfw"
+            log_time=$(Get-Date).ToUniversalTime().ToString("MMM dd yyyy HH:mm:ss GMT", [System.Globalization.CultureInfo]::CreateSpecificCulture("en-US"))
+            log_type="THREAT"
+            misc=""
+            nat_dest="0.0.0.0"
+            nat_dest_port="0"
+            nat_source="0.0.0.0"
+            nat_source_port="0"
+            outbound_if="ethernet1/1"
+            protocol="tcp"
+            rule_matched="Any"
+            rule_matched_uuid="bebedbe4-0e29-0e10-0093-5bb48ced7596"
+            sequence_no=[DateTimeOffset]::Now.ToUnixTimeSeconds()
+            session_id=([DateTimeOffset]::Now.ToUnixTimeSeconds() * 123)
+            severity="4"
+            source_device_category=""
+            source_device_mac=""
+            source_device_model=""
+            source_device_osfamily=""
+            source_device_osversion=""
+            source_device_profile=""
+            source_device_vendor=""
+            source_ip=""
+            source_port=""
+            source_user=""
+            subtype="vulnerability"
+            threat_category=""
+            threat_id=""
+            threat_name=""
+            time_generated=$(Get-Date).ToUniversalTime().ToString("MMM dd yyyy HH:mm:ss GMT", [System.Globalization.CultureInfo]::CreateSpecificCulture("en-US"))
+            to_zone="corvette"
+            user_agent=""
+            vsys="vsys1"
+            vsys_name=""
+            xff=""
+            xff_ip=""
+        }
+
+        if ($threat_template -eq "Malicious PowerShell Script") {
+            $log_params["subtype"] = ReadInput `
+                "subtype" `
+                "ml-virus"
+
+            $log_params["source_ip"] = ReadInput `
+                "source_ip" `
+                "" `
+                @($script:PATTERN_IPV4_ADDR) `
+                "Please retype a valid IPv4 address"
+
+            $log_params["source_user"] = ReadInput `
+                "source_user" `
+                 ""
+
+            $log_params["source_port"] = ReadInput `
+                "source_port" `
+                "$(Get-Random -Minimum 10000 -Maximum 65534)" `
+                @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                "Please retype a valid port number"
+
+            $log_params["dest_ip"] = ReadInput `
+                "dest_ip" `
+                "" `
+                @($script:PATTERN_IPV4_ADDR) `
+                "Please retype a valid IPv4 address"
+
+            $log_params["dest_port"] = ReadInput `
+                "dest_port" `
+                "443" `
+                @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                "Please retype a valid port number"
+
+            $log_params["app"] = ReadInput `
+                "app" `
+                "github-downloading"
+
+            $log_params["app_category"] = ReadInput `
+                "app_category" `
+                "saas"
+
+            $log_params["app_sub_category"] = ReadInput `
+                "app_sub_category" `
+                "management"
+
+            $log_params["misc"] = ReadInput `
+                "misc" `
+                "xma.g00g1e.net/xp101t.ps1"
+
+            $log_params["action"] = ReadInput `
+                "action" `
+                "drop"
+
+            $log_params["threat_name"] = ReadInput `
+                "threat_name" `
+                "Malicious PowerShell Script"
+
+            $log_params["threat_category"] = ReadInput `
+                "threat_category" `
+                "powershell1"
+
+            $log_params["direction"] = "server to client"
+        } else {
+            throw "Unexpected error"
+        }
+        $cef_extention = ConvertTo-Json -Compress $log_params
+        $cef_extention = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($cef_extention))
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $cargs = @("powershell.exe",
+                       "-ExecutionPolicy", "Bypass", $script_file,
+                       "-SyslogHost", $syslog_host,
+                       "-SyslogPort", $syslog_port,
+                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                       "-CEFVendor", "PANW",
+                       "-CEFDeviceProduct", "NGFW_CEF",
+                       "-CEFDeviceVersion", "11.1.1",
+                       "-CEFEventClassID", "end",
+                       "-CEFName", "THREAT",
+                       "-CEFSeverity", "4",
+                       "-CEFExtension", $cef_extention,
+                       "-ShowLogs", "1")
             $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
             Start-Process -FilePath "cmd.exe" -ArgumentList $args
         }
