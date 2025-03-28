@@ -2796,7 +2796,7 @@ class PaloAltoNGFWLogs : CommandBase {
             direction="client-to-server"
             from_zone="corvette"
             inbound_if="ethernet1/2"
-            log_source_id="012345678901234"
+            log_source_id="123456787654321"
             log_source_name="panw-ngfw"
             log_time=$(Get-Date).ToUniversalTime().ToString("MMM dd yyyy HH:mm:ss GMT", [System.Globalization.CultureInfo]::CreateSpecificCulture("en-US"))
             log_type="THREAT"
