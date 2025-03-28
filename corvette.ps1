@@ -2962,7 +2962,7 @@ class PaloAltoNGFWLogs : CommandBase {
         } elseif ($threat_template -eq "DGA") {
             $log_params["threat_name"] = ReadInput `
                 "threat_name" `
-                "DGA:$(-Join (Get-Random -Count 4 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)).$(-Join (Get-Random -Count 12 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)).net"
+                "DGA:$(-Join (Get-Random -Count 4 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)).$(-Join (Get-Random -Count 32 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)).net"
 
             $log_params["threat_category"] = ReadInput `
                 "threat_category" `
