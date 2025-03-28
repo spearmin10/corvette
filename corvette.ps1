@@ -2769,7 +2769,7 @@ class PaloAltoNGFWLogs : CommandBase {
                                      "Please retype a valid protocol"
 
         Write-Host ""
-        Write-Host "### Enter the threat log template"
+        Write-Host "### Enter the threat log parameters"
         $threat_template = ReadInputByChooser "Threat Log Template" `
                                               "Malicious PowerShell Script" `
                                               @("Malicious PowerShell Script") `
