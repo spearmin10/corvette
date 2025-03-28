@@ -3008,7 +3008,7 @@ class PaloAltoNGFWLogs : CommandBase {
 
             $log_params["source_port"] = "$(Get-Random -Minimum 10000 -Maximum 65534)"
             $log_params["direction"] = "client to server"
-            $log_parmas["protocol"] = "udp"
+            $log_params["protocol"] = "udp"
 
         } else {
             throw "Unexpected error"
