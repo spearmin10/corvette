@@ -2779,7 +2779,7 @@ class PaloAltoNGFWLogs : CommandBase {
 
         $log_params = @{
             __firewall_type="firewall.threat"
-            __timestamp=$(Get-Date $(Get-Date).ToUniversalTime() -Format "yyyy/MM/dd HH:mm:ss")
+            __timestamp="$($(Get-Date).ToUniversalTime().ToString("MMM dd yyyy HH:mm:ss", [System.Globalization.CultureInfo]::CreateSpecificCulture("en-US"))) GMT"
             __tz=$(Get-Date $(Get-Date).ToUniversalTime() -Format "yyyy-MM-ddTHH:mm:ssK")
             action="alert"
             app="unknown-tcp"
@@ -2799,8 +2799,8 @@ class PaloAltoNGFWLogs : CommandBase {
             from_zone="corvette"
             inbound_if="ethernet1/2"
             log_source_id="123456787654321"
-            log_source_name="panw-ngfw"
-            log_time=$(Get-Date).ToUniversalTime().ToString("MMM dd yyyy HH:mm:ss GMT", [System.Globalization.CultureInfo]::CreateSpecificCulture("en-US"))
+            log_source_name="corvette"
+            log_time="$($(Get-Date).ToUniversalTime().ToString("MMM dd yyyy HH:mm:ss", [System.Globalization.CultureInfo]::CreateSpecificCulture("en-US"))) GMT"
             log_type="THREAT"
             misc=""
             nat_dest="0.0.0.0"
@@ -2959,14 +2959,21 @@ class PaloAltoNGFWLogs : CommandBase {
 
             $log_params["direction"] = "client to server"
 
-        } elseif ($threat_template -eq "DGA") {
+        } elseif ($threat_template -eq "DGA") {            
+            [string]$hostname = "$(-Join (Get-Random -Count 4 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)).$(-Join (Get-Random -Count 32 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)).net"
+            
             $log_params["threat_name"] = ReadInput `
                 "threat_name" `
-                "DGA:$(-Join (Get-Random -Count 4 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)).$(-Join (Get-Random -Count 32 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)).net"
+                "DGA:$hostname"
+            $log_params["threat_id"] = $log_params["threat_name"]
 
             $log_params["threat_category"] = ReadInput `
                 "threat_category" `
                 "dns-c2"
+
+            $log_params["subtype"] = ReadInput `
+                "subtype" `
+                "spyware"
 
             $log_params["source_ip"] = ReadInput `
                 "source_ip" `
@@ -3004,11 +3011,12 @@ class PaloAltoNGFWLogs : CommandBase {
 
             $log_params["action"] = ReadInput `
                 "action" `
-                "alert"
+                "drop-packet"
 
             $log_params["source_port"] = "$(Get-Random -Minimum 10000 -Maximum 65534)"
-            $log_params["direction"] = "client to server"
+            $log_params["direction"] = "client-to-server"
             $log_params["protocol"] = "udp"
+            $log_params["misc"] = $hostname
 
         } else {
             throw "Unexpected error"
@@ -3025,7 +3033,7 @@ class PaloAltoNGFWLogs : CommandBase {
                        "-CEFVendor", "PANW",
                        "-CEFDeviceProduct", "NGFW_CEF",
                        "-CEFDeviceVersion", "11.1.1",
-                       "-CEFEventClassID", "end",
+                       "-CEFEventClassID", $log_params["threat_name"],
                        "-CEFName", "THREAT",
                        "-CEFSeverity", "4",
                        "-CEFExtension", $cef_extention,
