@@ -2773,7 +2773,8 @@ class PaloAltoNGFWLogs : CommandBase {
         $threat_template = ReadInputByChooser "Threat Log Template" `
                                               "Malicious PowerShell Script" `
                                               @("Malicious PowerShell Script",
-                                                "Windows SMB Login Attempt") `
+                                                "Windows SMB Login Attempt",
+                                                "DGA") `
                                               "Please type a valid log template"
 
         $log_params = @{
@@ -2956,7 +2957,58 @@ class PaloAltoNGFWLogs : CommandBase {
                 "action" `
                 "drop"
 
-            $log_params["direction"] = "client-to-server"
+            $log_params["direction"] = "client to server"
+
+        } elseif ($threat_template -eq "DGA") {
+            $log_params["threat_name"] = ReadInput `
+                "threat_name" `
+                "DGA:$(-Join (Get-Random -Count 4 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)).$(-Join (Get-Random -Count 12 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)).net"
+
+            $log_params["threat_category"] = ReadInput `
+                "threat_category" `
+                "dns-c2"
+
+            $log_params["source_ip"] = ReadInput `
+                "source_ip" `
+                "" `
+                @($script:PATTERN_IPV4_ADDR) `
+                "Please retype a valid IPv4 address"
+
+            $log_params["source_user"] = ReadInput `
+                "source_user" `
+                 ""
+
+            $log_params["dest_ip"] = ReadInput `
+                "dest_ip" `
+                "" `
+                @($script:PATTERN_IPV4_ADDR) `
+                "Please retype a valid IPv4 address"
+
+            $log_params["dest_port"] = ReadInput `
+                "dest_port" `
+                "53" `
+                @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                "Please retype a valid port number"
+
+            $log_params["app"] = ReadInput `
+                "app" `
+                "dns-base"
+
+            $log_params["app_category"] = ReadInput `
+                "app_category" `
+                "networking"
+
+            $log_params["app_sub_category"] = ReadInput `
+                "app_sub_category" `
+                "infrastructure"
+
+            $log_params["action"] = ReadInput `
+                "action" `
+                "alert"
+
+            $log_params["source_port"] = "$(Get-Random -Minimum 10000 -Maximum 65534)"
+            $log_params["direction"] = "client to server"
+            $log_parmas["protocol"] = "udp"
 
         } else {
             throw "Unexpected error"
