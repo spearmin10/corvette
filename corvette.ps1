@@ -2772,7 +2772,8 @@ class PaloAltoNGFWLogs : CommandBase {
         Write-Host "### Enter the threat log parameters"
         $threat_template = ReadInputByChooser "Threat Log Template" `
                                               "Malicious PowerShell Script" `
-                                              @("Malicious PowerShell Script") `
+                                              @("Malicious PowerShell Script",
+                                                "Windows SMB Login Attempt") `
                                               "Please type a valid log template"
 
         $log_params = @{
@@ -2897,6 +2898,66 @@ class PaloAltoNGFWLogs : CommandBase {
                 "drop"
 
             $log_params["direction"] = "server to client"
+
+        } elseif ($threat_template -eq "Windows SMB Login Attempt") {
+            $log_params["threat_name"] = ReadInput `
+                "threat_name" `
+                "Windows SMB Login Attempt"
+
+            $log_params["threat_category"] = ReadInput `
+                "threat_category" `
+                "brute-force"
+
+            $log_params["subtype"] = ReadInput `
+                "subtype" `
+                "vulnerability"
+
+            $log_params["source_ip"] = ReadInput `
+                "source_ip" `
+                "" `
+                @($script:PATTERN_IPV4_ADDR) `
+                "Please retype a valid IPv4 address"
+
+            $log_params["source_user"] = ReadInput `
+                "source_user" `
+                 ""
+
+            $log_params["source_port"] = ReadInput `
+                "source_port" `
+                "$(Get-Random -Minimum 10000 -Maximum 65534)" `
+                @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                "Please retype a valid port number"
+
+            $log_params["dest_ip"] = ReadInput `
+                "dest_ip" `
+                "" `
+                @($script:PATTERN_IPV4_ADDR) `
+                "Please retype a valid IPv4 address"
+
+            $log_params["dest_port"] = ReadInput `
+                "dest_port" `
+                "445" `
+                @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                "Please retype a valid port number"
+
+            $log_params["app"] = ReadInput `
+                "app" `
+                "ms-ds-smbv3"
+
+            $log_params["app_category"] = ReadInput `
+                "app_category" `
+                "business-systems"
+
+            $log_params["app_sub_category"] = ReadInput `
+                "app_sub_category" `
+                "storage-backup"
+
+            $log_params["action"] = ReadInput `
+                "action" `
+                "drop"
+
+            $log_params["direction"] = "client-to-server"
+
         } else {
             throw "Unexpected error"
         }
