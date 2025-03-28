@@ -2836,6 +2836,14 @@ class PaloAltoNGFWLogs : CommandBase {
         }
 
         if ($threat_template -eq "Malicious PowerShell Script") {
+            $log_params["threat_name"] = ReadInput `
+                "threat_name" `
+                "Malicious PowerShell Script"
+
+            $log_params["threat_category"] = ReadInput `
+                "threat_category" `
+                "powershell1"
+
             $log_params["subtype"] = ReadInput `
                 "subtype" `
                 "ml-virus"
@@ -2887,14 +2895,6 @@ class PaloAltoNGFWLogs : CommandBase {
             $log_params["action"] = ReadInput `
                 "action" `
                 "drop"
-
-            $log_params["threat_name"] = ReadInput `
-                "threat_name" `
-                "Malicious PowerShell Script"
-
-            $log_params["threat_category"] = ReadInput `
-                "threat_category" `
-                "powershell1"
 
             $log_params["direction"] = "server to client"
         } else {
