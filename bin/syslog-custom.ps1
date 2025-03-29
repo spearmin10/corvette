@@ -214,7 +214,7 @@ class Main {
     }
 }
 
-$cef_extension_obj = ConvertFrom-Json $([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($CEFExtension)))
+$cef_extension_obj = ConvertFrom-Json $([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($CEFExtension)))
 $cef_extension = @{}
 foreach ($key in $cef_extension_obj.PSObject.Properties.Name) {
     $cef_extension[$key] = $cef_extension_obj.$key
