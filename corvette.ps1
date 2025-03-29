@@ -204,11 +204,26 @@ function AskYesNo ([string]$message, [string]$default = "") {
 
 function Quote ($value) {
     if ($value -is [array]) {
-        return $value | % { (Quote $_) }
+        $value = ,@($value | % { (Quote $_) })
     } else {
         $value = $value.Replace('"', '""')
-        return "`"$value`""
+        $value = "`"$value`""
     }
+    return $value
+}
+
+function QuoteCmdParam ($value) {
+    if ($value -is [array]) {
+        $value = ,@($value | % { (QuoteCmdParam $_) })
+    } else {
+        if ($value.Contains('"')) {
+            $value = $value.Replace('"', '""""""')
+        }
+        if ($value.Contains(" ")) {
+            $value = "`"`"`"$value`"`"`""
+        }
+    }
+    return $value
 }
 
 function HexDigestSha256 ([byte[]]$data) {
@@ -301,6 +316,39 @@ function ChangeExecutableName ([hashtable]$exec_random, [string]$key, [string]$p
             return $null
         }
     }
+}
+
+function StartProcess ([string]$cmd_path, [array]$cmd_args, [string]$home_dir, [string]$epilogue_script) {
+    $script = @'
+$cargs = ConvertFrom-Json $([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String("@@@cmd_args@@@")))
+$home_dir = "@@@home_dir@@@"
+if ([string]::IsNullOrEmpty($dir)) {
+    [string]$home_dir = Get-Location
+}
+if ($cargs) {
+    Start-Process -FilePath "@@@cmd_path@@@" -ArgumentList $cargs -Wait -NoNewWindow -WorkingDirectory $home_dir
+} else {
+    Start-Process -FilePath "@@@cmd_path@@@" -Wait -NoNewWindow -WorkingDirectory $home_dir
+}
+Write-Host 'Done.'
+Write-Host -NoNewLine 'Press any keys to continue...'
+$null = [System.Console]::ReadKey()
+& ([ScriptBlock]::Create([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String("@@@epilogue_script@@@"))))
+'@
+    if (!$cmd_args) {
+        $cmd_args = @()
+    }
+    if ($epilogue_script) {
+        $epilogue_script = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($epilogue_script))
+    }
+    $cargs = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($(ConvertTo-Json $(QuoteCmdParam $cmd_args) -Compress)))
+    $script = $script.Replace("@@@cmd_path@@@", $cmd_path)
+    $script = $script.Replace("@@@cmd_args@@@", $cargs)
+    $script = $script.Replace("@@@home_dir@@@", $home_dir)
+    $script = $script.Replace("@@@epilogue_script@@@", $epilogue_script)
+
+    $script_b64 = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($script))
+    Start-Process -FilePath "powershell.exe" -ArgumentList @("-e", $script_b64)
 }
 
 function CleanupHome ([string]$home_dir) {
@@ -766,8 +814,7 @@ class PsExec : CommandBase {
             Set-Item Env:Path $Env:Path.Replace($exe_dir + ";", "")
             $Env:Path = $exe_dir + ";" + $Env:Path
 
-            $cargs = @($exe_name,
-                      ("\\" + $hostname),
+            $cargs = @(("\\" + $hostname),
                       "-accepteula",
                       "-u", $userid,
                       "-i")
@@ -775,9 +822,7 @@ class PsExec : CommandBase {
                 $cargs += @("-p", $password)
             }
             $cargs += SplitCommandLine $cmdline
-
-            $args = @("/C,") + (Quote $cargs) + "& pause"
-            Start-Process -FilePath "cmd.exe" -ArgumentList $args
+            StartProcess $exe_name $cargs
         }
     }
 }
@@ -833,9 +878,8 @@ class KerberosBruteForce : CommandBase {
         Set-Item Env:Path $Env:Path.Replace($exe_dir + ";", "")
         $Env:Path = $exe_dir + ";" + $Env:Path
 
-        $cargs = @($exe_name, "brute", "/passwords:$($this.passwords_file)", "/noticket")
-        $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
-        Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
+        $cargs = @("brute", "/passwords:$($this.passwords_file)", "/noticket")
+        StartProcess $exe_name $cargs
     }
 }
 
@@ -861,9 +905,8 @@ class WildFireTestPE : CommandBase {
 
         Set-Item Env:Path $Env:Path.Replace($exe_dir + ";", "")
         $Env:Path = $exe_dir + ";" + $Env:Path
-
-        $args = @("/C,", (Quote $exe_name), "& echo Done. & pause")
-        Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
+        
+        StartProcess $exe_name
     }
 }
 
@@ -941,8 +984,7 @@ class IptgenBase : CommandBase {
     }
 
     [void]Run([string]$interface, [string]$iptgen_json, [int]$response_interval) {
-        $post_cmds = " & echo Done. & pause"
-
+        $epilogue_script = ""
         $exe_path = ChangeExecutableName $this.props.exec_random "iptgen" $this.iptgen_exe
         if ([string]::IsNullOrEmpty($exe_path)) {
             $exe_path = $this.iptgen_exe
@@ -951,7 +993,7 @@ class IptgenBase : CommandBase {
             New-Item -ItemType HardLink -Path $exe_path -Value $this.iptgen_exe
             #>
             Copy-Item -Destination $exe_path -Path $this.iptgen_exe
-            $post_cmds += " & del " + (Quote $exe_path) + " > NUL 2>&1"
+            $epilogue_script = "Remove-Item $exe_path -Force"
         }
         $exe_dir = [IO.Path]::GetDirectoryName($exe_path)
         $exe_name = [IO.Path]::GetFileName($exe_path)
@@ -959,12 +1001,11 @@ class IptgenBase : CommandBase {
         Set-Item Env:Path $Env:Path.Replace($exe_dir + ";", "")
         $Env:Path = $exe_dir + ";" + $Env:Path
 
-        $cargs = @($exe_name, "--in.file", $iptgen_json, "--out.eth", $interface)
+        $cargs = @("--in.file", $iptgen_json, "--out.eth", $interface)
         if ($response_interval -ne 0) {
             $cargs += @("--response.interval", [string]$response_interval)
         }
-        $args = @("/C,") + (Quote $cargs) + $post_cmds
-        Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
+        StartProcess $exe_name $cargs $this.props.home_dir $epilogue_script
     }
 }
 
@@ -988,8 +1029,7 @@ class RsgcliBase : CommandBase {
     }
 
     [void]Run([string]$rsgsvr_host, [int]$rsgsvr_port, [string]$rsgcli_json) {
-        $post_cmds = " & echo Done. & pause"
-
+        $epilogue_script = ""
         $exe_path = ChangeExecutableName $this.props.exec_random "rsgcli" $this.rsgcli_exe
         if ([string]::IsNullOrEmpty($exe_path)) {
             $exe_path = $this.rsgcli_exe
@@ -998,7 +1038,7 @@ class RsgcliBase : CommandBase {
             New-Item -ItemType HardLink -Path $exe_path -Value $this.rsgcli_exe
             #>
             Copy-Item -Destination $exe_path -Path $this.rsgcli_exe
-            $post_cmds += " & del " + (Quote $exe_path) + " > NUL 2>&1"
+            $epilogue_script = "Remove-Item $exe_path -Force"
         }
         $exe_dir = [IO.Path]::GetDirectoryName($exe_path)
         $exe_name = [IO.Path]::GetFileName($exe_path)
@@ -1006,12 +1046,10 @@ class RsgcliBase : CommandBase {
         Set-Item Env:Path $Env:Path.Replace($exe_dir + ";", "")
         $Env:Path = $exe_dir + ";" + $Env:Path
 
-        $cargs = @($exe_name,
-                   "--in.file", $rsgcli_json,
+        $cargs = @("--in.file", $rsgcli_json,
                    "--mgmt.host", $rsgsvr_host,
                    "--mgmt.port", [string]$rsgsvr_port)
-        $args = @("/C,") + (Quote $cargs) + $post_cmds
-        Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
+        StartProcess $exe_name $cargs $this.props.home_dir $epilogue_script
     }
 }
 
@@ -1034,9 +1072,8 @@ class NmapPortScan : NmapBase {
             Write-Host ""
             Write-Host "Starting a port scan: $subnet"
 
-            $cargs = @($exe_name, "-p", "1-65535", $subnet)
-            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
-            Start-Process -FilePath "cmd.exe" -ArgumentList $args -WorkingDirectory $this.props.home_dir
+            $cargs = @("-p", "1-65535", $subnet)
+            StartProcess $exe_name $cargs $this.props.home_dir
         }
     }
 }
@@ -2194,15 +2231,13 @@ class FortigateLogs : CommandBase {
                                     "Please retype a valid IPv4 address"
 
         if (AskYesNo "Are you sure you want to run?") {
-            $cargs = @("powershell.exe",
-                       "-ExecutionPolicy", "Bypass", $script_file,
+            $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog_host,
                        "-SyslogPort", $syslog_port,
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
                        "-SourceIP", $source_ip,
                        "-DestinationIP", $destination_ip)
-            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
-            Start-Process -FilePath "cmd.exe" -ArgumentList $args
+            StartProcess "powershell.exe" $cargs
         }
     }
 
@@ -2252,8 +2287,7 @@ class FortigateLogs : CommandBase {
                                                "Please retype a valid number")
 
         if (AskYesNo "Are you sure you want to run?") {
-            $cargs = @("powershell.exe",
-                       "-ExecutionPolicy", "Bypass", $script_file,
+            $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog_host,
                        "-SyslogPort", $syslog_port,
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
@@ -2262,8 +2296,7 @@ class FortigateLogs : CommandBase {
                        "-SessionType", $session_type,
                        "-TotalUploadSize", [string]$upload_size,
                        "-NumberOfRecords", [string]$numof_session)
-            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
-            Start-Process -FilePath "cmd.exe" -ArgumentList $args
+            StartProcess "powershell.exe" $cargs
         }
     }
 
@@ -2320,8 +2353,7 @@ class FortigateLogs : CommandBase {
             }
         }
         if (AskYesNo "Are you sure you want to run?") {
-            $cargs = @("powershell.exe",
-                       "-ExecutionPolicy", "Bypass", $script_file,
+            $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog_host,
                        "-SyslogPort", $syslog_port,
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
@@ -2330,8 +2362,7 @@ class FortigateLogs : CommandBase {
                        "-Domain", $domain,
                        "-Count", [string]$numof_logs,
                        "-LogType", $log_type)
-            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
-            Start-Process -FilePath "cmd.exe" -ArgumentList $args
+            StartProcess "powershell.exe" $cargs
         }
     }
 }
@@ -2409,16 +2440,14 @@ class CheckPointLogs : CommandBase {
                          @("^.+$")
 
         if (AskYesNo "Are you sure you want to run?") {
-            $cargs = @("powershell.exe",
-                       "-ExecutionPolicy", "Bypass", $script_file,
+            $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog_host,
                        "-SyslogPort", $syslog_port,
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
                        "-App", $app,
                        "-SourceIP", $source_ip,
                        "-DestinationIP", $destination_ip)
-            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
-            Start-Process -FilePath "cmd.exe" -ArgumentList $args
+            StartProcess "powershell.exe" $cargs
         }
     }
 }
@@ -2500,15 +2529,13 @@ class CiscoLogs : CommandBase {
                                     "Please retype a valid IPv4 address"
 
         if (AskYesNo "Are you sure you want to run?") {
-            $cargs = @("powershell.exe",
-                       "-ExecutionPolicy", "Bypass", $script_file,
+            $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog_host,
                        "-SyslogPort", $syslog_port,
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
                        "-SourceIP", $source_ip,
                        "-DestinationIP", $destination_ip)
-            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
-            Start-Process -FilePath "cmd.exe" -ArgumentList $args
+            StartProcess "powershell.exe" $cargs
         }
     }
 
@@ -2557,8 +2584,7 @@ class CiscoLogs : CommandBase {
                                                @("^[0-9]+$") `
                                                "Please retype a valid number")
         if (AskYesNo "Are you sure you want to run?") {
-            $cargs = @("powershell.exe",
-                       "-ExecutionPolicy", "Bypass", $script_file,
+            $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog_host,
                        "-SyslogPort", $syslog_port,
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
@@ -2567,8 +2593,7 @@ class CiscoLogs : CommandBase {
                        "-DestinationPort", $destination_port,
                        "-TotalUploadSize", [string]$upload_size,
                        "-NumberOfRecords", [string]$numof_session)
-            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
-            Start-Process -FilePath "cmd.exe" -ArgumentList $args
+            StartProcess "powershell.exe" $cargs
         }
     }
 
@@ -2637,8 +2662,7 @@ class CiscoLogs : CommandBase {
         $group_policy = "group"
 
         if (AskYesNo "Are you sure you want to run?") {
-            $cargs = @("powershell.exe",
-                       "-ExecutionPolicy", "Bypass", $script_file,
+            $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog_host,
                        "-SyslogPort", $syslog_port,
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
@@ -2650,8 +2674,7 @@ class CiscoLogs : CommandBase {
             if (![string]::IsNullOrEmpty($user_id)) {
                 $cargs += @("-UserID", $user_id)
             }
-            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
-            Start-Process -FilePath "cmd.exe" -ArgumentList $args
+            StartProcess "powershell.exe" $cargs
         }
     }
 }
@@ -2730,15 +2753,13 @@ class PaloAltoNGFWLogs : CommandBase {
                                     "Please retype a valid IPv4 address"
 
         if (AskYesNo "Are you sure you want to run?") {
-            $cargs = @("powershell.exe",
-                       "-ExecutionPolicy", "Bypass", $script_file,
+            $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog_host,
                        "-SyslogPort", $syslog_port,
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
                        "-SourceIP", $source_ip,
                        "-DestinationIP", $destination_ip)
-            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
-            Start-Process -FilePath "cmd.exe" -ArgumentList $args
+            StartProcess "powershell.exe" $cargs
         }
     }
 
@@ -3022,11 +3043,10 @@ class PaloAltoNGFWLogs : CommandBase {
             throw "Unexpected error"
         }
         $cef_extention = ConvertTo-Json -Compress $log_params
-        $cef_extention = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($cef_extention))
+        $cef_extention = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($cef_extention))
 
         if (AskYesNo "Are you sure you want to run?") {
-            $cargs = @("powershell.exe",
-                       "-ExecutionPolicy", "Bypass", $script_file,
+            $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog_host,
                        "-SyslogPort", $syslog_port,
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
@@ -3038,8 +3058,7 @@ class PaloAltoNGFWLogs : CommandBase {
                        "-CEFSeverity", "4",
                        "-CEFExtension", $cef_extention,
                        "-ShowLogs", "1")
-            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
-            Start-Process -FilePath "cmd.exe" -ArgumentList $args
+            StartProcess "powershell.exe" $cargs
         }
     }
 }
@@ -3123,8 +3142,7 @@ class BindLogs : CommandBase {
                                                "Please retype a valid number")
 
         if (AskYesNo "Are you sure you want to run?") {
-            $cargs = @("powershell.exe",
-                       "-ExecutionPolicy", "Bypass", $script_file,
+            $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog_host,
                        "-SyslogPort", $syslog_port,
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
@@ -3133,8 +3151,7 @@ class BindLogs : CommandBase {
                        "-DNSServerIP", $server_ip,
                        "-QueryDomain", $domain,
                        "-Count", [string]$numof_queries)
-            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
-            Start-Process -FilePath "cmd.exe" -ArgumentList $args
+            StartProcess "powershell.exe" $cargs
         }
     }
 
@@ -3180,8 +3197,7 @@ class BindLogs : CommandBase {
                                                "Please retype a valid number")
 
         if (AskYesNo "Are you sure you want to run?") {
-            $cargs = @("powershell.exe",
-                       "-ExecutionPolicy", "Bypass", $script_file,
+            $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog_host,
                        "-SyslogPort", $syslog_port,
                        "-SyslogProtocol", $syslog_protocol.ToUpper(),
@@ -3189,8 +3205,7 @@ class BindLogs : CommandBase {
                        "-DNSClientIP", $client_ip,
                        "-DNSServerIP", $server_ip,
                        "-Count", [string]$numof_queries)
-            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
-            Start-Process -FilePath "cmd.exe" -ArgumentList $args
+            StartProcess "powershell.exe" $cargs
         }
     }
 }
@@ -3261,15 +3276,13 @@ class NetflowLogs : CommandBase {
                                  "Please retype a valid subnet"
 
         if (AskYesNo "Are you sure you want to run?") {
-            $cargs = @("powershell.exe",
-                       "-ExecutionPolicy", "Bypass", $script_file,
+            $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-NetflowHost", $netflow_host,
                        "-NetflowPort", $netflow_port,
                        "-NetflowProtocol", "UDP",
                        "-SourceIP", $source_ip,
                        "-ScanSubnet", $scan_subnet)
-            $args = @("/C,") + (Quote $cargs) + "& echo Done. & pause"
-            Start-Process -FilePath "cmd.exe" -ArgumentList $args
+            StartProcess "powershell.exe" $cargs
         }
     }
 }
