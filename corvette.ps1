@@ -2780,7 +2780,7 @@ class PaloAltoNGFWLogs : CommandBase {
         $log_params = @{
             __firewall_type="firewall.threat"
             __timestamp="$($(Get-Date).ToUniversalTime().ToString("MMM dd yyyy HH:mm:ss", [System.Globalization.CultureInfo]::CreateSpecificCulture("en-US"))) GMT"
-            __tz=$(Get-Date $(Get-Date).ToUniversalTime() -Format "yyyy-MM-ddTHH:mm:ssK")
+            __tz=$(Get-Date $(Get-Date).ToUniversalTime() -Format "yyyy-MM-ddTHH:mm:ss.fff+00:00")
             action="alert"
             app="unknown-tcp"
             app_category=""
@@ -2828,7 +2828,7 @@ class PaloAltoNGFWLogs : CommandBase {
             threat_category=""
             threat_id=""
             threat_name=""
-            time_generated=$(Get-Date).ToUniversalTime().ToString("MMM dd yyyy HH:mm:ss GMT", [System.Globalization.CultureInfo]::CreateSpecificCulture("en-US"))
+            time_generated="$($(Get-Date).ToUniversalTime().ToString("MMM dd yyyy HH:mm:ss", [System.Globalization.CultureInfo]::CreateSpecificCulture("en-US"))) GMT"
             to_zone="corvette"
             user_agent=""
             vsys="vsys1"
