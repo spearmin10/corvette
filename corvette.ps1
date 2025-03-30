@@ -426,7 +426,13 @@ $null = [System.Console]::ReadKey()
     if ($epilogue_script) {
         $epilogue_script = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($epilogue_script))
     }
-    $cargs = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($(ConvertTo-Json $(QuoteCmdParam $cmd_args) -Compress)))
+    $cmd_name = Split-Path -Path $cmd_path -Leaf
+    if ($cmd_name -ieq "cmd.exe" -Or $cmd_name -ieq "powershell.exe") {
+        $cargs = QuoteCmdParam $cmd_args
+    } else {
+        $cargs = Quote $cmd_args
+    }
+    $cargs = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($(ConvertTo-Json $cargs -Compress)))
     $script = $script.Replace("@@@cmd_path@@@", $cmd_path)
     $script = $script.Replace("@@@cmd_args@@@", $cargs)
     $script = $script.Replace("@@@home_dir@@@", $home_dir)
