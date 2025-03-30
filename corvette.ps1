@@ -933,8 +933,8 @@ class PsRemoting : CommandBase {
             $q_userid = Quote $userid
             $script_configure =
 @"
-Write-Host ```#```#```# net start WinRM
-net start WinRM
+Write-Host ```#```#```# Start-Service -Name WinRM
+Start-Service -Name WinRM
 #Write-Host ```#```#```# Set-Item WSMan:\localhost\Client\TrustedHosts -Force -Value *
 #Set-Item WSMan:\localhost\Client\TrustedHosts -Force -Value *
 Write-Host ```#```#```# Set-Item WSMan:\localhost\Client\TrustedHosts -Force -Concatenate -Value $q_hostname
@@ -957,9 +957,12 @@ Write-Host ""
 Enter-PSSession -Session `$sess
 "@
             $trusted = $False
-            if (Test-Path WSMan:\localhost\Client\TrustedHosts) {
-                $trusted_hosts = (Get-Item WSMan:\localhost\Client\TrustedHosts).Value.ToLower().Split(",")
-                $trusted = $trusted_hosts -contains "*" -Or $trusted_hosts -contains $hostname.ToLower()
+            $status = Get-Service -Name WinRM -ErrorAction SilentlyContinue
+            if ($status -and $status.Status -eq "Running") {
+                if (Test-Path WSMan:\localhost\Client\TrustedHosts) {
+                    $trusted_hosts = (Get-Item WSMan:\localhost\Client\TrustedHosts).Value.ToLower().Split(",")
+                    $trusted = $trusted_hosts -contains "*" -Or $trusted_hosts -contains $hostname.ToLower()
+                }
             }
             if (!$trusted -And (AskYesNo "Do you want to configure the local PsRemoting?")) {
                 $script = $script_configure, $script_pssess -join "`r`n"
