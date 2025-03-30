@@ -931,20 +931,16 @@ class PsRemoting : CommandBase {
         if (AskYesNo "Are you sure you want to run?") {
             $q_hostname = Quote $hostname
             $q_userid = Quote $userid
-            
-            if (AskYesNo "Do you want to configure the local PsRemoting?") {
-                $script =
+            $script_configure =
 @"
-Set-PSDebug -Trace 1
+Write-Host ```#```#```# net start WinRM
 net start WinRM
+Write-Host ```#```#```# Set-Item WSMan:\localhost\Client\TrustedHosts -Force -Value $q_hostname
 Set-Item WSMan:\localhost\Client\TrustedHosts -Force -Value $q_hostname
-Set-PSDebug -Off
-Write-Host -NoNewLine 'Press any keys to continue...'
-`$null = [System.Console]::ReadKey()
+Write-Host ""
 "@
-                StartEncodedScript $script -run_as $True -wait $True
-            }
-            $script =
+
+            $script_pssess =
 @"
 `$prompt = $q_hostname, ": Enter a Password for ", $q_userid -join ""
 `$passwd = Read-Host -Prompt `$prompt -AsSecureString
@@ -958,7 +954,13 @@ Write-Host -NoNewLine 'Press any keys to continue...'
 `$sess = New-PSSession -ComputerName $q_hostname -Credential `$credential
 Enter-PSSession -Session `$sess
 "@
-            StartEncodedScript $script -no_exit $True
+
+            if (AskYesNo "Do you want to configure the local PsRemoting?") {
+                $script = $script_configure, $script_pssess -join "`r`n"
+                StartEncodedScript $script -no_exit $True -run_as $True
+            } else {
+                StartEncodedScript $script_pssess -no_exit $True
+            }
         }
     }
 }
