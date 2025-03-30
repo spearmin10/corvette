@@ -959,7 +959,7 @@ Enter-PSSession -Session `$sess
             $trusted = $False
             if (Test-Path WSMan:\localhost\Client\TrustedHosts) {
                 $trusted_hosts = (Get-Item WSMan:\localhost\Client\TrustedHosts).Value.ToLower().Split(",")
-                $trusted = $trusted_hosts -contains "*" -Or $trusted_hosts -contains $hostname
+                $trusted = $trusted_hosts -contains "*" -Or $trusted_hosts -contains $hostname.ToLower()
             }
             if (!$trusted -And (AskYesNo "Do you want to configure the local PsRemoting?")) {
                 $script = $script_configure, $script_pssess -join "`r`n"
