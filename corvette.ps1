@@ -972,6 +972,25 @@ if (`$sess -ne `$null) {
             } else {
                 StartEncodedScript $script_pssess -no_exit $True
             }
+            <#
+            $run_configure = !$trusted -And (AskYesNo "Do you want to configure the local PsRemoting?")
+            $run_as_admin = AskYesNo "Do you want to run this with admin rights?"
+            if ($run_configure) {
+                if ($run_as_admin) {
+                    $script = $script_configure, $script_pssess -join "`r`n"
+                    StartEncodedScript $script -no_exit $True -run_as $True
+                } else {
+                    StartEncodedScript $script_configure -wait $True -run_as $True
+                    StartEncodedScript $script_pssess -no_exit $True
+                }
+            } else {
+                if ($run_as_admin) {
+                    StartEncodedScript $script_pssess -no_exit $True -run_as $True
+                } else {
+                    StartEncodedScript $script_pssess -no_exit $True
+                }
+            }
+            #>
         }
     }
 }
