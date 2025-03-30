@@ -935,10 +935,10 @@ class PsRemoting : CommandBase {
 @"
 Write-Host ```#```#```# net start WinRM
 net start WinRM
-Write-Host ```#```#```# Set-Item WSMan:\localhost\Client\TrustedHosts -Force -Value *
-Set-Item WSMan:\localhost\Client\TrustedHosts -Force -Value *
-#Write-Host ```#```#```# Set-Item WSMan:\localhost\Client\TrustedHosts -Force -Concatenate -Value $q_hostname
-#Set-Item WSMan:\localhost\Client\TrustedHosts -Force -Concatenate -Value $q_hostname
+#Write-Host ```#```#```# Set-Item WSMan:\localhost\Client\TrustedHosts -Force -Value *
+#Set-Item WSMan:\localhost\Client\TrustedHosts -Force -Value *
+Write-Host ```#```#```# Set-Item WSMan:\localhost\Client\TrustedHosts -Force -Concatenate -Value $q_hostname
+Set-Item WSMan:\localhost\Client\TrustedHosts -Force -Concatenate -Value $q_hostname
 Write-Host ""
 "@
 
@@ -956,8 +956,12 @@ Write-Host ""
 `$sess = New-PSSession -ComputerName $q_hostname -Credential `$credential
 Enter-PSSession -Session `$sess
 "@
-
-            if (AskYesNo "Do you want to configure the local PsRemoting?") {
+            $trusted = $False
+            if (Test-Path WSMan:\localhost\Client\TrustedHosts) {
+                $trusted_hosts = (Get-Item WSMan:\localhost\Client\TrustedHosts).Value.ToLower().Split(",")
+                $trusted = $trusted_hosts -contains "*" -Or $trusted_hosts -contains $hostname
+            }
+            if (!$trusted -And (AskYesNo "Do you want to configure the local PsRemoting?")) {
                 $script = $script_configure, $script_pssess -join "`r`n"
                 StartEncodedScript $script -no_exit $True -run_as $True
             } else {
