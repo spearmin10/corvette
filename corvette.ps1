@@ -935,8 +935,10 @@ class PsRemoting : CommandBase {
 @"
 Write-Host ```#```#```# net start WinRM
 net start WinRM
-Write-Host ```#```#```# Set-Item WSMan:\localhost\Client\TrustedHosts -Force -Value $q_hostname
-Set-Item WSMan:\localhost\Client\TrustedHosts -Force -Value $q_hostname
+Write-Host ```#```#```# Set-Item WSMan:\localhost\Client\TrustedHosts -Force -Value *
+Set-Item WSMan:\localhost\Client\TrustedHosts -Force -Value *
+#Write-Host ```#```#```# Set-Item WSMan:\localhost\Client\TrustedHosts -Force -Concatenate -Value $q_hostname
+#Set-Item WSMan:\localhost\Client\TrustedHosts -Force -Concatenate -Value $q_hostname
 Write-Host ""
 "@
 
