@@ -954,7 +954,9 @@ Write-Host ""
 `$credential = New-Object @cred_params
 
 `$sess = New-PSSession -ComputerName $q_hostname -Credential `$credential
-Enter-PSSession -Session `$sess
+if (`$sess -ne `$null) {
+    Enter-PSSession -Session `$sess
+}
 "@
             $trusted = $False
             $status = Get-Service -Name WinRM -ErrorAction SilentlyContinue
