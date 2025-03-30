@@ -1,19 +1,28 @@
 
 Set-Variable -Scope script -Name PATTERN_IPV4_ADDR -Option Constant -Value "^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$"
 
-function IsFile ([string]$path) {
+function IsFile (
+    [string]$path
+) {
     return [IO.File]::Exists($path)
 }
 
-function IsDirectory ([string]$path) {
+function IsDirectory (
+    [string]$path
+) {
     return ![string]::IsNullOrEmpty($path) -And (Test-Path $path) -And ((Get-Item $path) -is [IO.DirectoryInfo])
 }
 
-function BuildFullPath ([string]$parent, [string]$child) {
+function BuildFullPath (
+    [string]$parent,
+    [string]$child
+) {
     return [IO.Path]::GetFullPath((Join-Path $parent $child))
 }
 
-function ReadAllBytes ([IO.BinaryReader] $reader) {
+function ReadAllBytes (
+    [IO.BinaryReader] $reader
+) {
     $mem = New-Object IO.MemoryStream
     $buf = New-Object byte[] 4096
     $actual = 0
@@ -28,16 +37,23 @@ function ReadAllBytes ([IO.BinaryReader] $reader) {
     return $mem.ToArray()
 }
 
-function DownloadString ([string]$url) {
+function DownloadString (
+    [string]$url
+) {
     return [Net.WebClient]::New().DownloadString($url)
 }
 
-function DownloadBytes ([string]$url) {
+function DownloadBytes (
+    [string]$url
+) {
     $resp = New-Object IO.BinaryReader([Net.HttpWebRequest]::Create($url).GetResponse().GetResponseStream())
     return ReadAllBytes($resp)
 }
 
-function DownloadFile ([string]$url, [string]$save_as) {
+function DownloadFile (
+    [string]$url,
+    [string]$save_as
+) {
     $cli = New-Object Net.WebClient
     $cli.Headers.Add("Cache-Control", "no-cache, no-store")
 
@@ -58,13 +74,21 @@ function DownloadFile ([string]$url, [string]$save_as) {
     return $save_as
 }
 
-function DownloadAndExtractArchive ([string]$url, [string]$directory) {
+function DownloadAndExtractArchive (
+    [string]$url,
+    [string]$directory
+) {
     $file = DownloadFile $url ([IO.Path]::GetTempPath())
     Expand-Archive -Force $file $directory
     Remove-Item $file
 }
 
-function ReadInput ([string]$message, [string]$default, [string[]]$and_patterns, [string]$retry_message) {
+function ReadInput (
+    [string]$message,
+    [string]$default,
+    [string[]]$and_patterns,
+    [string]$retry_message
+) {
     if (![string]::IsNullOrEmpty($default)) {
         $message += " (default: $default)"
     }
@@ -91,7 +115,12 @@ function ReadInput ([string]$message, [string]$default, [string[]]$and_patterns,
     } while ($true)
 }
 
-function ReadPassword ([string]$message, [string]$default, [string]$pattern, [string]$retry_message) {
+function ReadPassword (
+    [string]$message,
+    [string]$default,
+    [string]$pattern,
+    [string]$retry_message
+) {
     if (![string]::IsNullOrEmpty($default)) {
         $message += " (default: $default)"
     }
@@ -116,8 +145,11 @@ function ReadPassword ([string]$message, [string]$default, [string]$pattern, [st
     } while ($true)
 }
 
-function ReadInputSize ([string]$message, [string]$default, [string]$retry_message) {
-
+function ReadInputSize (
+    [string]$message,
+    [string]$default,
+    [string]$retry_message
+) {
     $pattern = "^(?<num>\d+(?:\.\d+)?)\s*(?<unit>[KMGT]?B)?$"
     $size_unit = $null
     do {
@@ -142,7 +174,12 @@ function ReadInputSize ([string]$message, [string]$default, [string]$retry_messa
     } while ($true)
 }
 
-function ReadInputByChooser ([string]$message, [string]$default, [string[]]$options, [string]$retry_message) {
+function ReadInputByChooser (
+    [string]$message,
+    [string]$default,
+    [string[]]$options,
+    [string]$retry_message
+) {
     if (!$options) {
         throw "options are empty."
     }
@@ -174,7 +211,10 @@ function ReadInputByChooser ([string]$message, [string]$default, [string[]]$opti
     } while ($true)
 }
 
-function AskYesNo ([string]$message, [string]$default = "") {
+function AskYesNo (
+    [string]$message,
+    [string]$default = ""
+) {
     $default = $default.ToLower()
     if (![string]::IsNullOrEmpty($default)) {
         if ($default -eq "yes" -Or $default -eq "y") {
@@ -202,7 +242,9 @@ function AskYesNo ([string]$message, [string]$default = "") {
     return $false
 }
 
-function Quote ($value) {
+function Quote (
+    $value
+) {
     if ($value -is [array]) {
         $value = ,@($value | % { (Quote $_) })
     } else {
@@ -212,7 +254,9 @@ function Quote ($value) {
     return $value
 }
 
-function QuoteCmdParam ($value) {
+function QuoteCmdParam (
+    $value
+) {
     if ($value -is [array]) {
         $value = ,@($value | % { (QuoteCmdParam $_) })
     } else {
@@ -226,14 +270,18 @@ function QuoteCmdParam ($value) {
     return $value
 }
 
-function HexDigestSha256 ([byte[]]$data) {
+function HexDigestSha256 (
+    [byte[]]$data
+) {
     $sha256 = [BitConverter]::ToString(
         [Security.Cryptography.SHA256]::Create().ComputeHash($data)
     ) -replace "-"
     return $sha256.ToLower()
 }
 
-function ParseNumber ([string]$val) {
+function ParseNumber (
+    [string]$val
+) {
     $num = 0
     if ([int]::TryParse($val, [ref]$num)) {
         return $num
@@ -242,7 +290,9 @@ function ParseNumber ([string]$val) {
     }
 }
 
-function SplitCommandLine ([string]$cmdline) {
+function SplitCommandLine (
+    [string]$cmdline
+) {
     Begin
     {
         $Kernel32Definition = @'
@@ -285,7 +335,11 @@ function SplitCommandLine ([string]$cmdline) {
     }
 }
 
-function ChangeExecutableName ([hashtable]$exec_random, [string]$key, [string]$path) {
+function ChangeExecutableName (
+    [hashtable]$exec_random,
+    [string]$key,
+    [string]$path
+) {
     function GenerateRandomName([string]$path) {
         $dir = [IO.Path]::GetDirectoryName($path)
         $name = [IO.Path]::GetFileNameWithoutExtension($path)
@@ -318,7 +372,38 @@ function ChangeExecutableName ([hashtable]$exec_random, [string]$key, [string]$p
     }
 }
 
-function StartProcess ([string]$cmd_path, [array]$cmd_args, [string]$home_dir, [string]$epilogue_script) {
+function StartEncodedScript (
+    [string]$script,
+    [bool]$run_as = $False,
+    [bool]$wait = $False,
+    [bool]$no_exit = $False
+) {
+    $arg_list = @(
+        "-e",
+        $([Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($script)))
+    )
+    if ($no_exit) {
+        $arg_list += "-NoExit"
+    }
+    $params = @{
+        FilePath = "powershell.exe"
+        ArgumentList = $arg_list
+    }
+    if ($wait) {
+        $params["Wait"] = $null
+    }
+    if ($run_as) {
+        $params["verb"] = "runas"
+    }
+    Start-Process @params
+}
+
+function StartProcess (
+    [string]$cmd_path,
+    [array]$cmd_args,
+    [string]$home_dir = "",
+    [string]$epilogue_script = ""
+) {
     $script = @'
 $cargs = ConvertFrom-Json $([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String("@@@cmd_args@@@")))
 $home_dir = "@@@home_dir@@@"
@@ -346,12 +431,12 @@ $null = [System.Console]::ReadKey()
     $script = $script.Replace("@@@cmd_args@@@", $cargs)
     $script = $script.Replace("@@@home_dir@@@", $home_dir)
     $script = $script.Replace("@@@epilogue_script@@@", $epilogue_script)
-
-    $script_b64 = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($script))
-    Start-Process -FilePath "powershell.exe" -ArgumentList @("-e", $script_b64)
+    StartEncodedScript $script
 }
 
-function CleanupHome ([string]$home_dir) {
+function CleanupHome (
+    [string]$home_dir
+) {
     Get-ChildItem -Path $home_dir -Exclude @("corvette.json", "corvette.sha256") | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 }
 
@@ -823,6 +908,88 @@ class PsExec : CommandBase {
             }
             $cargs += SplitCommandLine $cmdline
             StartProcess $exe_name $cargs
+        }
+    }
+}
+
+class PsRemoting : CommandBase {
+    PsRemoting([Properties]$props) : base($props) {
+    }
+
+    [void]Run() {
+        Write-Host ""
+        Write-Host "### Enter the connection parameters for PsSession"
+        $hostname = ReadInput "Remote Host Name" "" @("^.+$")
+        $userid = ReadInput "Remote User ID" "" @("^.+$")
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $q_hostname = Quote $hostname
+            $q_userid = Quote $userid
+            
+            if (AskYesNo "Do you want to configure the local PsRemoting?") {
+                $script =
+@"
+Set-PSDebug -Trace 1
+net start WinRM
+Set-Item WSMan:\localhost\Client\TrustedHosts -Force -Value $q_hostname
+Set-PSDebug -Off
+Write-Host -NoNewLine 'Press any keys to continue...'
+`$null = [System.Console]::ReadKey()
+"@
+                StartEncodedScript $script -run_as $True -wait $True
+            }
+            $script =
+@"
+`$prompt = $q_hostname, ": Enter a Password for ", $q_userid -join ""
+`$passwd = Read-Host -Prompt `$prompt -AsSecureString
+`$userid = $q_userid
+`$cred_params = @{
+    TypeName = "System.Management.Automation.PSCredential"
+    ArgumentList = `$userid, `$passwd
+}
+`$credential = New-Object @cred_params
+
+`$sess = New-PSSession -ComputerName $q_hostname -Credential `$credential
+Enter-PSSession -Session `$sess
+"@
+            StartEncodedScript $script -no_exit $True
+        }
+    }
+}
+
+class RemoteAccess : CommandBase {
+    RemoteAccess([Properties]$props) : base($props) {
+    }
+
+    [void]Run() {
+        while ($true) {
+            Write-Host "************************************"
+            Write-Host " 1) Run PsExec"
+            Write-Host " 2) Create PsSession"
+            Write-Host " q) Exit"
+
+            try {
+                :retry do {
+                    $cmd = Read-Host "Please choose a menu item to run"
+                    switch($cmd) {
+                        "1" {
+                            [PsExec]::New($this.props).Run()
+                        }
+                        "2" {
+                            [PsRemoting]::New($this.props).Run()
+                        }
+                        "q" {
+                            return
+                        }
+                        default {
+                            continue retry
+                        }
+                    }
+                    break
+                } while($true)
+            } catch {
+                Write-Host $_
+            }
         }
     }
 }
@@ -3317,8 +3484,7 @@ class Menu {
   ).ReadToEnd()
 ))
 "@
-                $script_b64 = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($script))
-                Start-Process -FilePath "powershell.exe" -verb runas -ArgumentList @("-e", $script_b64)
+                StartEncodedScript $script -run_as $True
             }
             "1" {
                 [SetupTools]::New($this.props).Run()
@@ -3342,13 +3508,13 @@ class Menu {
                 Start-Process -FilePath "powershell.exe" -verb runas -ArgumentList $args
             }
             "7" {
-                [Mimikatz]::New($this.props).Run($false)
+                [RemoteAccess]::New($this.props).Run()
             }
             "8" {
-                [Mimikatz]::New($this.props).Run($true)
+                [Mimikatz]::New($this.props).Run($false)
             }
             "9" {
-                [PsExec]::New($this.props).Run()
+                [Mimikatz]::New($this.props).Run($true)
             }
             "10" {
                 [NmapMenu]::New($this.props).Run()
@@ -3399,9 +3565,9 @@ class Menu {
             Write-Host " 4) Create a new powershell"
             Write-Host " 5) Create a new command shell (Run as administrator)"
             Write-Host " 6) Create a new powershell (Run as administrator)"
-            Write-Host " 7) Run mimikatz"
-            Write-Host " 8) Run mimikatz (Run as administrator)"
-            Write-Host " 9) Run PsExec"
+            Write-Host " 7) Remote Access"
+            Write-Host " 8) Run mimikatz"
+            Write-Host " 9) Run mimikatz (Run as administrator)"
             Write-Host "10) Run nmap"
             Write-Host "11) Run Kerberos Brute Force"
             Write-Host "12) Run WildFire Test PE"
@@ -3438,10 +3604,10 @@ class Menu {
                 Start-Process -FilePath "powershell.exe" -WorkingDirectory $this.props.home_dir
             }
             "4" {
-                [Mimikatz]::New($this.props).Run($false)
+                [RemoteAccess]::New($this.props).Run()
             }
             "5" {
-                [PsExec]::New($this.props).Run()
+                [Mimikatz]::New($this.props).Run($false)
             }
             "6" {
                 [NmapMenu]::New($this.props).Run()
@@ -3474,8 +3640,8 @@ class Menu {
             Write-Host " 1) Open an explorer"
             Write-Host " 2) Create a new command shell"
             Write-Host " 3) Create a new powershell"
-            Write-Host " 4) Run mimikatz"
-            Write-Host " 5) Run PsExec"
+            Write-Host " 4) Remote Access"
+            Write-Host " 5) Run mimikatz"
             Write-Host " 6) Run nmap"
             Write-Host " 7) Run Kerberos Brute Force"
             Write-Host " 8) Run WildFire Test PE"
