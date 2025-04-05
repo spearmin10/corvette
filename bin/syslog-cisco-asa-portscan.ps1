@@ -157,10 +157,14 @@ class Main {
           } else {
               Write-Host "log: ${client_ip} > ${target_ip}:${target_port}"
           }
-          $this.syslog.Close()
         }
+    }
+
+    [void]Close() {
+        $this.syslog.Close()
     }
 }
 
 $main = [Main]::New($SyslogProtocol, $SyslogHost, $SyslogPort, $SyslogFormat, $SyslogFacility, $SyslogSeverity)
 $main.Run($SourceIP, $DestinationIP, $ShowLogs)
+$main.Close()
