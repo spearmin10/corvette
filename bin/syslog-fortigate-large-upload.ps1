@@ -195,10 +195,14 @@ CEF:0|Fortinet|Fortigate|v6.0.3|00013|traffic:forward close|3|deviceExternalId=F
             } else {
                 Write-Host "log: ${client_ip} > ${target_ip}:${target_port} - size: ${session_mb} MB"
             }
-            $this.syslog.Close()
         }
+    }
+
+    [void]Close() {
+        $this.syslog.Close()
     }
 }
 
 $main = [Main]::New($SyslogProtocol, $SyslogHost, $SyslogPort, $SyslogFormat, $SyslogFacility, $SyslogSeverity)
 $main.Run($SourceIP, $DestinationIP, $SessionType, $TotalUploadSize, $NumberOfRecords, $ShowLogs)
+$main.Close()
