@@ -252,11 +252,15 @@ class Main {
                 } else {
                     Write-Host "log: ${user_ip}:${user_id}"
                 }
-                $this.syslog.Close()
             }
         }
+    }
+
+    [void]Close() {
+        $this.syslog.Close()
     }
 }
 
 $main = [Main]::New($SyslogProtocol, $SyslogHost, $SyslogPort, $SyslogFormat, $SyslogFacility, $SyslogSeverity)
 $main.Run($UserIP, $PublicIP, $UserID, $GroupPolicy, $LogType, $Count, $ShowLogs)
+$main.Close()
