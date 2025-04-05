@@ -184,6 +184,7 @@ CEF:0|Fortinet|Fortigate|v6.0.3|43017|event:user NTLM-auth failure|7|deviceExter
             } else {
                 Write-Host "log: ${client_ip} > ${target_ip}"
             }
+            $this.syslog.Close()
         }
     }
 }
