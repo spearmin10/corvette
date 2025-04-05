@@ -252,6 +252,7 @@ class Main {
                 } else {
                     Write-Host "log: ${user_ip}:${user_id}"
                 }
+                $this.syslog.Close()
             }
         }
     }
