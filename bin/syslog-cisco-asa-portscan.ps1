@@ -157,6 +157,7 @@ class Main {
           } else {
               Write-Host "log: ${client_ip} > ${target_ip}:${target_port}"
           }
+          $this.syslog.Close()
         }
     }
 }
