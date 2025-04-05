@@ -159,6 +159,7 @@ CEF:0|Check Point|VPN-1 & FireWall-1|Check Point|Log|$app|informational|act=drop
             } else {
                 Write-Host "log: ${client_ip} > ${target_ip}:${target_port}"
             }
+            $this.syslog.Close()
         }
     }
 }
