@@ -172,10 +172,14 @@ $log_time queries: info: client @0x${client_id} ${client_ip}#${client_port} (${q
             } else {
                 Write-Host "DNS: ${client_ip} > ${server_ip} : ${query_name}"
             }
-            $this.syslog.Close()
         }
+    }
+
+    [void]Close() {
+        $this.syslog.Close()
     }
 }
 
 $main = [Main]::New($SyslogProtocol, $SyslogHost, $SyslogPort, $SyslogFormat, $SyslogFacility, $SyslogSeverity)
 $main.Run($DNSClientIP, $DNSServerIP, $Count, $ShowLogs)
+$main.Close()
