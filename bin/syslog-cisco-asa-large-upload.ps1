@@ -172,6 +172,7 @@ class Main {
             } else {
                 Write-Host "log: ${client_ip} > ${target_ip}:{$target_port} - size: ${session_mb} MB"
             }
+            $this.syslog.Close()
         }
     }
 }
