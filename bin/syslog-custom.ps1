@@ -211,6 +211,7 @@ class Main {
         if ($verbose) {
             Write-Host $log
         }
+        $this.syslog.Close()
     }
 }
 
