@@ -211,6 +211,9 @@ class Main {
         if ($verbose) {
             Write-Host $log
         }
+    }
+
+    [void]Close() {
         $this.syslog.Close()
     }
 }
@@ -232,3 +235,4 @@ $main.Run(
     $cef_extension,
     $ShowLogs
 )
+$main.Close()
