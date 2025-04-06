@@ -3586,7 +3586,7 @@ class ServerRsg : CommandBase {
                 $script_file,
                 "--port", $server_port
             )
-            Start-Process -FilePath $this.python_exe -ArgumentList $cargs
+            StartProcess $this.python_exe $cargs
         }
     }
 }
@@ -3641,7 +3641,7 @@ class ServerSyslogToHec : CommandBase {
             if ($hec_compression) {
                 $cargs += "--hec_compression"
             }
-            Start-Process -FilePath $this.python_exe -ArgumentList $cargs
+            StartProcess $this.python_exe $cargs
         }
     }
 }
