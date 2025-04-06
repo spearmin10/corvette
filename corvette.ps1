@@ -3635,6 +3635,7 @@ class ServerSyslogToHec : CommandBase {
                 "--hec_api_key_raw", "*",
                 "--hec_api_key_cef", "*",
                 "--insecure",
+                "--print_logs",
                 "--ignore_non_syslog_message"
             )
             if ($hec_compression) {
