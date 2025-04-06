@@ -812,21 +812,40 @@ class SetupTools : CommandBase {
     }
 
     [string]DownloadEmbeddablePython() {
-        $tool_dir = BuildFullPath $this.props.home_dir ".\python-3.11.1"
+        $tool_dir = BuildFullPath $this.props.home_dir ".\python-3.14.0a6"
         $tool_exe = BuildFullPath $tool_dir "python.exe"
 
         if (!(IsFile $this.tool_exe)) {
-            $url = "https://github.com/spearmin10/corvette/blob/main/bin/python-3.11.1-embed-win32.zip?raw=true"
+            $url = "https://www.python.org/ftp/python/3.14.0/python-3.14.0a6-embed-win32.zip"
             DownloadAndExtractArchive $url $tool_dir
+
+            $pth_path = BuildFullPath $tool_dir "python314._pth"
+            $content = [IO.File]::ReadAllText($pth_path)
+            $content = $content -replace "#import site", "import site"
+            [IO.File]::WriteAllText($pth_path, $content)
         }
+        $pipexe_path = BuildFullPath $tool_dir "Scripts\pip.exe"
+        $getpip_path = BuildFullPath $tool_dir "get-pip.py"
+        if (!(IsFile $pipexe_path)) {
+            $url = "https://bootstrap.pypa.io/get-pip.py"
+            DownloadFile $url $getpip_path
+            
+            Start-Process -FilePath $tool_exe `
+                -ArgumentList @($getpip_path, "--no-warn-script-location") `
+                -Wait -NoNewWindow -WorkingDirectory $tool_dir
+        }
+        Start-Process -FilePath $tool_exe `
+            -ArgumentList @($pipexe_path, "install", "requests", "--no-warn-script-location") `
+            -Wait -NoNewWindow -WorkingDirectory $tool_dir
+
         return $tool_dir
     }
 
     [void]InstallPython() {
-        $installer_exe = BuildFullPath $this.props.home_dir "python-3.11.1.exe"
+        $installer_exe = BuildFullPath $this.props.home_dir "python-3.14.0a6.exe"
 
         if (!(IsFile $this.python_exe)) {
-            $url = "https://github.com/spearmin10/corvette/blob/main/bin/python-3.11.1.exe?raw=true"
+            $url = "https://www.python.org/ftp/python/3.14.0/python-3.14.0a6.exe"
             DownloadFile $url $installer_exe
         }
         Start-Process -FilePath $installer_exe
