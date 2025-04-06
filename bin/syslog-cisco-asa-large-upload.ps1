@@ -170,7 +170,7 @@ class Main {
             if ($verbose) {
                 Write-Host $log
             } else {
-                Write-Host "log: ${client_ip} > ${target_ip}:{$target_port} - size: ${session_mb} MB"
+                Write-Host "log: ${client_ip} > ${target_ip}:${target_port} - size: ${session_mb} MB"
             }
         }
     }
