@@ -815,7 +815,7 @@ class SetupTools : CommandBase {
         $tool_dir = BuildFullPath $this.props.home_dir ".\python-3.14.0a6"
         $tool_exe = BuildFullPath $tool_dir "python.exe"
 
-        if (!(IsFile $this.tool_exe)) {
+        if (!(IsFile $tool_exe)) {
             $url = "https://www.python.org/ftp/python/3.14.0/python-3.14.0a6-embed-win32.zip"
             DownloadAndExtractArchive $url $tool_dir
 
@@ -824,27 +824,31 @@ class SetupTools : CommandBase {
             $content = $content -replace "#import site", "import site"
             [IO.File]::WriteAllText($pth_path, $content)
         }
-        $pipexe_path = BuildFullPath $tool_dir "Scripts\pip.exe"
-        $getpip_path = BuildFullPath $tool_dir "get-pip.py"
-        if (!(IsFile $pipexe_path)) {
+        $complete_path = BuildFullPath $tool_dir "python.installed"
+        if (!(IsFile $complete_path)) {
+            $pipexe_path = BuildFullPath $tool_dir "Scripts\pip.exe"
+            $getpip_path = BuildFullPath $tool_dir "get-pip.py"
+            
             $url = "https://bootstrap.pypa.io/get-pip.py"
             DownloadFile $url $getpip_path
             
             Start-Process -FilePath $tool_exe `
                 -ArgumentList @($getpip_path, "--no-warn-script-location") `
                 -Wait -NoNewWindow -WorkingDirectory $tool_dir
-        }
-        Start-Process -FilePath $tool_exe `
-            -ArgumentList @($pipexe_path, "install", "requests", "--no-warn-script-location") `
-            -Wait -NoNewWindow -WorkingDirectory $tool_dir
 
+            Start-Process -FilePath $tool_exe `
+                -ArgumentList @($pipexe_path, "install", "requests", "--no-warn-script-location") `
+                -Wait -NoNewWindow -WorkingDirectory $tool_dir
+            
+            [IO.File]::WriteAllText($complete_path, "")
+        }
         return $tool_dir
     }
 
     [void]InstallPython() {
         $installer_exe = BuildFullPath $this.props.home_dir "python-3.14.0a6.exe"
 
-        if (!(IsFile $this.python_exe)) {
+        if (!(IsFile $installer_exe)) {
             $url = "https://www.python.org/ftp/python/3.14.0/python-3.14.0a6.exe"
             DownloadFile $url $installer_exe
         }
@@ -3511,6 +3515,136 @@ class NetflowLogs : CommandBase {
     }
 }
 
+class ServerMenu : CommandBase {
+    ServerMenu([Properties]$props) : base($props) {
+    }
+
+    [void]Run() {
+        while ($true) {
+            Write-Host "************************************"
+            Write-Host " 1) Run RSG Server"
+            Write-Host " 2) Run Syslog To HEC"
+            Write-Host " q) Exit"
+
+            try {
+                :retry do {
+                    $cmd = Read-Host "Please choose a menu item to run"
+                    switch($cmd) {
+                        "1" {
+                            [ServerRsg]::New($this.props).Run()
+                        }
+                        "2" {
+                            [ServerSyslogToHec]::New($this.props).Run()
+                        }
+                        "q" {
+                            return
+                        }
+                        default {
+                            continue retry
+                        }
+                    }
+                    break
+                } while($true)
+            } catch {
+                Write-Host $_
+            }
+        }
+    }
+}
+
+class ServerRsg : CommandBase {
+    [string]$python_dir
+    [string]$python_exe
+
+    ServerRsg([Properties]$props) : base($props) {
+        $this.python_dir = [SetupTools]::New($props).DownloadEmbeddablePython()
+        $this.python_exe = BuildFullPath $this.python_dir "python.exe"
+    }
+
+    [void]Run() {
+        $file_name = "rsgsvr.py"
+        $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
+        $script_file = BuildFullPath $scripts_dir $file_name
+        if (!(IsDirectory $scripts_dir)) {
+            New-Item -ItemType Directory -Force -Path $scripts_dir
+        }
+
+        if (!(IsFile $script_file)) {
+            $url = "https://github.com/spearmin10/rsgen/blob/main/rsgsvr.py?raw=true"
+            DownloadFile $url $script_file
+        }
+
+        Write-Host ""
+        Write-Host "### Enter RSG Server parameters"
+        $server_port = ReadInput "Server Port" `
+                                 "65534" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                 "Please retype a valid port number"
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $cargs = @(
+                $script_file,
+                "--port", $server_port
+            )
+            Start-Process -FilePath $this.python_exe -ArgumentList $cargs
+        }
+    }
+}
+
+class ServerSyslogToHec : CommandBase {
+    [string]$python_dir
+    [string]$python_exe
+
+    ServerSyslogToHec([Properties]$props) : base($props) {
+        $this.python_dir = [SetupTools]::New($props).DownloadEmbeddablePython()
+        $this.python_exe = BuildFullPath $this.python_dir "python.exe"
+    }
+
+    [void]Run() {
+        $file_name = "syslog_to_hec.py"
+        $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
+        $script_file = BuildFullPath $scripts_dir $file_name
+        if (!(IsDirectory $scripts_dir)) {
+            New-Item -ItemType Directory -Force -Path $scripts_dir
+        }
+
+        if (!(IsFile $script_file)) {
+            $url = "https://github.com/spearmin10/xsiam-utils/blob/main/Syslog%20To%20HEC/standalone/syslog_to_hec.py?raw=true"
+            DownloadFile $url $script_file
+        }
+
+        Write-Host ""
+        Write-Host "### Enter syslog_to_hec parameters"
+        $syslog_port = ReadInput "Syslog Port" `
+                                 "514" `
+                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                 "Please retype a valid port number"
+        $syslog_protocol = ReadInput "Syslog Protocol" `
+                                     "UDP" `
+                                     @("^UDP|TCP|udp|tcp$") `
+                                     "Please retype a valid protocol"
+        $hec_api_url = ReadInput "HEC API URL" "" @("^.+$")
+        $hec_compression = AskYesNo "Compression Mode" "y"
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $cargs = @(
+                $script_file,
+                "--syslog_protocol", $syslog_protocol.ToLower(),
+                "--syslog_port", $syslog_port,
+                "--hec_api_url", $hec_api_url,
+                "--hec_api_key_raw", "*",
+                "--hec_api_key_cef", "*",
+                "--insecure",
+                "--ignore_non_syslog_message"
+            )
+            if ($hec_compression) {
+                $cargs += "--hec_compression"
+            }
+            Start-Process -FilePath $this.python_exe -ArgumentList $cargs
+        }
+    }
+}
+
 class Menu {
     [Properties]$props
 
@@ -3603,6 +3737,9 @@ class Menu {
             "19" {
                 [NetflowLogs]::New($this.props).Run()
             }
+            "20" {
+                [ServerMenu]::New($this.props).Run()
+            }
             default {
                 return $false
             }
@@ -3635,6 +3772,7 @@ class Menu {
             Write-Host "17) Send Palo Alto Networks NGFW Logs"
             Write-Host "18) Send BIND Logs"
             Write-Host "19) Send Netflow Logs"
+            Write-Host "20) Run Server"
             try {
                 while (!$this.LaunchUserModeCommand((Read-Host "Please choose a menu item to run"))) {}
             } catch {
@@ -3681,6 +3819,9 @@ class Menu {
             "10" {
                 [RsgcliMenu]::New($this.props).Run()
             }
+            "11" {
+                [ServerMenu]::New($this.props).Run()
+            }
             default {
                 return $false
             }
@@ -3704,6 +3845,7 @@ class Menu {
             Write-Host " 8) Run WildFire Test PE"
             Write-Host " 9) Generate Network Traffic (iptgen)"
             Write-Host "10) Generate Network Traffic (rsgen)"
+            Write-Host "11) Run Server"
             try {
                 while (!$this.LaunchAdminModeCommand((Read-Host "Please choose a menu item to run"))) {}
             } catch {
