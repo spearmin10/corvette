@@ -921,7 +921,7 @@ class ConfigureSettings : CommandBase {
                             if ($this.props.syslog.Length -eq 0) {
                                 Write-Host "* No Default Syslog Servers"
                             } else {
-                            Write-Host "* Default Syslog Servers"
+                                Write-Host "* Default Syslog Servers"
                                 foreach ($props in $this.props.syslog) {
                                     Write-Host "  - $($props.host):$($props.port) ($($props.protocol))"
                                 }
@@ -977,6 +977,10 @@ class ConfigureSettings : CommandBase {
     }
 
     hidden [void]DeleteDefaultSyslogServer() {
+        if ($this.props.syslog.Length -eq 0) {
+            Write-Host "* No Default Syslog Servers"
+            return
+        }
         [System.Collections.ArrayList]$items = $this.props.syslog
 
         while ($true) {
@@ -1027,7 +1031,7 @@ class ConfigureSettings : CommandBase {
                             if ($this.props.netflow.Length -eq 0) {
                                 Write-Host "* No Default Netflow Servers"
                             } else {
-                            Write-Host "* Default Netflow Servers"
+                                Write-Host "* Default Netflow Servers"
                                 foreach ($props in $this.props.netflow) {
                                     Write-Host "  - $($props.host):$($props.port)"
                                 }
@@ -1078,6 +1082,10 @@ class ConfigureSettings : CommandBase {
     }
 
     hidden [void]DeleteDefaultNetflowServer() {
+        if ($this.props.netflow.Length -eq 0) {
+            Write-Host "* No Default Netflow Servers"
+            return
+        }
         [System.Collections.ArrayList]$items = $this.props.netflow
 
         while ($true) {
@@ -1129,7 +1137,7 @@ class ConfigureSettings : CommandBase {
                             if ($this.props.rsgsvr.Length -eq 0) {
                                 Write-Host "* No Default RSG Servers"
                             } else {
-                            Write-Host "* Default RSG Servers"
+                                Write-Host "* Default RSG Servers"
                                 foreach ($props in $this.props.rsgsvr) {
                                     Write-Host "  - $($props.host):$($props.port)"
                                 }
@@ -1180,6 +1188,10 @@ class ConfigureSettings : CommandBase {
     }
 
     hidden [void]DeleteDefaultRsgServer() {
+        if ($this.props.rsgsvr.Length -eq 0) {
+            Write-Host "* No Default RSG Servers"
+            return
+        }
         [System.Collections.ArrayList]$items = $this.props.rsgsvr
 
         while ($true) {
@@ -1276,6 +1288,10 @@ class ConfigureSettings : CommandBase {
     }
 
     hidden [void]DeleteDefaultCortexHttpCollector() {
+        if ($this.props.cortex_hec.Length -eq 0) {
+            Write-Host "* No Default Cortex HTTP Collectors"
+            return
+        }
         [System.Collections.ArrayList]$items = $this.props.cortex_hec
 
         while ($true) {
