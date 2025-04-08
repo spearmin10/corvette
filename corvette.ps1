@@ -437,6 +437,7 @@ $null = [System.Console]::ReadKey()
     $script = $script.Replace("@@@cmd_args@@@", $cargs)
     $script = $script.Replace("@@@home_dir@@@", $home_dir)
     $script = $script.Replace("@@@epilogue_script@@@", $epilogue_script)
+    
     StartEncodedScript $script
 }
 
@@ -446,21 +447,199 @@ function CleanupHome (
     Get-ChildItem -Path $home_dir -Exclude @("corvette.json", "corvette.sha256") | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 }
 
+class PropsSyslog {
+    [string]$host
+    [string]$port
+    [string]$protocol
+
+    PropsSyslog() {
+        $this.Init($null)
+    }
+
+    PropsSyslog([PSCustomObject]$props) {
+        $this.Init($props)
+    }
+
+    hidden [void]Init([PSCustomObject]$props) {
+        if ($null -ne $props) {
+            $this.host = $props.host
+            $this.port = $props.port
+            $this.protocol = $props.protocol
+        }
+        if ([string]::IsNullOrEmpty($this.port)) {
+            $this.port = "514"
+        }
+        if ([string]::IsNullOrEmpty($this.protocol)) {
+            $this.protocol = "UDP"
+        }
+    }
+
+    [boolean]Equals([object]$obj) {
+        return (
+            $obj.host -eq $this.host -And
+            $obj.port -eq $this.port -And
+            $obj.protocol -eq $this.protocol
+        )
+    }
+
+    [hashtable]Export() {
+        return @{
+            "host" = $this.host
+            "port" = $this.port
+            "protocol" = $this.protocol
+        }
+    }
+}
+
+class PropsNetflow {
+    [string]$host
+    [string]$port
+
+    PropsNetflow() {
+        $this.Init($null)
+    }
+
+    PropsNetflow([PSCustomObject]$props) {
+        $this.Init($props)
+    }
+
+    hidden [void]Init([PSCustomObject]$props) {
+        if ($null -ne $props) {
+            $this.host = $props.host
+            $this.port = $props.port
+        }
+        if ([string]::IsNullOrEmpty($this.port)) {
+            $this.port = "2055"
+        }
+    }
+
+    [boolean]Equals([object]$obj) {
+        return (
+            $obj.host -eq $this.host -And
+            $obj.port -eq $this.port
+        )
+    }
+
+    [hashtable]Export() {
+        return @{
+            "host" = $this.host
+            "port" = $this.port
+        }
+    }
+}
+
+class PropsRsgSvr {
+    [string]$host
+    [string]$port
+
+    PropsRsgSvr() {
+        $this.Init($null)
+    }
+
+    PropsRsgSvr([PSCustomObject]$props) {
+        $this.Init($props)
+    }
+
+    hidden [void]Init([PSCustomObject]$props) {
+        if ($null -ne $props) {
+            $this.host = $props.host
+            $this.port = $props.port
+        }
+        if ([string]::IsNullOrEmpty($this.port)) {
+            $this.port = "65534"
+        }
+    }
+
+    [boolean]Equals([object]$obj) {
+        return (
+            $obj.host -eq $this.host -And
+            $obj.port -eq $this.port
+        )
+    }
+
+    [hashtable]Export() {
+        return @{
+            "host" = $this.host
+            "port" = $this.port
+        }
+    }
+}
+
+class PropsCortexHttpCollector {
+    [string]$api_url
+    [string]$api_key_raw
+    [string]$api_key_cef
+    [boolean]$compression
+
+    PropsCortexHttpCollector() {
+        $this.Init($null)
+    }
+
+    PropsCortexHttpCollector([PSCustomObject]$props) {
+        $this.Init($props)
+    }
+
+    hidden [void]Init([PSCustomObject]$props) {
+        if ($null -ne $props) {
+            $this.api_url = $props.api_url
+            $this.api_key_raw = $props.api_key_raw
+            $this.api_key_cef = $props.api_key_cef
+            $this.compression = $props.compression
+        }
+        if ([string]::IsNullOrEmpty($this.compression)) {
+            $this.compression = $true
+        }
+    }
+
+    [boolean]Equals([object]$obj) {
+        return (
+            $obj.api_url -eq $this.api_url -And
+            $obj.api_key_raw -eq $this.api_key_raw -And
+            $obj.api_key_cef -eq $this.api_key_cef -And
+            $obj.compression -eq $this.compression
+        )
+    }
+
+    [object]Import([PSCustomObject]$props) {
+        $this.Init(@{
+            "api_url" = $props.api_url
+            "compression" = $props.compression
+            "api_key_raw" = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR(
+                [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR(
+                    $(ConvertTo-SecureString -String ([string]$props.api_key_raw))
+                )
+            )
+            "api_key_cef" = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR(
+                [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR(
+                    $(ConvertTo-SecureString -String ([string]$props.api_key_cef))
+                )
+            )
+        })
+        return $this
+    }
+
+    [hashtable]Export() {
+        $local:api_key_raw = $(ConvertTo-SecureString -string [string]$this.api_key_raw -AsPlainText -Force | ConvertFrom-SecureString)
+        $local:api_key_cef = $(ConvertTo-SecureString -string [string]$this.api_key_cef -AsPlainText -Force | ConvertFrom-SecureString)
+
+        return @{
+            "api_url" = $this.api_url
+            "api_key_raw" = $local:api_key_raw
+            "api_key_cef" = $local:api_key_cef
+            "compression" = $this.compression
+        }
+    }
+}
+
 class Properties {
     [string]$my_script
     [string]$home_dir
     [Management.Automation.InvocationInfo]$invocation_info
 
-    [string]$syslog_host
-    [string]$syslog_port
-    [string]$syslog_protocol
-
-    [string]$netflow_host
-    [string]$netflow_port
-
-    [string]$rsgsvr_host
-    [string]$rsgsvr_port
-
+    [PropsSyslog[]]$syslog
+    [PropsNetflow[]]$netflow
+    [PropsRsgSvr[]]$rsgsvr
+    [PropsCortexHttpCollector[]]$cortex_hec
     [hashtable]$exec_random
 
     Properties([Management.Automation.InvocationInfo]$info) {
@@ -498,34 +677,35 @@ class Properties {
         } else {
             $settings = @{}
         }
-        $this.syslog_host = $settings.syslog.host
-        $this.syslog_port = $settings.syslog.port
-        $this.syslog_protocol = $settings.syslog.protocol
-        if ($this.syslog_host -isnot [string] -Or [string]::IsNullOrEmpty($this.syslog_port)) {
-            $this.syslog_port = $null
+        $this.syslog = @()
+        if ($settings.syslog -is [array]) {
+            foreach ($props in $settings.syslog) {
+                $this.syslog += [PropsSyslog]::New($props)
+            }
         }
-        if ($this.syslog_port -isnot [string] -Or [string]::IsNullOrEmpty($this.syslog_port)) {
-            $this.syslog_port = "514"
+        $this.netflow = @()
+        if ($settings.netflow -is [array]) {
+            foreach ($props in $settings.netflow) {
+                $this.netflow += [PropsNetflow]::New($props)
+            }
         }
-        if ($this.syslog_protocol -isnot [string] -Or [string]::IsNullOrEmpty($this.syslog_protocol)) {
-            $this.syslog_protocol = "UDP"
+        $this.rsgsvr = @()
+        if ($settings.rsgsvr -is [array]) {
+            foreach ($props in $settings.rsgsvr) {
+                $this.rsgsvr += [PropsRsgSvr]::New($props)
+            }
         }
-        $this.netflow_host = $settings.netflow.host
-        $this.netflow_port = $settings.netflow.port
-        if ($this.netflow_host -isnot [string] -Or [string]::IsNullOrEmpty($this.netflow_port)) {
-            $this.netflow_port = $null
+
+        $this.cortex_hec = @()
+        if ($settings.cortex_hec -is [array]) {
+            foreach ($props in $settings.cortex_hec) {
+                try {
+                    $this.cortex_hec += [PropsCortexHttpCollector]::New().Import($props)
+                } catch {
+                }
+            }
         }
-        if ($this.netflow_port -isnot [string] -Or [string]::IsNullOrEmpty($this.netflow_port)) {
-            $this.netflow_port = "2055"
-        }
-        $this.rsgsvr_host = $settings.rsgsvr.host
-        $this.rsgsvr_port = $settings.rsgsvr.port
-        if ($this.rsgsvr_host -isnot [string] -Or [string]::IsNullOrEmpty($this.rsgsvr_port)) {
-            $this.rsgsvr_port = $null
-        }
-        if ($this.rsgsvr_port -isnot [string] -Or [string]::IsNullOrEmpty($this.rsgsvr_port)) {
-            $this.rsgsvr_port = "65534"
-        }
+
         $this.exec_random = @{}
         if ($settings.exec_random -ne $null) {
             foreach ($name in $settings.exec_random.psobject.properties.name) {
@@ -547,20 +727,39 @@ class Properties {
             }
         }
 
+        $local:syslog = @()
+        if ($this.syslog -is [array]) {
+            foreach ($props in $this.syslog) {
+                $local:syslog += $props.Export()
+            }
+        }
+
+        $local:netflow = @()
+        if ($this.netflow -is [array]) {
+            foreach ($props in $this.netflow) {
+                $local:netflow += $props.Export()
+            }
+        }
+
+        $local:rsgsvr = @()
+        if ($this.rsgsvr -is [array]) {
+            foreach ($props in $this.rsgsvr) {
+                $local:rsgsvr += $props.Export()
+            }
+        }
+
+        $local:cortex_hec = @()
+        if ($this.cortex_hec -is [array]) {
+            foreach ($props in $this.cortex_hec) {
+                $local:cortex_hec += $props.Export()
+            }
+        }
+
         $settings = @{
-            "syslog" = @{
-                "host" = $this.syslog_host
-                "port" = $this.syslog_port
-                "protocol" = $this.syslog_protocol
-            }
-            "netflow" = @{
-                "host" = $this.netflow_host
-                "port" = $this.netflow_port
-            }
-            "rsgsvr" = @{
-                "host" = $this.rsgsvr_host
-                "port" = $this.rsgsvr_port
-            }
+            "syslog" = $local:syslog
+            "netflow" = $local:netflow
+            "rsgsvr" = $local:rsgsvr
+            "cortex_hec" = $local:cortex_hec
             "exec_random" = $local:exec_random
         }
         $settings | ConvertTo-Json | Set-Content -Encoding utf8 -Path $conf_file
@@ -583,6 +782,110 @@ class Properties {
         }
         return $path
     }
+
+    [PropsSyslog]SelectDefaultSyslogServer() {
+        $items = $this.syslog
+        if ($items.Length -ne 0) {
+            while ($true) {
+                Write-Host "Select a default syslog server"
+                Write-Host "************************************"
+                for ($i=0; $i -lt $items.Length; $i++) {
+                    $props = $items[$i]
+                    Write-Host " $($i + 1)) $($props.host):$($props.port) ($($props.protocol))"
+                }
+                Write-Host " q) Exit"
+                do {
+                    $cmd = Read-Host "Please choose a menu item"
+                    if ($cmd -eq "q") {
+                        return $null
+                    }
+                    $num = ParseNumber ($cmd)
+                    if ($num -gt 0 -And $num -le $items.Length) {
+                        return $items[$num - 1]
+                    }
+                } while($true)
+            }
+        }
+        return $null
+    }
+
+    [PropsNetflow]SelectDefaultNetflowServer() {
+        $items = $this.netflow
+        if ($items.Length -ne 0) {
+            while ($true) {
+                Write-Host "Select a default netflow server"
+                Write-Host "************************************"
+                for ($i=0; $i -lt $items.Length; $i++) {
+                    $props = $items[$i]
+                    Write-Host " $($i + 1)) $($props.host):$($props.port)"
+                }
+                Write-Host " q) Exit"
+                do {
+                    $cmd = Read-Host "Please choose a menu item"
+                    if ($cmd -eq "q") {
+                        return $null
+                    }
+                    $num = ParseNumber ($cmd)
+                    if ($num -gt 0 -And $num -le $items.Length) {
+                        return $items[$num - 1]
+                    }
+                } while($true)
+            }
+        }
+        return $null
+    }
+
+    [PropsRsgSvr]SelectDefaultRsgServer() {
+        $items = $this.rsgsvr
+        if ($items.Length -ne 0) {
+            while ($true) {
+                Write-Host "Select a default RSG server"
+                Write-Host "************************************"
+                for ($i=0; $i -lt $items.Length; $i++) {
+                    $props = $items[$i]
+                    Write-Host " $($i + 1)) $($props.host):$($props.port)"
+                }
+                Write-Host " q) Exit"
+                do {
+                    $cmd = Read-Host "Please choose a menu item"
+                    if ($cmd -eq "q") {
+                        return $null
+                    }
+                    $num = ParseNumber ($cmd)
+                    if ($num -gt 0 -And $num -le $items.Length) {
+                        return $items[$num - 1]
+                    }
+                } while($true)
+            }
+        }
+        return $null
+    }
+
+    [PropsCortexHttpCollector]SelectDefaultCortexHttpCollector() {
+        $items = $this.cortex_hec
+        if ($items.Length -ne 0) {
+            while ($true) {
+                Write-Host "Select a default Cortex HTTP Collector"
+                Write-Host "************************************"
+                for ($i=0; $i -lt $items.Length; $i++) {
+                    $props = $items[$i]
+                    Write-Host " $($i + 1)) $($props.api_url) (compression = $($props.compression))"
+                }
+                Write-Host " q) Exit"
+                do {
+                    $cmd = Read-Host "Please choose a menu item"
+                    if ($cmd -eq "q") {
+                        return $null
+                    }
+                    $num = ParseNumber ($cmd)
+                    if ($num -gt 0 -And $num -le $items.Length) {
+                        return $items[$num - 1]
+                    }
+                } while($true)
+            }
+        }
+        return $null
+    }
 }
 
 class CommandBase {
@@ -598,85 +901,412 @@ class ConfigureSettings : CommandBase {
     ConfigureSettings([Properties]$props) : base($props) {
     }
 
-    hidden [void]SetDefaultSyslogServer() {
+    hidden [void]ConfigureDefaultSyslogServer() {
+        while ($true) {
+            Write-Host "************************************"
+            Write-Host " 1) List syslog servers"
+            Write-Host " 2) Add a syslog server"
+            Write-Host " 3) Delete a syslog server"
+            Write-Host " q) Exit"
 
-        $syslog_port = $this.props.syslog_port
-        if ([string]::IsNullOrEmpty($syslog_port)) {
-            $syslog_port = "514"
+            try {
+                :retry do {
+                    $cmd = Read-Host "Please choose a menu item"
+                    switch ($cmd) {
+                        "q" {
+                            return
+                        }
+                        "1" {
+                            Write-Host ""
+                            if ($this.props.syslog.Length -eq 0) {
+                                Write-Host "* No Default Syslog Servers"
+                            } else {
+                            Write-Host "* Default Syslog Servers"
+                                foreach ($props in $this.props.syslog) {
+                                    Write-Host "  - $($props.host):$($props.port) ($($props.protocol))"
+                                }
+                            }
+                            Write-Host ""
+                        }
+                        "2" {
+                            $this.AddDefaultSyslogServer()
+                        }
+                        "3" {
+                            $this.DeleteDefaultSyslogServer()
+                        }
+                        default {
+                            continue retry
+                        }
+                    }
+                    break
+                } while($true)
+            } catch {
+                Write-Host $_
+            }
         }
-        $syslog_protocol = [string]$this.props.syslog_protocol
-        if ([string]::IsNullOrEmpty($syslog_protocol)) {
-            $syslog_protocol = "UDP"
-        }
+    }
+
+    hidden [void]AddDefaultSyslogServer() {
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host" `
-                                 $this.props.syslog_host `
-                                 @("^.+$")
-        $syslog_port = ReadInput "Syslog Port" `
-                                 $syslog_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
-        $syslog_protocol = ReadInput "Syslog Protocol" `
-                                     $syslog_protocol `
-                                     @("^UDP|TCP|udp|tcp$") `
-                                     "Please retype a valid protocol"
+        
+        $props = [PropsSyslog]::New()
+        $props.host = `
+            ReadInput "Syslog Host" `
+                      $props.host `
+                      @("^.+$")
+        $props.port = `
+            ReadInput "Syslog Port" `
+                      $props.port `
+                      @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                      "Please retype a valid port number"
+        $props.protocol = `
+            ReadInput "Syslog Protocol" `
+                      $props.protocol `
+                      @("^UDP|TCP|udp|tcp$") `
+                      "Please retype a valid protocol"
 
-        if (AskYesNo "Do you want to save changes?") {
-            $this.props.syslog_host = $syslog_host
-            $this.props.syslog_port = [int]$syslog_port
-            $this.props.syslog_protocol = $syslog_protocol
+        if ($props -in $this.props.syslog) {
+            Write-Host "The syslog parameters already exist."
+            return
+        }
+        if (AskYesNo "Do you want to add?") {
+            $this.props.syslog += $props
             $this.props.Save()
         }
     }
 
-    hidden [void]SetDefaultNetflowServer() {
+    hidden [void]DeleteDefaultSyslogServer() {
+        [System.Collections.ArrayList]$items = $this.props.syslog
 
-        $netflow_port = $this.props.netflow_port
-        if ([string]::IsNullOrEmpty($netflow_port)) {
-            $netflow_port = "2055"
+        while ($true) {
+            Write-Host ""
+            Write-Host "Delete a default syslog server"
+            Write-Host "************************************"
+            for ($i=0; $i -lt $items.Count; $i++) {
+                $props = $items[$i]
+                Write-Host " $($i + 1)) $($props.host):$($props.port) ($($props.protocol))"
+            }
+            Write-Host " q) Exit"
+            do {
+                $cmd = Read-Host "Please choose a menu item"
+                if ($cmd -eq "q") {
+                    if ((@(Compare-Object $items $this.props.syslog -SyncWindow 0).Length -ne 0) -And
+                        $(AskYesNo "Do you want to save changes?")) {
+                        $this.props.syslog = $items
+                        $this.props.Save()
+                    }
+                    return
+                }
+                $num = ParseNumber ($cmd)
+                if ($num -gt 0 -And $num -le $items.Count) {
+                    $items.RemoveAt($num - 1)
+                    break
+                }
+            } while($true)
         }
+    }
+
+    hidden [void]ConfigureDefaultNetflowServer() {
+        while ($true) {
+            Write-Host "************************************"
+            Write-Host " 1) List netflow servers"
+            Write-Host " 2) Add a netflow server"
+            Write-Host " 3) Delete a netflow server"
+            Write-Host " q) Exit"
+
+            try {
+                :retry do {
+                    $cmd = Read-Host "Please choose a menu item"
+                    switch ($cmd) {
+                        "q" {
+                            return
+                        }
+                        "1" {
+                            Write-Host ""
+                            if ($this.props.netflow.Length -eq 0) {
+                                Write-Host "* No Default Netflow Servers"
+                            } else {
+                            Write-Host "* Default Netflow Servers"
+                                foreach ($props in $this.props.netflow) {
+                                    Write-Host "  - $($props.host):$($props.port)"
+                                }
+                            }
+                            Write-Host ""
+                        }
+                        "2" {
+                            $this.AddDefaultNetflowServer()
+                        }
+                        "3" {
+                            $this.DeleteDefaultNetflowServer()
+                        }
+                        default {
+                            continue retry
+                        }
+                    }
+                    break
+                } while($true)
+            } catch {
+                Write-Host $_
+            }
+        }
+    }
+
+    hidden [void]AddDefaultNetflowServer() {
         Write-Host ""
-        Write-Host "### Enter the netflow server configuration"
-        $netflow_host = ReadInput "Netflow Host" `
-                                  $this.props.netflow_host `
-                                  @("^.+$")
-        $netflow_port = ReadInput "Netflow Port" `
-                                  $netflow_port `
-                                  @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                  "Please retype a valid port number"
+        Write-Host "### Enter the netflow configuration"
 
-        if (AskYesNo "Do you want to save changes?") {
-            $this.props.netflow_host = $netflow_host
-            $this.props.netflow_port = [int]$netflow_port
+        $props = [PropsNetflow]::New()
+        $props.host = ReadInput `
+            "Netflow Host" `
+            $props.host `
+            @("^.+$")
+        $props.port = `
+            ReadInput "Netflow Port" `
+            $props.port `
+            @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+            "Please retype a valid port number"
+
+        if ($props -in $this.props.syslog) {
+            Write-Host "The netflow parameters already exist."
+            return
+        }
+        if (AskYesNo "Do you want to add?") {
+            $this.props.netflow += $props
             $this.props.Save()
         }
     }
 
-    hidden [void]SetDefaultRsgServer() {
+    hidden [void]DeleteDefaultNetflowServer() {
+        [System.Collections.ArrayList]$items = $this.props.netflow
 
-        $rsgsvr_port = $this.props.rsgsvr_port
-        if ([string]::IsNullOrEmpty($rsgsvr_port)) {
-            $rsgsvr_port = "65534"
+        while ($true) {
+            Write-Host ""
+            Write-Host "Delete a default netflow server"
+            Write-Host "************************************"
+            for ($i=0; $i -lt $items.Count; $i++) {
+                $props = $items[$i]
+                Write-Host " $($i + 1)) $($props.host):$($props.port)"
+            }
+            Write-Host " q) Exit"
+            do {
+                $cmd = Read-Host "Please choose a menu item"
+                if ($cmd -eq "q") {
+                    if ((@(Compare-Object $items $this.props.netflow -SyncWindow 0).Length -ne 0) -And
+                        $(AskYesNo "Do you want to save changes?")) {
+                        $this.props.netflow = $items
+                        $this.props.Save()
+                    }
+                    return
+                }
+                $num = ParseNumber ($cmd)
+                if ($num -gt 0 -And $num -le $items.Count) {
+                    $items.RemoveAt($num - 1)
+                    break
+                }
+            } while($true)
         }
+    }
+
+
+    hidden [void]ConfigureDefaultRsgServer() {
+        while ($true) {
+            Write-Host "************************************"
+            Write-Host " 1) List RSG servers"
+            Write-Host " 2) Add a RSG server"
+            Write-Host " 3) Delete a RSG server"
+            Write-Host " q) Exit"
+
+            try {
+                :retry do {
+                    $cmd = Read-Host "Please choose a menu item"
+                    switch ($cmd) {
+                        "q" {
+                            return
+                        }
+                        "1" {
+                            Write-Host ""
+                            if ($this.props.rsgsvr.Length -eq 0) {
+                                Write-Host "* No Default RSG Servers"
+                            } else {
+                            Write-Host "* Default RSG Servers"
+                                foreach ($props in $this.props.rsgsvr) {
+                                    Write-Host "  - $($props.host):$($props.port)"
+                                }
+                            }
+                            Write-Host ""
+                        }
+                        "2" {
+                            $this.AddDefaultRsgServer()
+                        }
+                        "3" {
+                            $this.DeleteDefaultRsgServer()
+                        }
+                        default {
+                            continue retry
+                        }
+                    }
+                    break
+                } while($true)
+            } catch {
+                Write-Host $_
+            }
+        }
+    }
+
+    hidden [void]AddDefaultRsgServer() {
         Write-Host ""
-        Write-Host "### Enter the rsg server configuration"
-        $rsgsvr_host = ReadInput "RSG Host" `
-                                 $this.props.rsgsvr_host `
-                                 @("^.+$")
-        $rsgsvr_port = ReadInput "RSG Port" `
-                                 $rsgsvr_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
+        Write-Host "### Enter the RSG server configuration"
 
-        if (AskYesNo "Do you want to save changes?") {
-            $this.props.rsgsvr_host = $rsgsvr_host
-            $this.props.rsgsvr_port = [int]$rsgsvr_port
+        $props = [PropsRsgSvr]::New()
+        $props.host = ReadInput `
+            "RSG Host" `
+            $props.host `
+            @("^.+$")
+        $props.port = `
+            ReadInput "RSG Port" `
+            $props.port `
+            @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+            "Please retype a valid port number"
+
+        if ($props -in $this.props.syslog) {
+            Write-Host "The RSG server parameters already exist."
+            return
+        }
+        if (AskYesNo "Do you want to add?") {
+            $this.props.rsgsvr += $props
             $this.props.Save()
         }
     }
 
-    hidden [void]SetExecutableNameRandomization() {
+    hidden [void]DeleteDefaultRsgServer() {
+        [System.Collections.ArrayList]$items = $this.props.rsgsvr
+
+        while ($true) {
+            Write-Host ""
+            Write-Host "Delete a default RSG server"
+            Write-Host "************************************"
+            for ($i=0; $i -lt $items.Count; $i++) {
+                $props = $items[$i]
+                Write-Host " $($i + 1)) $($props.host):$($props.port)"
+            }
+            Write-Host " q) Exit"
+            do {
+                $cmd = Read-Host "Please choose a menu item"
+                if ($cmd -eq "q") {
+                    if ((@(Compare-Object $items $this.props.rsgsvr -SyncWindow 0).Length -ne 0) -And
+                        $(AskYesNo "Do you want to save changes?")) {
+                        $this.props.rsgsvr = $items
+                        $this.props.Save()
+                    }
+                    return
+                }
+                $num = ParseNumber ($cmd)
+                if ($num -gt 0 -And $num -le $items.Count) {
+                    $items.RemoveAt($num - 1)
+                    break
+                }
+            } while($true)
+        }
+    }
+
+    hidden [void]ConfigureDefaultCortexHttpCollector() {
+        while ($true) {
+            Write-Host "************************************"
+            Write-Host " 1) List Cortex HTTP Collector"
+            Write-Host " 2) Add a Cortex HTTP Collector"
+            Write-Host " 3) Delete a Cortex HTTP Collector"
+            Write-Host " q) Exit"
+
+            try {
+                :retry do {
+                    $cmd = Read-Host "Please choose a menu item"
+                    switch ($cmd) {
+                        "q" {
+                            return
+                        }
+                        "1" {
+                            Write-Host ""
+                            if ($this.props.cortex_hec.Length -eq 0) {
+                                Write-Host "* No Default Cortex HTTP Collectors"
+                            } else {
+                            Write-Host "* Default Cortex HTTP Collectors"
+                                foreach ($props in $this.props.cortex_hec) {
+                                    Write-Host "  - $($props.api_url) (compression = $($props.compression))"
+                                }
+                            }
+                            Write-Host ""
+                        }
+                        "2" {
+                            $this.AddDefaultCortexHttpCollector()
+                        }
+                        "3" {
+                            $this.DeleteDefaultCortexHttpCollector()
+                        }
+                        default {
+                            continue retry
+                        }
+                    }
+                    break
+                } while($true)
+            } catch {
+                Write-Host $_
+            }
+        }
+    }
+
+    hidden [void]AddDefaultCortexHttpCollector() {
+        Write-Host ""
+        Write-Host "### Enter the Cortex HTTP Collector configuration"
+        
+        $props = [PropsCortexHttpCollector]::New()
+        $props.api_url = ReadInput "API URL" $props.api_url @("^.+$")
+        $props.api_key_raw = ReadInput "API Key (RAW logs)" $props.api_key_raw
+        $props.api_key_cef = ReadInput "API Key (CEF logs)" $props.api_key_cef
+        $props.compression = AskYesNo "Compression Mode" "y"
+
+        if ($props -in $this.props.cortex_hec) {
+            Write-Host "The Cortex HTTP Collector parameters already exist."
+            return
+        }
+        if (AskYesNo "Do you want to add?") {
+            $this.props.cortex_hec += $props
+            $this.props.Save()
+        }
+    }
+
+    hidden [void]DeleteDefaultCortexHttpCollector() {
+        [System.Collections.ArrayList]$items = $this.props.cortex_hec
+
+        while ($true) {
+            Write-Host ""
+            Write-Host "Delete a default Cortex HTTP Collector"
+            Write-Host "************************************"
+            for ($i=0; $i -lt $items.Count; $i++) {
+                $props = $items[$i]
+                Write-Host " $($i + 1)) $($props.api_url) (compression = $($props.compression))"
+            }
+            Write-Host " q) Exit"
+            do {
+                $cmd = Read-Host "Please choose a menu item"
+                if ($cmd -eq "q") {
+                    if ((@(Compare-Object $items $this.props.cortex_hec -SyncWindow 0).Length -ne 0) -And
+                        $(AskYesNo "Do you want to save changes?")) {
+                        $this.props.cortex_hec = $items
+                        $this.props.Save()
+                    }
+                    return
+                }
+                $num = ParseNumber ($cmd)
+                if ($num -gt 0 -And $num -le $items.Count) {
+                    $items.RemoveAt($num - 1)
+                    break
+                }
+            } while($true)
+        }
+    }
+
+    hidden [void]ConfigureExecutableNameRandomization() {
 
         $exec_random = $this.props.exec_random
         if ([string]::IsNullOrEmpty($exec_random)) {
@@ -690,13 +1320,13 @@ class ConfigureSettings : CommandBase {
             Write-Host ""
             Write-Host "Execution Name Randomization"
             Write-Host "************************************"
-            foreach ($key in $keys) {
-                $num = $keys.IndexOf($key) + 1
+            for ($i=0; $i -lt $keys.Length; $i++) {
+                $key = $keys[$i]
                 $mode = "disabled"
                 if (![string]::IsNullOrEmpty($exec_random.$key.mode)) {
                     $mode = $exec_random.$key.mode
                 }
-                Write-Host " ${num}) ${key} [Current: ${mode}]"
+                Write-Host " $($i + 1)) ${key} [Current: ${mode}]"
             }
             Write-Host " q) Exit"
             do {
@@ -709,7 +1339,7 @@ class ConfigureSettings : CommandBase {
                     return
                 }
                 $num = ParseNumber ($cmd)
-                if ($num -ne $null -And $num -ge 1) {
+                if ($num -gt 0 -And $num -le $keys.Length) {
                     $key = $keys[$num - 1]
 
                     if ($exec_random.$key -eq $null) {
@@ -730,10 +1360,11 @@ class ConfigureSettings : CommandBase {
         while ($true) {
             Write-Host "************************************"
             Write-Host " 0) Cleanup the working directory"
-            Write-Host " 1) Set default syslog server"
-            Write-Host " 2) Set default netflow server"
-            Write-Host " 3) Set default RSG server"
-            Write-Host " 4) Set executable name randomization"
+            Write-Host " 1) Configure default syslog servers"
+            Write-Host " 2) Configure default netflow servers"
+            Write-Host " 3) Configure default RSG servers"
+            Write-Host " 4) Configure default Cortex HTTP Collectors"
+            Write-Host " 5) Configure executable name randomization"
             Write-Host " q) Exit"
             try {
                 :retry do {
@@ -747,16 +1378,19 @@ class ConfigureSettings : CommandBase {
                             Write-Host "Done."
                         }
                         "1" {
-                            $this.SetDefaultSyslogServer()
+                            $this.ConfigureDefaultSyslogServer()
                         }
                         "2" {
-                            $this.SetDefaultNetflowServer()
+                            $this.ConfigureDefaultNetflowServer()
                         }
                         "3" {
-                            $this.SetDefaultRsgServer()
+                            $this.ConfigureDefaultRsgServer()
                         }
                         "4" {
-                            $this.SetExecutableNameRandomization()
+                            $this.ConfigureDefaultCortexHttpCollector()
+                        }
+                        "5" {
+                            $this.ConfigureExecutableNameRandomization()
                         }
                         default {
                             continue retry
@@ -1916,19 +2550,23 @@ class RsgcliDnsTunneling : RsgcliBase {
 
     [void]Run() {
         Write-Host ""
-        Write-Host "### Enter the DNS tunneling configuration"
-        $rsgsvr_host = ReadInput "RSG Server Host" `
-                                 $this.props.rsgsvr_host `
-                                 @("^.+$")
-        $rsgsvr_port = ReadInput "RSG Server Port" `
-                                 $this.props.rsgsvr_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
+        Write-Host "### Enter the RSG Server and DNS tunneling configuration"
+        $rsgsvr = $this.props.SelectDefaultRsgServer()
+        if ($null -eq $rsgsvr) {
+            $rsgsvr = [PropsRsgSvr]::New()
+            $rsgsvr.host = ReadInput "RSG Server Host" `
+                                     $rsgsvr.host `
+                                     @("^.+$")
+            $rsgsvr.port = ReadInput "RSG Server Port" `
+                                     $rsgsvr.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+        }
         $domain = ReadInput "DNS tunnel domain" $null @("^.+$")
 
         $Env:domain = $domain
         if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
+            $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
         }
     }
 }
@@ -1948,17 +2586,20 @@ class RsgcliDnsRandomQuery : RsgcliBase {
 
     [void]Run() {
         Write-Host ""
-        Write-Host "### Enter the DNS random query configuration"
-        $rsgsvr_host = ReadInput "RSG Server Host" `
-                                 $this.props.rsgsvr_host `
-                                 @("^.+$")
-        $rsgsvr_port = ReadInput "RSG Server Port" `
-                                 $this.props.rsgsvr_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
-
+        Write-Host "### Enter the RSG Server and DNS random query configuration"
+        $rsgsvr = $this.props.SelectDefaultRsgServer()
+        if ($null -eq $rsgsvr) {
+            $rsgsvr = [PropsRsgSvr]::New()
+            $rsgsvr.host = ReadInput "RSG Server Host" `
+                                     $rsgsvr.host `
+                                     @("^.+$")
+            $rsgsvr.port = ReadInput "RSG Server Port" `
+                                     $rsgsvr.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+        }
         if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
+            $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
         }
     }
 }
@@ -1978,15 +2619,18 @@ class RsgcliSmtpFileUpload : RsgcliBase {
 
     [void]Run() {
         Write-Host ""
-        Write-Host "### Enter the SMTP file upload configuration"
-        $rsgsvr_host = ReadInput "RSG Server Host" `
-                                 $this.props.rsgsvr_host `
-                                 @("^.+$")
-        $rsgsvr_port = ReadInput "RSG Server Port" `
-                                 $this.props.rsgsvr_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
-
+        Write-Host "### Enter the RSG Server and SMTP file upload configuration"
+        $rsgsvr = $this.props.SelectDefaultRsgServer()
+        if ($null -eq $rsgsvr) {
+            $rsgsvr = [PropsRsgSvr]::New()
+            $rsgsvr.host = ReadInput "RSG Server Host" `
+                                     $rsgsvr.host `
+                                     @("^.+$")
+            $rsgsvr.port = ReadInput "RSG Server Port" `
+                                     $rsgsvr.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+        }
         $upload_filename = ReadInput "Upload file name" "test.dat" @("^.+$")
         $upload_filesize = ReadInputSize "Upload file size" "20MB" "Invalid file size. Please retype the size."
         $repeat_count = ParseNumber(ReadInput "Number of times to repeat" `
@@ -1998,7 +2642,7 @@ class RsgcliSmtpFileUpload : RsgcliBase {
         $Env:upload_filesize = $upload_filesize
         $Env:repeat_count = $repeat_count
         if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
+            $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
         }
     }
 }
@@ -2018,15 +2662,18 @@ class RsgcliFtpFileUpload : RsgcliBase {
 
     [void]Run() {
         Write-Host ""
-        Write-Host "### Enter the FTP file upload configuration"
-        $rsgsvr_host = ReadInput "RSG Server Host" `
-                                 $this.props.rsgsvr_host `
-                                 @("^.+$")
-        $rsgsvr_port = ReadInput "RSG Server Port" `
-                                 $this.props.rsgsvr_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
-
+        Write-Host "### Enter the RSG Server and FTP file upload configuration"
+        $rsgsvr = $this.props.SelectDefaultRsgServer()
+        if ($null -eq $rsgsvr) {
+            $rsgsvr = [PropsRsgSvr]::New()
+            $rsgsvr.host = ReadInput "RSG Server Host" `
+                                     $rsgsvr.host `
+                                     @("^.+$")
+            $rsgsvr.port = ReadInput "RSG Server Port" `
+                                     $rsgsvr.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+        }
         $upload_filename = ReadInput "Upload file name" "test.dat" @("^.+$")
         $upload_filesize = ReadInputSize "Upload file size" "100MB" "Invalid file size. Please retype the size."
         $repeat_count = ParseNumber(ReadInput "Number of times to repeat" `
@@ -2038,7 +2685,7 @@ class RsgcliFtpFileUpload : RsgcliBase {
         $Env:upload_filesize = $upload_filesize
         $Env:repeat_count = $repeat_count
         if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
+            $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
         }
     }
 }
@@ -2058,15 +2705,18 @@ class RsgcliHttpFileUpload : RsgcliBase {
 
     [void]Run() {
         Write-Host ""
-        Write-Host "### Enter the HTTP file upload configuration"
-        $rsgsvr_host = ReadInput "RSG Server Host" `
-                                 $this.props.rsgsvr_host `
-                                 @("^.+$")
-        $rsgsvr_port = ReadInput "RSG Server Port" `
-                                 $this.props.rsgsvr_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
-
+        Write-Host "### Enter the RSG Server and HTTP file upload configuration"
+        $rsgsvr = $this.props.SelectDefaultRsgServer()
+        if ($null -eq $rsgsvr) {
+            $rsgsvr = [PropsRsgSvr]::New()
+            $rsgsvr.host = ReadInput "RSG Server Host" `
+                                     $rsgsvr.host `
+                                     @("^.+$")
+            $rsgsvr.port = ReadInput "RSG Server Port" `
+                                     $rsgsvr.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+        }
         $upload_filesize = ReadInputSize "Upload file size" "100MB" "Invalid file size. Please retype the size."
         $repeat_count = ParseNumber(ReadInput "Number of times to repeat" `
                                               "1" `
@@ -2076,7 +2726,7 @@ class RsgcliHttpFileUpload : RsgcliBase {
         $Env:upload_filesize = $upload_filesize
         $Env:repeat_count = $repeat_count
         if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
+            $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
         }
     }
 }
@@ -2096,19 +2746,22 @@ class RsgcliHttpUnauthorizedLoginAttempts : RsgcliBase {
 
     [void]Run() {
         Write-Host ""
-        Write-Host "### Enter the HTTP configuration"
-        $rsgsvr_host = ReadInput "RSG Server Host" `
-                                 $this.props.rsgsvr_host `
-                                 @("^.+$")
-        $rsgsvr_port = ReadInput "RSG Server Port" `
-                                 $this.props.rsgsvr_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
-
+        Write-Host "### Enter the RSG Server and HTTP configuration"
+        $rsgsvr = $this.props.SelectDefaultRsgServer()
+        if ($null -eq $rsgsvr) {
+            $rsgsvr = [PropsRsgSvr]::New()
+            $rsgsvr.host = ReadInput "RSG Server Host" `
+                                     $rsgsvr.host `
+                                     @("^.+$")
+            $rsgsvr.port = ReadInput "RSG Server Port" `
+                                     $rsgsvr.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+        }
         $Env:attempt_count = 10000
 
         if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
+            $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
         }
     }
 }
@@ -2127,14 +2780,18 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
 
     [void]Run() {
         Write-Host ""
-        Write-Host "### Enter the SMB configuration"
-        $rsgsvr_host = ReadInput "RSG Server Host" `
-                                 $this.props.rsgsvr_host `
-                                 @("^.+$")
-        $rsgsvr_port = ReadInput "RSG Server Port" `
-                                 $this.props.rsgsvr_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
+        Write-Host "### Enter the RSG Server and SMB configuration"
+        $rsgsvr = $this.props.SelectDefaultRsgServer()
+        if ($null -eq $rsgsvr) {
+            $rsgsvr = [PropsRsgSvr]::New()
+            $rsgsvr.host = ReadInput "RSG Server Host" `
+                                     $rsgsvr.host `
+                                     @("^.+$")
+            $rsgsvr.port = ReadInput "RSG Server Port" `
+                                     $rsgsvr.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+        }
         $domain_name = ReadInput "Domain Name [1..46]" `
                                  "corp.example.com" `
                                  @("^[^.]{1,12}\.[^.]", "^.{1,46}$") `
@@ -2166,7 +2823,7 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
             $Env:user_name_max14 = $username
         }
         if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
+            $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
         }
     }
 }
@@ -2185,14 +2842,18 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
 
     [void]Run() {
         Write-Host ""
-        Write-Host "### Enter the LDAP configuration"
-        $rsgsvr_host = ReadInput "RSG Server Host" `
-                                 $this.props.rsgsvr_host `
-                                 @("^.+$")
-        $rsgsvr_port = ReadInput "RSG Server Port" `
-                                 $this.props.rsgsvr_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
+        Write-Host "### Enter the RSG Server and LDAP configuration"
+        $rsgsvr = $this.props.SelectDefaultRsgServer()
+        if ($null -eq $rsgsvr) {
+            $rsgsvr = [PropsRsgSvr]::New()
+            $rsgsvr.host = ReadInput "RSG Server Host" `
+                                     $rsgsvr.host `
+                                     @("^.+$")
+            $rsgsvr.port = ReadInput "RSG Server Port" `
+                                     $rsgsvr.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+        }
         $domain_name = ReadInput "Domain Name [1..46]" `
                                  "corp.example.com" `
                                  @("^[^.]{1,12}\.[^.]", "^.{1,46}$") `
@@ -2225,7 +2886,7 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
             $Env:user_name_max14 = $username
         }
         if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
+            $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
         }
     }
 }
@@ -2244,14 +2905,18 @@ class RsgcliKerberosUnauthorizedLoginAttempts : RsgcliBase {
 
     [void]Run() {
         Write-Host ""
-        Write-Host "### Enter the kerberos configuration"
-        $rsgsvr_host = ReadInput "RSG Server Host" `
-                                 $this.props.rsgsvr_host `
-                                 @("^.+$")
-        $rsgsvr_port = ReadInput "RSG Server Port" `
-                                 $this.props.rsgsvr_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
+        Write-Host "### Enter the RSG Server and kerberos configuration"
+        $rsgsvr = $this.props.SelectDefaultRsgServer()
+        if ($null -eq $rsgsvr) {
+            $rsgsvr = [PropsRsgSvr]::New()
+            $rsgsvr.host = ReadInput "RSG Server Host" `
+                                     $rsgsvr.host `
+                                     @("^.+$")
+            $rsgsvr.port = ReadInput "RSG Server Port" `
+                                     $rsgsvr.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+        }
         $domain_name = ReadInput "Domain Name" "corp.example.com" @("^.+$")
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
                                                 "100" `
@@ -2271,7 +2936,7 @@ class RsgcliKerberosUnauthorizedLoginAttempts : RsgcliBase {
             $Env:user_name = $username
         }
         if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
+            $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
         }
     }
 }
@@ -2290,14 +2955,18 @@ class RsgcliKerberosUserEnumerationBruteForce : RsgcliBase {
 
     [void]Run() {
         Write-Host ""
-        Write-Host "### Enter the kerberos configuration"
-        $rsgsvr_host = ReadInput "RSG Server Host" `
-                                 $this.props.rsgsvr_host `
-                                 @("^.+$")
-        $rsgsvr_port = ReadInput "RSG Server Port" `
-                                 $this.props.rsgsvr_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
+        Write-Host "### Enter the RSG Server and kerberos configuration"
+        $rsgsvr = $this.props.SelectDefaultRsgServer()
+        if ($null -eq $rsgsvr) {
+            $rsgsvr = [PropsRsgSvr]::New()
+            $rsgsvr.host = ReadInput "RSG Server Host" `
+                                     $rsgsvr.host `
+                                     @("^.+$")
+            $rsgsvr.port = ReadInput "RSG Server Port" `
+                                     $rsgsvr.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+        }
         $domain_name = ReadInput "Domain Name" "corp.example.com" @("^.+$")
         $numof_attempts = ParseNumber(ReadInput "Number of attempts" `
                                                 "100" `
@@ -2308,7 +2977,7 @@ class RsgcliKerberosUserEnumerationBruteForce : RsgcliBase {
         $Env:attempt_count = $numof_attempts
 
         if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr_host, $rsgsvr_port, $this.rsgcli_json)
+            $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
         }
     }
 }
@@ -2436,17 +3105,21 @@ class FortigateLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host" `
-                                 $this.props.syslog_host `
-                                 @("^.+$")
-        $syslog_port = ReadInput "Syslog Port" `
-                                 $this.props.syslog_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
-        $syslog_protocol = ReadInput "Syslog Protocol" `
-                                     $this.props.syslog_protocol `
-                                     @("^UDP|TCP|udp|tcp$") `
-                                     "Please retype a valid protocol"
+        $syslog = $this.props.SelectDefaultSyslogServer()
+        if ($null -eq $syslog) {
+            $syslog = [PropsSyslog]::New()
+            $syslog.host = ReadInput "Syslog Host" `
+                                     $syslog.host `
+                                     @("^.+$")
+            $syslog.port = ReadInput "Syslog Port" `
+                                     $syslog.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+            $syslog.protocol = ReadInput "Syslog Protocol" `
+                                         $syslog.protocol `
+                                         @("^UDP|TCP|udp|tcp$") `
+                                         "Please retype a valid protocol"
+        }
         Write-Host ""
         Write-Host "### Enter the port scan configuration"
         $source_ip = ReadInput "Source IP" `
@@ -2460,9 +3133,9 @@ class FortigateLogs : CommandBase {
 
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
-                       "-SyslogHost", $syslog_host,
-                       "-SyslogPort", $syslog_port,
-                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                       "-SyslogHost", $syslog.host,
+                       "-SyslogPort", $syslog.port,
+                       "-SyslogProtocol", $syslog.protocol.ToUpper(),
                        "-SourceIP", $source_ip,
                        "-DestinationIP", $destination_ip)
             StartProcess "powershell.exe" $cargs
@@ -2483,17 +3156,21 @@ class FortigateLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host" `
-                                 $this.props.syslog_host `
-                                 @("^.+$")
-        $syslog_port = ReadInput "Syslog Port" `
-                                 $this.props.syslog_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
-        $syslog_protocol = ReadInput "Syslog Protocol" `
-                                     $this.props.syslog_protocol `
-                                     @("^UDP|TCP|udp|tcp$") `
-                                     "Please retype a valid protocol"
+        $syslog = $this.props.SelectDefaultSyslogServer()
+        if ($null -eq $syslog) {
+            $syslog = [PropsSyslog]::New()
+            $syslog.host = ReadInput "Syslog Host" `
+                                     $syslog.host `
+                                     @("^.+$")
+            $syslog.port = ReadInput "Syslog Port" `
+                                     $syslog.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+            $syslog.protocol = ReadInput "Syslog Protocol" `
+                                         $syslog.protocol `
+                                         @("^UDP|TCP|udp|tcp$") `
+                                         "Please retype a valid protocol"
+        }
         Write-Host ""
         Write-Host "### Enter the file upload configuration"
         $source_ip = ReadInput "Source IP" `
@@ -2516,9 +3193,9 @@ class FortigateLogs : CommandBase {
 
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
-                       "-SyslogHost", $syslog_host,
-                       "-SyslogPort", $syslog_port,
-                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                       "-SyslogHost", $syslog.host,
+                       "-SyslogPort", $syslog.port,
+                       "-SyslogProtocol", $syslog.protocol.ToUpper(),
                        "-SourceIP", $source_ip,
                        "-DestinationIP", $destination_ip,
                        "-SessionType", $session_type,
@@ -2542,17 +3219,21 @@ class FortigateLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host" `
-                                 $this.props.syslog_host `
-                                 @("^.+$")
-        $syslog_port = ReadInput "Syslog Port" `
-                                 $this.props.syslog_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
-        $syslog_protocol = ReadInput "Syslog Protocol" `
-                                     $this.props.syslog_protocol `
-                                     @("^UDP|TCP|udp|tcp$") `
-                                     "Please retype a valid protocol"
+        $syslog = $this.props.SelectDefaultSyslogServer()
+        if ($null -eq $syslog) {
+            $syslog = [PropsSyslog]::New()
+            $syslog.host = ReadInput "Syslog Host" `
+                                     $syslog.host `
+                                     @("^.+$")
+            $syslog.port = ReadInput "Syslog Port" `
+                                     $syslog.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+            $syslog.protocol = ReadInput "Syslog Protocol" `
+                                         $syslog.protocol `
+                                         @("^UDP|TCP|udp|tcp$") `
+                                         "Please retype a valid protocol"
+        }
         Write-Host ""
         Write-Host "### Enter the authentication logs configuration"
         $source_ip = ReadInput "Authentication Client IP" `
@@ -2582,9 +3263,9 @@ class FortigateLogs : CommandBase {
         }
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
-                       "-SyslogHost", $syslog_host,
-                       "-SyslogPort", $syslog_port,
-                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                       "-SyslogHost", $syslog.host,
+                       "-SyslogPort", $syslog.port,
+                       "-SyslogProtocol", $syslog.protocol.ToUpper(),
                        "-SourceIP", $source_ip,
                        "-DestinationIP", $destination_ip,
                        "-Domain", $domain,
@@ -2641,17 +3322,21 @@ class CheckPointLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host" `
-                                 $this.props.syslog_host `
-                                 @("^.+$")
-        $syslog_port = ReadInput "Syslog Port" `
-                                 $this.props.syslog_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
-        $syslog_protocol = ReadInput "Syslog Protocol" `
-                                     $this.props.syslog_protocol `
-                                     @("^UDP|TCP|udp|tcp$") `
-                                     "Please retype a valid protocol"
+        $syslog = $this.props.SelectDefaultSyslogServer()
+        if ($null -eq $syslog) {
+            $syslog = [PropsSyslog]::New()
+            $syslog.host = ReadInput "Syslog Host" `
+                                     $syslog.host `
+                                     @("^.+$")
+            $syslog.port = ReadInput "Syslog Port" `
+                                     $syslog.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+            $syslog.protocol = ReadInput "Syslog Protocol" `
+                                         $syslog.protocol `
+                                         @("^UDP|TCP|udp|tcp$") `
+                                         "Please retype a valid protocol"
+        }
         Write-Host ""
         Write-Host "### Enter the port scan configuration"
         $source_ip = ReadInput "Source IP" `
@@ -2669,9 +3354,9 @@ class CheckPointLogs : CommandBase {
 
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
-                       "-SyslogHost", $syslog_host,
-                       "-SyslogPort", $syslog_port,
-                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                       "-SyslogHost", $syslog.host,
+                       "-SyslogPort", $syslog.port,
+                       "-SyslogProtocol", $syslog.protocol.ToUpper(),
                        "-App", $app,
                        "-SourceIP", $source_ip,
                        "-DestinationIP", $destination_ip)
@@ -2734,17 +3419,21 @@ class CiscoLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host" `
-                                 $this.props.syslog_host `
-                                 @("^.+$")
-        $syslog_port = ReadInput "Syslog Port" `
-                                 $this.props.syslog_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
-        $syslog_protocol = ReadInput "Syslog Protocol" `
-                                     $this.props.syslog_protocol `
-                                     @("^UDP|TCP|udp|tcp$") `
-                                     "Please retype a valid protocol"
+        $syslog = $this.props.SelectDefaultSyslogServer()
+        if ($null -eq $syslog) {
+            $syslog = [PropsSyslog]::New()
+            $syslog.host = ReadInput "Syslog Host" `
+                                     $syslog.host `
+                                     @("^.+$")
+            $syslog.port = ReadInput "Syslog Port" `
+                                     $syslog.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+            $syslog.protocol = ReadInput "Syslog Protocol" `
+                                         $syslog.protocol `
+                                         @("^UDP|TCP|udp|tcp$") `
+                                         "Please retype a valid protocol"
+        }
         Write-Host ""
         Write-Host "### Enter the port scan configuration"
         $source_ip = ReadInput "Source IP" `
@@ -2758,9 +3447,9 @@ class CiscoLogs : CommandBase {
 
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
-                       "-SyslogHost", $syslog_host,
-                       "-SyslogPort", $syslog_port,
-                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                       "-SyslogHost", $syslog.host,
+                       "-SyslogPort", $syslog.port,
+                       "-SyslogProtocol", $syslog.protocol.ToUpper(),
                        "-SourceIP", $source_ip,
                        "-DestinationIP", $destination_ip)
             StartProcess "powershell.exe" $cargs
@@ -2781,17 +3470,21 @@ class CiscoLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host" `
-                                 $this.props.syslog_host `
-                                 @("^.+$")
-        $syslog_port = ReadInput "Syslog Port" `
-                                 $this.props.syslog_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
-        $syslog_protocol = ReadInput "Syslog Protocol" `
-                                     $this.props.syslog_protocol `
-                                     @("^UDP|TCP|udp|tcp$") `
-                                     "Please retype a valid protocol"
+        $syslog = $this.props.SelectDefaultSyslogServer()
+        if ($null -eq $syslog) {
+            $syslog = [PropsSyslog]::New()
+            $syslog.host = ReadInput "Syslog Host" `
+                                     $syslog.host `
+                                     @("^.+$")
+            $syslog.port = ReadInput "Syslog Port" `
+                                     $syslog.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+            $syslog.protocol = ReadInput "Syslog Protocol" `
+                                         $syslog.protocol `
+                                         @("^UDP|TCP|udp|tcp$") `
+                                         "Please retype a valid protocol"
+        }
         Write-Host ""
         Write-Host "### Enter the file upload configuration"
         $source_ip = ReadInput "Source IP" `
@@ -2813,9 +3506,9 @@ class CiscoLogs : CommandBase {
                                                "Please retype a valid number")
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
-                       "-SyslogHost", $syslog_host,
-                       "-SyslogPort", $syslog_port,
-                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                       "-SyslogHost", $syslog.host,
+                       "-SyslogPort", $syslog.port,
+                       "-SyslogProtocol", $syslog.protocol.ToUpper(),
                        "-SourceIP", $source_ip,
                        "-DestinationIP", $destination_ip,
                        "-DestinationPort", $destination_port,
@@ -2839,17 +3532,21 @@ class CiscoLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host" `
-                                 $this.props.syslog_host `
-                                 @("^.+$")
-        $syslog_port = ReadInput "Syslog Port" `
-                                 $this.props.syslog_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
-        $syslog_protocol = ReadInput "Syslog Protocol" `
-                                     $this.props.syslog_protocol `
-                                     @("^UDP|TCP|udp|tcp$") `
-                                     "Please retype a valid protocol"
+        $syslog = $this.props.SelectDefaultSyslogServer()
+        if ($null -eq $syslog) {
+            $syslog = [PropsSyslog]::New()
+            $syslog.host = ReadInput "Syslog Host" `
+                                     $syslog.host `
+                                     @("^.+$")
+            $syslog.port = ReadInput "Syslog Port" `
+                                     $syslog.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+            $syslog.protocol = ReadInput "Syslog Protocol" `
+                                         $syslog.protocol `
+                                         @("^UDP|TCP|udp|tcp$") `
+                                         "Please retype a valid protocol"
+        }
         Write-Host ""
         Write-Host "### Enter the authentication logs configuration"
         $log_type = ReadInputByChooser "Log Type" `
@@ -2891,9 +3588,9 @@ class CiscoLogs : CommandBase {
 
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
-                       "-SyslogHost", $syslog_host,
-                       "-SyslogPort", $syslog_port,
-                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                       "-SyslogHost", $syslog.host,
+                       "-SyslogPort", $syslog.port,
+                       "-SyslogProtocol", $syslog.protocol.ToUpper(),
                        "-UserIP", $user_ip,
                        "-PublicIP", $public_ip,
                        "-GroupPolicy", $group_policy,
@@ -2958,17 +3655,21 @@ class PaloAltoNGFWLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host" `
-                                 $this.props.syslog_host `
-                                 @("^.+$")
-        $syslog_port = ReadInput "Syslog Port" `
-                                 $this.props.syslog_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
-        $syslog_protocol = ReadInput "Syslog Protocol" `
-                                     $this.props.syslog_protocol `
-                                     @("^UDP|TCP|udp|tcp$") `
-                                     "Please retype a valid protocol"
+        $syslog = $this.props.SelectDefaultSyslogServer()
+        if ($null -eq $syslog) {
+            $syslog = [PropsSyslog]::New()
+            $syslog.host = ReadInput "Syslog Host" `
+                                     $syslog.host `
+                                     @("^.+$")
+            $syslog.port = ReadInput "Syslog Port" `
+                                     $syslog.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+            $syslog.protocol = ReadInput "Syslog Protocol" `
+                                         $syslog.protocol `
+                                         @("^UDP|TCP|udp|tcp$") `
+                                         "Please retype a valid protocol"
+        }
         Write-Host ""
         Write-Host "### Enter the port scan configuration"
         $source_ip = ReadInput "Source IP" `
@@ -2982,9 +3683,9 @@ class PaloAltoNGFWLogs : CommandBase {
 
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
-                       "-SyslogHost", $syslog_host,
-                       "-SyslogPort", $syslog_port,
-                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                       "-SyslogHost", $syslog.host,
+                       "-SyslogPort", $syslog.port,
+                       "-SyslogProtocol", $syslog.protocol.ToUpper(),
                        "-SourceIP", $source_ip,
                        "-DestinationIP", $destination_ip)
             StartProcess "powershell.exe" $cargs
@@ -3005,18 +3706,21 @@ class PaloAltoNGFWLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host" `
-                                 $this.props.syslog_host `
-                                 @("^.+$")
-        $syslog_port = ReadInput "Syslog Port" `
-                                 $this.props.syslog_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
-        $syslog_protocol = ReadInput "Syslog Protocol" `
-                                     $this.props.syslog_protocol `
-                                     @("^UDP|TCP|udp|tcp$") `
-                                     "Please retype a valid protocol"
-
+        $syslog = $this.props.SelectDefaultSyslogServer()
+        if ($null -eq $syslog) {
+            $syslog = [PropsSyslog]::New()
+            $syslog.host = ReadInput "Syslog Host" `
+                                     $syslog.host `
+                                     @("^.+$")
+            $syslog.port = ReadInput "Syslog Port" `
+                                     $syslog.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+            $syslog.protocol = ReadInput "Syslog Protocol" `
+                                         $syslog.protocol `
+                                         @("^UDP|TCP|udp|tcp$") `
+                                         "Please retype a valid protocol"
+        }
         Write-Host ""
         Write-Host "### Enter the threat log parameters"
         $threat_template = ReadInputByChooser "Threat Log Template" `
@@ -3275,9 +3979,9 @@ class PaloAltoNGFWLogs : CommandBase {
 
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
-                       "-SyslogHost", $syslog_host,
-                       "-SyslogPort", $syslog_port,
-                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                       "-SyslogHost", $syslog.host,
+                       "-SyslogPort", $syslog.port,
+                       "-SyslogProtocol", $syslog.protocol.ToUpper(),
                        "-CEFVendor", "PANW",
                        "-CEFDeviceProduct", "NGFW_CEF",
                        "-CEFDeviceVersion", "11.1.1",
@@ -3341,18 +4045,21 @@ class BindLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host" `
-                                 $this.props.syslog_host `
-                                 @("^.+$")
-        $syslog_port = ReadInput "Syslog Port" `
-                                 $this.props.syslog_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
-        $syslog_protocol = ReadInput "Syslog Protocol" `
-                                     $this.props.syslog_protocol `
-                                     @("^UDP|TCP|udp|tcp$") `
-                                     "Please retype a valid protocol"
-
+        $syslog = $this.props.SelectDefaultSyslogServer()
+        if ($null -eq $syslog) {
+            $syslog = [PropsSyslog]::New()
+            $syslog.host = ReadInput "Syslog Host" `
+                                     $syslog.host `
+                                     @("^.+$")
+            $syslog.port = ReadInput "Syslog Port" `
+                                     $syslog.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+            $syslog.protocol = ReadInput "Syslog Protocol" `
+                                         $syslog.protocol `
+                                         @("^UDP|TCP|udp|tcp$") `
+                                         "Please retype a valid protocol"
+        }
         Write-Host ""
         Write-Host "### Enter the DNS tunneling configuration"
         $client_ip = ReadInput "DNS client IP" `
@@ -3371,9 +4078,9 @@ class BindLogs : CommandBase {
 
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
-                       "-SyslogHost", $syslog_host,
-                       "-SyslogPort", $syslog_port,
-                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                       "-SyslogHost", $syslog.host,
+                       "-SyslogPort", $syslog.port,
+                       "-SyslogProtocol", $syslog.protocol.ToUpper(),
                        "-SyslogFormat", "RFC-3164",
                        "-DNSClientIP", $client_ip,
                        "-DNSServerIP", $server_ip,
@@ -3397,18 +4104,21 @@ class BindLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the syslog configuration"
-        $syslog_host = ReadInput "Syslog Host" `
-                                 $this.props.syslog_host `
-                                 @("^.+$")
-        $syslog_port = ReadInput "Syslog Port" `
-                                 $this.props.syslog_port `
-                                 @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                 "Please retype a valid port number"
-        $syslog_protocol = ReadInput "Syslog Protocol" `
-                                     $this.props.syslog_protocol `
-                                     @("^UDP|TCP|udp|tcp$") `
-                                     "Please retype a valid protocol"
-
+        $syslog = $this.props.SelectDefaultSyslogServer()
+        if ($null -eq $syslog) {
+            $syslog = [PropsSyslog]::New()
+            $syslog.host = ReadInput "Syslog Host" `
+                                     $syslog.host `
+                                     @("^.+$")
+            $syslog.port = ReadInput "Syslog Port" `
+                                     $syslog.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+            $syslog.protocol = ReadInput "Syslog Protocol" `
+                                         $syslog.protocol `
+                                         @("^UDP|TCP|udp|tcp$") `
+                                         "Please retype a valid protocol"
+        }
         Write-Host ""
         Write-Host "### Enter the DNS random query configuration"
         $client_ip = ReadInput "DNS client IP" `
@@ -3426,9 +4136,9 @@ class BindLogs : CommandBase {
 
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
-                       "-SyslogHost", $syslog_host,
-                       "-SyslogPort", $syslog_port,
-                       "-SyslogProtocol", $syslog_protocol.ToUpper(),
+                       "-SyslogHost", $syslog.host,
+                       "-SyslogPort", $syslog.port,
+                       "-SyslogProtocol", $syslog.protocol.ToUpper(),
                        "-SyslogFormat", "RFC-3164",
                        "-DNSClientIP", $client_ip,
                        "-DNSServerIP", $server_ip,
@@ -3484,14 +4194,17 @@ class NetflowLogs : CommandBase {
 
         Write-Host ""
         Write-Host "### Enter the netflow configuration"
-        $netflow_host = ReadInput "Netflow Host" `
-                                  $this.props.netflow_host `
-                                  @("^.+$")
-        $netflow_port = ReadInput "Netflow Port" `
-                                  $this.props.netflow_port `
-                                  @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
-                                  "Please retype a valid port number"
-
+        $netflow = $this.props.SelectDefaultNetflowServer()
+        if ($null -eq $netflow) {
+            $netflow = [PropsNetflow]::New()
+            $netflow.host = ReadInput "Netflow Host" `
+                                     $netflow.host `
+                                     @("^.+$")
+            $netflow.port = ReadInput "Netflow Port" `
+                                     $netflow.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+        }
         Write-Host ""
         Write-Host "### Enter the port scan configuration"
         $source_ip = ReadInput "Source IP" `
@@ -3505,8 +4218,8 @@ class NetflowLogs : CommandBase {
 
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
-                       "-NetflowHost", $netflow_host,
-                       "-NetflowPort", $netflow_port,
+                       "-NetflowHost", $netflow.host,
+                       "-NetflowPort", $netflow.port,
                        "-NetflowProtocol", "UDP",
                        "-SourceIP", $source_ip,
                        "-ScanSubnet", $scan_subnet)
@@ -3623,22 +4336,34 @@ class ServerSyslogToHec : CommandBase {
                                      "UDP" `
                                      @("^UDP|TCP|udp|tcp$") `
                                      "Please retype a valid protocol"
-        $hec_api_url = ReadInput "HEC API URL" "" @("^.+$")
-        $hec_compression = AskYesNo "Compression Mode" "y"
 
+        if ($this.props.cortex_hec.Length -gt 0) {
+            Write-Host ""
+            Write-Host "!!! Unsecure !!!"
+            Write-Host "!!!  When using the default Cortex HTTP Collector settings, API keys are passed through the command line."
+            Write-Host ""
+        }
+        $hec = $this.props.SelectDefaultCortexHttpCollector()
+        if ($null -eq $hec) {
+            $hec = [PropsCortexHttpCollector]::New()
+            $hec.api_url = ReadInput "HEC API URL" "" @("^.+$")
+            $hec.api_key_raw = "*"
+            $hec.api_key_cef = "*"
+            $hec.compression = AskYesNo "Compression Mode" "y"
+        }
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @(
                 $script_file,
                 "--syslog_protocol", $syslog_protocol.ToLower(),
                 "--syslog_port", $syslog_port,
-                "--hec_api_url", $hec_api_url,
-                "--hec_api_key_raw", "*",
-                "--hec_api_key_cef", "*",
+                "--hec_api_url", $hec.api_url,
+                "--hec_api_key_raw", $hec.api_key_raw,
+                "--hec_api_key_cef", $hec.api_key_cef,
                 "--insecure",
                 "--print_logs",
                 "--ignore_non_syslog_message"
             )
-            if ($hec_compression) {
+            if ($hec.compression) {
                 $cargs += "--hec_compression"
             }
             StartProcess $this.python_exe $cargs
