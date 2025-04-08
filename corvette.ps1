@@ -1238,16 +1238,7 @@ class ConfigureSettings : CommandBase {
                             return
                         }
                         "1" {
-                            Write-Host ""
-                            if ($this.props.cortex_hec.Length -eq 0) {
-                                Write-Host "* No Default Cortex HTTP Collectors"
-                            } else {
-                            Write-Host "* Default Cortex HTTP Collectors"
-                                foreach ($props in $this.props.cortex_hec) {
-                                    Write-Host "  - $($props.api_url) (compression = $($props.compression))"
-                                }
-                            }
-                            Write-Host ""
+                            $this.ListDefaultCortexHttpCollector()
                         }
                         "2" {
                             $this.AddDefaultCortexHttpCollector()
@@ -1267,14 +1258,35 @@ class ConfigureSettings : CommandBase {
         }
     }
 
+    hidden [void]ListDefaultCortexHttpCollector() {
+        Write-Host ""
+        if ($this.props.cortex_hec.Length -eq 0) {
+            Write-Host "* No Default Cortex HTTP Collectors"
+        } else {
+            Write-Host "* Default Cortex HTTP Collectors"
+            foreach ($props in $this.props.cortex_hec) {
+                $raw_enabled = "disabled"
+                if (![string]::IsNullOrEmpty($props.api_key_raw)) {
+                    $raw_enabled = "enabled"
+                }
+                $cef_enabled = "disabled"
+                if (![string]::IsNullOrEmpty($props.api_key_cef)) {
+                    $cef_enabled = "enabled"
+                }
+                Write-Host "  - $($props.api_url) (raw:$raw_enabled cef:$cef_enabled compression:$($props.compression))"
+            }
+        }
+        Write-Host ""
+    }
+
     hidden [void]AddDefaultCortexHttpCollector() {
         Write-Host ""
         Write-Host "### Enter the Cortex HTTP Collector configuration"
         
         $props = [PropsCortexHttpCollector]::New()
         $props.api_url = ReadInput "API URL" $props.api_url @("^.+$")
-        $props.api_key_raw = ReadInput "API Key (RAW logs)" $props.api_key_raw
-        $props.api_key_cef = ReadInput "API Key (CEF logs)" $props.api_key_cef
+        $props.api_key_raw = ReadInput "API Key for RAW logs (Optional)" $props.api_key_raw
+        $props.api_key_cef = ReadInput "API Key for CEF logs (Optional)" $props.api_key_cef
         $props.compression = AskYesNo "Compression Mode" "y"
 
         if ($props -in $this.props.cortex_hec) {
@@ -1300,7 +1312,15 @@ class ConfigureSettings : CommandBase {
             Write-Host "************************************"
             for ($i=0; $i -lt $items.Count; $i++) {
                 $props = $items[$i]
-                Write-Host " $($i + 1)) $($props.api_url) (compression = $($props.compression))"
+                $raw_enabled = "disabled"
+                if (![string]::IsNullOrEmpty($props.api_key_raw)) {
+                    $raw_enabled = "enabled"
+                }
+                $cef_enabled = "disabled"
+                if (![string]::IsNullOrEmpty($props.api_key_cef)) {
+                    $cef_enabled = "enabled"
+                }
+                Write-Host " $($i + 1)) $($props.api_url) (raw:$raw_enabled cef:$cef_enabled compression:$($props.compression))"
             }
             Write-Host " q) Exit"
             do {
@@ -3826,7 +3846,7 @@ class PaloAltoNGFWLogs : CommandBase {
                 "Please retype a valid IPv4 address"
 
             $log_params["source_user"] = ReadInput `
-                "source_user" `
+                "source_user (Optional)" `
                  ""
 
             $log_params["source_port"] = ReadInput `
@@ -3889,7 +3909,7 @@ class PaloAltoNGFWLogs : CommandBase {
                 "Please retype a valid IPv4 address"
 
             $log_params["source_user"] = ReadInput `
-                "source_user" `
+                "source_user (Optional)" `
                  ""
 
             $log_params["source_port"] = ReadInput `
@@ -3951,7 +3971,7 @@ class PaloAltoNGFWLogs : CommandBase {
                 "Please retype a valid IPv4 address"
 
             $log_params["source_user"] = ReadInput `
-                "source_user" `
+                "source_user (Optional)" `
                  ""
 
             $log_params["dest_ip"] = ReadInput `
