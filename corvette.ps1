@@ -4375,8 +4375,8 @@ class ServerSyslogToHec : CommandBase {
 
         if ($this.props.cortex_hec.Length -gt 0) {
             Write-Host ""
-            Write-Host "!!! Unsecure !!!"
-            Write-Host "!!!  When using the default Cortex HTTP Collector settings, API keys are passed through the command line."
+            Write-Host "!!! Insecure !!!"
+            Write-Host "!!!  API keys are provided through the command line when using the default Cortex HTTP Collector settings"
             Write-Host ""
         }
         $hec = $this.props.SelectDefaultCortexHttpCollector()
