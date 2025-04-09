@@ -619,13 +619,10 @@ class PropsCortexHttpCollector {
     }
 
     [hashtable]Export() {
-        $local:api_key_raw = $(ConvertTo-SecureString -string [string]$this.api_key_raw -AsPlainText -Force | ConvertFrom-SecureString)
-        $local:api_key_cef = $(ConvertTo-SecureString -string [string]$this.api_key_cef -AsPlainText -Force | ConvertFrom-SecureString)
-
         return @{
             "api_url" = $this.api_url
-            "api_key_raw" = $local:api_key_raw
-            "api_key_cef" = $local:api_key_cef
+            "api_key_raw" = $(ConvertTo-SecureString -string ([string]$this.api_key_raw) -AsPlainText -Force | ConvertFrom-SecureString)
+            "api_key_cef" = $(ConvertTo-SecureString -string ([string]$this.api_key_cef) -AsPlainText -Force | ConvertFrom-SecureString)
             "compression" = $this.compression
         }
     }
