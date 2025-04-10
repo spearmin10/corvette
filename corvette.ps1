@@ -444,7 +444,6 @@ $null = [System.Console]::ReadKey()
 function CleanupHome (
     [string]$home_dir
 ) {
-	return
     Get-ChildItem -Path $home_dir -Exclude @("corvette.json", "corvette.sha256") | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 }
 
