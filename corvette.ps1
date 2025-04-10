@@ -1481,8 +1481,9 @@ class SetupTools : CommandBase {
     [string]DownloadEmbeddablePython() {
         $tool_dir = BuildFullPath $this.props.home_dir ".\python-3.14.0a6"
         $tool_exe = BuildFullPath $tool_dir "python.exe"
+        $complete_path = BuildFullPath $tool_dir "python.installed"
 
-        if (!(IsFile $tool_exe)) {
+        if (!(IsFile $tool_exe) -Or !(IsFile $complete_path)) {
             $url = "https://www.python.org/ftp/python/3.14.0/python-3.14.0a6-embed-win32.zip"
             DownloadAndExtractArchive $url $tool_dir
 
@@ -1491,7 +1492,6 @@ class SetupTools : CommandBase {
             $content = $content -replace "#import site", "import site"
             [IO.File]::WriteAllText($pth_path, $content)
         }
-        $complete_path = BuildFullPath $tool_dir "python.installed"
         if (!(IsFile $complete_path)) {
             $pipexe_path = BuildFullPath $tool_dir "Scripts\pip.exe"
             $getpip_path = BuildFullPath $tool_dir "get-pip.py"
