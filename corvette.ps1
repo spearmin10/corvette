@@ -4378,7 +4378,7 @@ class ServerSyslogToHec : CommandBase {
             $hec.api_key_cef = "*"
             $hec.compression = AskYesNo "Compression Mode" "y"
         } else {
-            $hec = [PropsCortexHttpCollector]::New($hec.Export())
+            $hec = [PropsCortexHttpCollector]::New($hec)
             $Env:hec_api_key_raw = $hec.api_key_raw
             $Env:hec_api_key_cef = $hec.api_key_cef
             $hec.api_key_raw = "`$env:hec_api_key_raw"
