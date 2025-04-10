@@ -4392,7 +4392,6 @@ class ServerSyslogToHec : CommandBase {
                 "--hec_api_url", $hec.api_url,
                 "--hec_api_key_raw", $hec.api_key_raw,
                 "--hec_api_key_cef", $hec.api_key_cef,
-                "--insecure",
                 "--print_logs",
                 "--ignore_non_syslog_message"
             )
