@@ -444,6 +444,7 @@ $null = [System.Console]::ReadKey()
 function CleanupHome (
     [string]$home_dir
 ) {
+	return
     Get-ChildItem -Path $home_dir -Exclude @("corvette.json", "corvette.sha256") | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 }
 
@@ -1282,8 +1283,8 @@ class ConfigureSettings : CommandBase {
         
         $props = [PropsCortexHttpCollector]::New()
         $props.api_url = ReadInput "API URL" $props.api_url @("^.+$")
-        $props.api_key_raw = ReadInput "API Key for RAW logs (Optional)" $props.api_key_raw
-        $props.api_key_cef = ReadInput "API Key for CEF logs (Optional)" $props.api_key_cef
+        $props.api_key_raw = ReadPassword "API Key for RAW logs (Optional)" $props.api_key_raw
+        $props.api_key_cef = ReadPassword "API Key for CEF logs (Optional)" $props.api_key_cef
         $props.compression = AskYesNo "Compression Mode" "y"
 
         if ($props -in $this.props.cortex_hec) {
@@ -4370,12 +4371,6 @@ class ServerSyslogToHec : CommandBase {
                                      @("^UDP|TCP|udp|tcp$") `
                                      "Please retype a valid protocol"
 
-        if ($this.props.cortex_hec.Length -gt 0) {
-            Write-Host ""
-            Write-Host "!!! Insecure !!!"
-            Write-Host "!!!  API keys are provided through the command line when using the default Cortex HTTP Collector settings"
-            Write-Host ""
-        }
         $hec = $this.props.SelectDefaultCortexHttpCollector()
         if ($null -eq $hec) {
             $hec = [PropsCortexHttpCollector]::New()
@@ -4383,7 +4378,13 @@ class ServerSyslogToHec : CommandBase {
             $hec.api_key_raw = "*"
             $hec.api_key_cef = "*"
             $hec.compression = AskYesNo "Compression Mode" "y"
-        }
+        } else {
+            $hec = [PropsCortexHttpCollector]::New($hec.Export())
+            $Env:hec_api_key_raw = $hec.api_key_raw
+            $Env:hec_api_key_cef = $hec.api_key_cef
+            $hec.api_key_raw = "`$env:hec_api_key_raw"
+            $hec.api_key_cef = "`$env:hec_api_key_cef"
+        }	
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @(
                 $script_file,
