@@ -866,7 +866,7 @@ class Properties {
                 Write-Host "************************************"
                 for ($i=0; $i -lt $items.Length; $i++) {
                     $props = $items[$i]
-                    Write-Host " $($i + 1)) $($props.api_url) (compression = $($props.compression))"
+                    Write-Host " $($i + 1)) $($props.api_url) (raw:$raw_enabled cef:$cef_enabled compression:$($props.compression))"
                 }
                 Write-Host " q) Exit"
                 do {
