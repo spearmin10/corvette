@@ -1492,30 +1492,37 @@ class SetupTools : CommandBase {
         $complete_path = BuildFullPath $tool_dir "python.installed"
 
         if (!(IsFile $tool_exe) -Or !(IsFile $complete_path)) {
-            $url = "https://www.python.org/ftp/python/3.14.0/python-3.14.0a6-embed-win32.zip"
-            DownloadAndExtractArchive $url $tool_dir
+            $use_installed_pack = $true
+            if ($use_installed_pack) {
+                $url = "https://github.com/spearmin10/corvette/blob/main/bin/python-3.14.0a6-embed-win32-custom.zip?raw=true"
+                DownloadAndExtractArchive $url $tool_dir
+            } else {
+                $url = "https://www.python.org/ftp/python/3.14.0/python-3.14.0a6-embed-win32.zip"
+                DownloadAndExtractArchive $url $tool_dir
 
-            $pth_path = BuildFullPath $tool_dir "python314._pth"
-            $content = [IO.File]::ReadAllText($pth_path)
-            $content = $content -replace "#import site", "import site"
-            [IO.File]::WriteAllText($pth_path, $content)
-        }
-        if (!(IsFile $complete_path)) {
-            $pipexe_path = BuildFullPath $tool_dir "Scripts\pip.exe"
-            $getpip_path = BuildFullPath $tool_dir "get-pip.py"
-            
-            $url = "https://bootstrap.pypa.io/get-pip.py"
-            DownloadFile $url $getpip_path
-            
-            Start-Process -FilePath $tool_exe `
-                -ArgumentList @($getpip_path, "--no-warn-script-location") `
-                -Wait -NoNewWindow -WorkingDirectory $tool_dir
+                $pth_path = BuildFullPath $tool_dir "python314._pth"
+                $content = [IO.File]::ReadAllText($pth_path)
+                $content = $content -replace "#import site", "import site"
+                [IO.File]::WriteAllText($pth_path, $content)
 
-            Start-Process -FilePath $tool_exe `
-                -ArgumentList @($pipexe_path, "install", "requests", "--no-warn-script-location") `
-                -Wait -NoNewWindow -WorkingDirectory $tool_dir
-            
-            [IO.File]::WriteAllText($complete_path, "")
+                if (!(IsFile $complete_path)) {
+                    $pipexe_path = BuildFullPath $tool_dir "Scripts\pip.exe"
+                    $getpip_path = BuildFullPath $tool_dir "get-pip.py"
+                    
+                    $url = "https://bootstrap.pypa.io/get-pip.py"
+                    DownloadFile $url $getpip_path
+                    
+                    Start-Process -FilePath $tool_exe `
+                        -ArgumentList @($getpip_path, "--no-warn-script-location") `
+                        -Wait -NoNewWindow -WorkingDirectory $tool_dir
+
+                    Start-Process -FilePath $tool_exe `
+                        -ArgumentList @($pipexe_path, "install", "requests", "--no-warn-script-location") `
+                        -Wait -NoNewWindow -WorkingDirectory $tool_dir
+                    
+                    [IO.File]::WriteAllText($complete_path, "")
+                }
+            }
         }
         return $tool_dir
     }
