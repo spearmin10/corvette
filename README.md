@@ -1,11 +1,11 @@
 corvette
 ===========
 
-corvette is a test tool for endpoint protection tools or network security tools that invokes suspicious activities to allow them to detect risks and generate alerts.
+corvette is a testing tool for endpoint protection and network security tools that simulates suspicious activities to help them detect risks and generate alerts.
 
 Disclaimer
 ----------
-I (spearmin10) am not liable for any damages caused by direct or indirect use of the information or functionality provided by these programs. The author or any Internet provider bears NO responsibility for content or misuse of these programs or any derivatives thereof. By using these programs you accept the fact that any damage (dataloss, system crash, system compromise, etc.) caused by the use of these programs is not spearmin10's responsibility.
+I (spearmin10) am not liable for any damages, whether direct or indirect, resulting from the use of the information or functionality provided by these programs. The author, as well as any Internet provider, assumes no responsibility for the content or misuse of these programs or any derivatives thereof. By using these programs, you acknowledge and accept that any damage (such as data loss, system crashes, system compromises, etc.) caused by their use is not the responsibility of spearmin10.
 
 
 Get Started
