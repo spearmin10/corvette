@@ -866,6 +866,14 @@ class Properties {
                 Write-Host "************************************"
                 for ($i=0; $i -lt $items.Length; $i++) {
                     $props = $items[$i]
+                    $raw_enabled = "disabled"
+                    if (![string]::IsNullOrEmpty($props.api_key_raw)) {
+                        $raw_enabled = "enabled"
+                    }
+                    $cef_enabled = "disabled"
+                    if (![string]::IsNullOrEmpty($props.api_key_cef)) {
+                        $cef_enabled = "enabled"
+                    }
                     Write-Host " $($i + 1)) $($props.api_url) (raw:$raw_enabled cef:$cef_enabled compression:$($props.compression))"
                 }
                 Write-Host " q) Exit"
