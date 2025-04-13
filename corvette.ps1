@@ -4470,7 +4470,7 @@ class HighRiskToolsAndCommands : CommandBase {
                         "2" {
                             $cargs = @(
                                 "-Command",
-                                "Enable-PSRemoting -force; Write-Host -NoNewLine 'Press any keys to continue...'; [System.Console]::ReadKey()"
+                                "Enable-PSRemoting -Force -SkipNetworkProfileCheck; Write-Host -NoNewLine 'Press any keys to continue...'; [System.Console]::ReadKey()"
                             )
                             Start-Process -FilePath "powershell.exe" -ArgumentList $cargs -verb runas
                         }
@@ -4527,7 +4527,8 @@ class HighRiskToolsAndCommands : CommandBase {
                             [RemoteAccess]::New($this.props).Run()
                         }
                         "2" {
-                            Enable-PSRemoting -force
+                            Write-Host $(Enable-PSRemoting -Force -SkipNetworkProfileCheck)
+                            Write-Host "Done."
                         }
                         "3" {
                             [Mimikatz]::New($this.props).Run($false)
