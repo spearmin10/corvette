@@ -4418,6 +4418,114 @@ class ServerSyslogToHec : CommandBase {
     }
 }
 
+
+class HighRiskToolsAndCommands : CommandBase {
+
+    HighRiskToolsAndCommands([Properties]$props) : base($props) {
+    }
+
+    hidden [void]OpenUserModeMenu() {
+        Write-Host "High-Risk Tools and Commands"
+        while ($true) {
+            Write-Host "************************************"
+            Write-Host " 1) Remote Access"
+            Write-Host " 2) Run mimikatz"
+            Write-Host " 3) Run mimikatz (Run as administrator)"
+            Write-Host " 4) Run nmap"
+            Write-Host " 5) Run Kerberos Brute Force"
+            Write-Host " 6) Run WildFire Test PE"
+            Write-Host " q) Exit"
+            try {
+                :retry do {
+                    $cmd = Read-Host "Please choose a menu item"
+                    switch ($cmd) {
+                        "q" {
+                            return
+                        }
+                        "1" {
+                            [RemoteAccess]::New($this.props).Run()
+                        }
+                        "2" {
+                            [Mimikatz]::New($this.props).Run($false)
+                        }
+                        "3" {
+                            [Mimikatz]::New($this.props).Run($true)
+                        }
+                        "4" {
+                            [NmapMenu]::New($this.props).Run()
+                        }
+                        "5" {
+                            [KerberosBruteForce]::New($this.props).Run()
+                        }
+                        "6" {
+                            [WildFireTestPE]::New($this.props).Run()
+                        }
+                        default {
+                            continue retry
+                        }
+                    }
+                    break
+                } while($true)
+            } catch {
+                Write-Host $_
+            }
+        }
+    }
+
+    hidden [void]OpenAdminModeMenu() {
+        Write-Host "High-Risk Tools and Commands"
+        while ($true) {
+            Write-Host "************************************"
+            Write-Host " 1) Remote Access"
+            Write-Host " 2) Run mimikatz"
+            Write-Host " 3) Run nmap"
+            Write-Host " 4) Run Kerberos Brute Force"
+            Write-Host " 5) Run WildFire Test PE"
+            Write-Host " q) Exit"
+            try {
+                :retry do {
+                    $cmd = Read-Host "Please choose a menu item"
+                    switch ($cmd) {
+                        "q" {
+                            return
+                        }
+                        "1" {
+                            [RemoteAccess]::New($this.props).Run()
+                        }
+                        "2" {
+                            [Mimikatz]::New($this.props).Run($false)
+                        }
+                        "3" {
+                            [NmapMenu]::New($this.props).Run()
+                        }
+                        "4" {
+                            [KerberosBruteForce]::New($this.props).Run()
+                        }
+                        "5" {
+                            [WildFireTestPE]::New($this.props).Run()
+                        }
+                        default {
+                            continue retry
+                        }
+                    }
+                    break
+                } while($true)
+            } catch {
+                Write-Host $_
+            }
+        }
+    }
+
+    hidden [void]Run() {
+        $current = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+        if ($current.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+            $this.OpenAdminModeMenu()
+        } else {
+            $this.OpenUserModeMenu()
+        }
+    }
+}
+
 class Menu {
     [Properties]$props
 
@@ -4472,45 +4580,30 @@ class Menu {
                 Start-Process -FilePath "powershell.exe" -verb runas -ArgumentList $args
             }
             "7" {
-                [RemoteAccess]::New($this.props).Run()
+                [HighRiskToolsAndCommands]::New($this.props).Run()
             }
             "8" {
-                [Mimikatz]::New($this.props).Run($false)
-            }
-            "9" {
-                [Mimikatz]::New($this.props).Run($true)
-            }
-            "10" {
-                [NmapMenu]::New($this.props).Run()
-            }
-            "11" {
-                [KerberosBruteForce]::New($this.props).Run()
-            }
-            "12" {
-                [WildFireTestPE]::New($this.props).Run()
-            }
-            "13" {
                 [RsgcliMenu]::New($this.props).Run()
             }
-            "14" {
+            "9" {
                 [FortigateLogs]::New($this.props).Run()
             }
-            "15" {
+            "10" {
                 [CheckPointLogs]::New($this.props).Run()
             }
-            "16" {
+            "11" {
                 [CiscoLogs]::New($this.props).Run()
             }
-            "17" {
+            "12" {
                 [PaloAltoNGFWLogs]::New($this.props).Run()
             }
-            "18" {
+            "13" {
                 [BindLogs]::New($this.props).Run()
             }
-            "19" {
+            "14" {
                 [NetflowLogs]::New($this.props).Run()
             }
-            "20" {
+            "15" {
                 [ServerMenu]::New($this.props).Run()
             }
             default {
@@ -4532,20 +4625,15 @@ class Menu {
             Write-Host " 4) Create a new powershell"
             Write-Host " 5) Create a new command shell (Run as administrator)"
             Write-Host " 6) Create a new powershell (Run as administrator)"
-            Write-Host " 7) Remote Access"
-            Write-Host " 8) Run mimikatz"
-            Write-Host " 9) Run mimikatz (Run as administrator)"
-            Write-Host "10) Run nmap"
-            Write-Host "11) Run Kerberos Brute Force"
-            Write-Host "12) Run WildFire Test PE"
-            Write-Host "13) Generate Network Traffic (rsgen)"
-            Write-Host "14) Send Fortigate Logs"
-            Write-Host "15) Send CheckPoint Logs"
-            Write-Host "16) Send Cisco Logs"
-            Write-Host "17) Send Palo Alto Networks NGFW Logs"
-            Write-Host "18) Send BIND Logs"
-            Write-Host "19) Send Netflow Logs"
-            Write-Host "20) Run Server"
+            Write-Host " 7) High-Risk Tools and Commands"
+            Write-Host " 8) Generate Network Traffic (rsgen)"
+            Write-Host " 9) Send Fortigate Logs"
+            Write-Host "10) Send CheckPoint Logs"
+            Write-Host "11) Send Cisco Logs"
+            Write-Host "12) Send Palo Alto Networks NGFW Logs"
+            Write-Host "13) Send BIND Logs"
+            Write-Host "14) Send Netflow Logs"
+            Write-Host "15) Run Server"
             try {
                 while (!$this.LaunchUserModeCommand((Read-Host "Please choose a menu item to run"))) {}
             } catch {
@@ -4572,27 +4660,15 @@ class Menu {
                 Start-Process -FilePath "powershell.exe" -WorkingDirectory $this.props.home_dir
             }
             "4" {
-                [RemoteAccess]::New($this.props).Run()
+                [HighRiskToolsAndCommands]::New($this.props).Run()
             }
             "5" {
-                [Mimikatz]::New($this.props).Run($false)
-            }
-            "6" {
-                [NmapMenu]::New($this.props).Run()
-            }
-            "7" {
-                [KerberosBruteForce]::New($this.props).Run()
-            }
-            "8" {
-                [WildFireTestPE]::New($this.props).Run()
-            }
-            "9" {
                 [IptgenMenu]::New($this.props).Run()
             }
-            "10" {
+            "6" {
                 [RsgcliMenu]::New($this.props).Run()
             }
-            "11" {
+            "7" {
                 [ServerMenu]::New($this.props).Run()
             }
             default {
@@ -4611,14 +4687,10 @@ class Menu {
             Write-Host " 1) Open an explorer"
             Write-Host " 2) Create a new command shell"
             Write-Host " 3) Create a new powershell"
-            Write-Host " 4) Remote Access"
-            Write-Host " 5) Run mimikatz"
-            Write-Host " 6) Run nmap"
-            Write-Host " 7) Run Kerberos Brute Force"
-            Write-Host " 8) Run WildFire Test PE"
-            Write-Host " 9) Generate Network Traffic (iptgen)"
-            Write-Host "10) Generate Network Traffic (rsgen)"
-            Write-Host "11) Run Server"
+            Write-Host " 4) High-Risk Tools and Commands"
+            Write-Host " 5) Generate Network Traffic (iptgen)"
+            Write-Host " 6) Generate Network Traffic (rsgen)"
+            Write-Host " 7) Run Server"
             try {
                 while (!$this.LaunchAdminModeCommand((Read-Host "Please choose a menu item to run"))) {}
             } catch {
