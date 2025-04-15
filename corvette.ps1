@@ -4722,7 +4722,7 @@ class HighRiskToolsAndCommands : CommandBase {
         } else {
             $reg = New-ItemProperty -Force -Path $path -Name $name `
                 -Value "powershell -e $script:CORVETTE_DYNAMIC_LOADER"
-            Write-Host "Persistence was achieved to ensure that 'corvette' runs on system startup at $path"
+            Write-Host "Persistence was achieved to ensure that 'corvette' runs on system startup at:`n  -> $path"
         }
     }
 
