@@ -411,7 +411,6 @@ if ([string]::IsNullOrEmpty($dir)) {
     [string]$home_dir = Get-Location
 }
 if ($cargs) {
-    Write-Host $cargs.Length
     Start-Process -FilePath "@@@cmd_path@@@" -ArgumentList $cargs -Wait -NoNewWindow -WorkingDirectory $home_dir
 } else {
     Start-Process -FilePath "@@@cmd_path@@@" -Wait -NoNewWindow -WorkingDirectory $home_dir
@@ -1927,7 +1926,7 @@ class RsgcliBase : CommandBase {
     [string]$rsgcli_exename
 
     RsgcliBase([Properties]$props) : base($props) {
-        $rsgcli_ver = "0.4.0"
+        $rsgcli_ver = "0.4.1"
         $this.rsgcli_exename = "rsgcli.exe"
         $this.rsgcli_dir = BuildFullPath $props.home_dir ".\rsgcli-${rsgcli_ver}"
         $this.rsgcli_bin = BuildFullPath $this.rsgcli_dir ".\bin"
@@ -2246,6 +2245,97 @@ class IptgenHttpFileUpload : IptgenBase {
     }
 }
 
+class IptgenHttpFileDownload : IptgenBase {
+    [string]$iptgen_json
+    [bool]$https
+
+    IptgenHttpFileDownload([Properties]$props, [bool]$https) : base ($props) {
+        $file_name = $null
+
+        if ($https) {
+          $file_name = "iptgen-https-download-template.json"
+        } else {
+          $file_name = "iptgen-http-download-template.json"
+        }
+        $this.https = $https
+        $this.iptgen_json = BuildFullPath $this.iptgen_dir ".\$($file_name)"
+
+        if (!(IsFile $this.iptgen_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
+            DownloadFile $url $this.iptgen_json
+        }
+    }
+
+    [void]DownloadCorvette(
+        [Microsoft.Management.Infrastructure.CimInstance]$interface,
+        [string]$client_ip,
+        [string]$server_ip
+    ) {
+        $script_b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($this.props.my_script))
+        $iptgen_json_data = [IO.File]::ReadAllText($this.iptgen_json)
+        $iptgen_json_data = $iptgen_json_data.Replace('${response_body_b64}', $script_b64)
+        $iptgen_json_path = $this.iptgen_json + ".tmp"
+
+        $Env:client_ip = $client_ip
+        $Env:server_ip = $server_ip
+        $Env:request_path = "/corvette.ps1"
+        $Env:response_content_type = "text/plain; charset=utf-8"
+
+        if (AskYesNo "Are you sure you want to run?") {
+            [IO.File]::WriteAllText($iptgen_json_path, $iptgen_json_data)
+
+            $response_interval = 10
+            if ($this.https) {
+                $response_interval = 0
+            }
+            $this.Run($interface.InterfaceAlias, $iptgen_json_path, $response_interval)
+        }
+    }
+
+    [void]Run() {
+        $interface = $this.SelectInterface()
+        if ([string]::IsNullOrEmpty($interface)) {
+            return
+        }
+        Write-Host ""
+        Write-Host "### Enter the HTTP file upload configuration"
+        $client_ip = ReadInput "Client IP" `
+                               $interface.IPAddress `
+                               @($script:PATTERN_IPV4_ADDR) `
+                               "Please retype a valid IPv4 address"
+        $server_ip = ReadInput "Server IP" `
+                               "" `
+                               @($script:PATTERN_IPV4_ADDR) `
+                               "Please retype a valid IPv4 address"
+
+        while ($true) {
+            Write-Host "Download File:"
+            Write-Host " 1) corvette.ps1"
+            Write-Host " q) Exit"
+            try {
+                :retry do {
+                    $cmd = Read-Host "Which file do you want to download?"
+                    switch($cmd) {
+                        "1" {
+                            $this.DownloadCorvette($interface, $client_ip, $server_ip)
+                            return
+                        }
+                        "q" {
+                            return
+                        }
+                        default {
+                            continue retry
+                        }
+                    }
+                    break
+                } while($true)
+            } catch {
+                Write-Host $_
+            }
+        }
+    }
+}
+
 class IptgenHttpUnauthorizedLoginAttempts : IptgenBase {
     [string]$iptgen_json
 
@@ -2525,11 +2615,13 @@ class IptgenMenu : CommandBase {
             Write-Host " 4) Generate FTP file upload packets"
             Write-Host " 5) Generate HTTP file upload packets"
             Write-Host " 6) Generate HTTPS file upload packets"
-            Write-Host " 7) Generate HTTP unauthorized login attempt packets"
-            Write-Host " 8) Generate SMB NTLM unauthorized login attempt packets"
-            Write-Host " 9) Generate LDAP NTLM unauthorized login attempt packets"
-            Write-Host "10) Generate Kerberos unauthorized login attempt packets"
-            Write-Host "11) Generate Kerberos user enumeration brute-force packets"
+            Write-Host " 7) Generate HTTP file download packets"
+            Write-Host " 8) Generate HTTPS file download packets"
+            Write-Host " 9) Generate HTTP unauthorized login attempt packets"
+            Write-Host "10) Generate SMB NTLM unauthorized login attempt packets"
+            Write-Host "11) Generate LDAP NTLM unauthorized login attempt packets"
+            Write-Host "12) Generate Kerberos unauthorized login attempt packets"
+            Write-Host "13) Generate Kerberos user enumeration brute-force packets"
             Write-Host " q) Exit"
             try {
                 :retry do {
@@ -2554,18 +2646,24 @@ class IptgenMenu : CommandBase {
                             [IptgenHttpFileUpload]::New($this.props, $true).Run()
                         }
                         "7" {
-                            [IptgenHttpUnauthorizedLoginAttempts]::New($this.props).Run()
+                            [IptgenHttpFileDownload]::New($this.props, $false).Run()
                         }
                         "8" {
-                            [IptgenSmbNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
+                            [IptgenHttpFileDownload]::New($this.props, $true).Run()
                         }
                         "9" {
-                            [IptgenLdapNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
+                            [IptgenHttpUnauthorizedLoginAttempts]::New($this.props).Run()
                         }
                         "10" {
-                            [IptgenKerberosUnauthorizedLoginAttempts]::New($this.props).Run()
+                            [IptgenSmbNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
                         }
                         "11" {
+                            [IptgenLdapNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
+                        }
+                        "12" {
+                            [IptgenKerberosUnauthorizedLoginAttempts]::New($this.props).Run()
+                        }
+                        "13" {
                             [IptgenKerberosUserEnumerationBruteForce]::New($this.props).Run()
                         }
                         "q" {
@@ -2776,6 +2874,76 @@ class RsgcliHttpFileUpload : RsgcliBase {
         $Env:repeat_count = $repeat_count
         if (AskYesNo "Are you sure you want to run?") {
             $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
+        }
+    }
+}
+
+class RsgcliHttpFileDownload : RsgcliBase {
+    [string]$rsgcli_json
+
+    RsgcliHttpFileDownload([Properties]$props) : base ($props) {
+        $file_name = "rsgcli-http-download-template.json"
+        $this.rsgcli_json = BuildFullPath $this.rsgcli_dir ".\$($file_name)"
+
+        if (!(IsFile $this.rsgcli_json)) {
+            $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/data/$($file_name)"
+            DownloadFile $url $this.rsgcli_json
+        }
+    }
+
+    [void]DownloadCorvette([PropsRsgSvr]$rsgsvr) {
+        $script_b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($this.props.my_script))
+        $rsgcli_json_data = [IO.File]::ReadAllText($this.rsgcli_json)
+        $rsgcli_json_data = $rsgcli_json_data.Replace('${response_body_b64}', $script_b64)
+        $rsgcli_json_path = $this.rsgcli_json + ".tmp"
+        
+        $Env:request_path = "/corvette.ps1"
+        $Env:response_content_type = "text/plain; charset=utf-8"
+
+        if (AskYesNo "Are you sure you want to run?") {
+            [IO.File]::WriteAllText($rsgcli_json_path, $rsgcli_json_data)
+            $this.Run($rsgsvr.host, $rsgsvr.port, $rsgcli_json_path)
+        }
+    }
+
+    [void]Run() {
+        Write-Host ""
+        Write-Host "### Enter the RSG Server and HTTP file download configuration"
+        $rsgsvr = $this.props.SelectDefaultRsgServer()
+        if ($null -eq $rsgsvr) {
+            $rsgsvr = [PropsRsgSvr]::New()
+            $rsgsvr.host = ReadInput "RSG Server Host" `
+                                     $rsgsvr.host `
+                                     @("^.+$")
+            $rsgsvr.port = ReadInput "RSG Server Port" `
+                                     $rsgsvr.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+        }
+        while ($true) {
+            Write-Host "Download File:"
+            Write-Host " 1) corvette.ps1"
+            Write-Host " q) Exit"
+            try {
+                :retry do {
+                    $cmd = Read-Host "Which file do you want to download?"
+                    switch($cmd) {
+                        "1" {
+                            $this.DownloadCorvette($rsgsvr)
+                            return
+                        }
+                        "q" {
+                            return
+                        }
+                        default {
+                            continue retry
+                        }
+                    }
+                    break
+                } while($true)
+            } catch {
+                Write-Host $_
+            }
         }
     }
 }
@@ -3043,11 +3211,12 @@ class RsgcliMenu : CommandBase {
             Write-Host " 3) Generate SMTP file upload session"
             Write-Host " 4) Generate FTP file upload session"
             Write-Host " 5) Generate HTTP file upload session"
-            Write-Host " 6) Generate HTTP unauthorized login attempt sessions"
-            Write-Host " 7) Generate SMB NTLM unauthorized login attempt sessions"
-            Write-Host " 8) Generate LDAP NTLM unauthorized login attempt sessions"
-            Write-Host " 9) Generate Kerberos unauthorized login attempt sessions"
-            Write-Host "10) Generate Kerberos user enumeration brute-force sessions"
+            Write-Host " 6) Generate HTTP file download session"
+            Write-Host " 7) Generate HTTP unauthorized login attempt sessions"
+            Write-Host " 8) Generate SMB NTLM unauthorized login attempt sessions"
+            Write-Host " 9) Generate LDAP NTLM unauthorized login attempt sessions"
+            Write-Host "10) Generate Kerberos unauthorized login attempt sessions"
+            Write-Host "11) Generate Kerberos user enumeration brute-force sessions"
             Write-Host " q) Exit"
 
             try {
@@ -3070,18 +3239,21 @@ class RsgcliMenu : CommandBase {
                             [RsgcliHttpFileUpload]::New($this.props).Run()
                         }
                         "6" {
-                            [RsgcliHttpUnauthorizedLoginAttempts]::New($this.props).Run()
+                            [RsgcliHttpFileDownload]::New($this.props).Run()
                         }
                         "7" {
-                            [RsgcliSmbNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
+                            [RsgcliHttpUnauthorizedLoginAttempts]::New($this.props).Run()
                         }
                         "8" {
-                            [RsgcliLdapNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
+                            [RsgcliSmbNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
                         }
                         "9" {
-                            [RsgcliKerberosUnauthorizedLoginAttempts]::New($this.props).Run()
+                            [RsgcliLdapNtlmUnauthorizedLoginAttempts]::New($this.props).Run()
                         }
                         "10" {
+                            [RsgcliKerberosUnauthorizedLoginAttempts]::New($this.props).Run()
+                        }
+                        "11" {
                             [RsgcliKerberosUserEnumerationBruteForce]::New($this.props).Run()
                         }
                         "q" {
