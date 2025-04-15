@@ -1,0 +1,40 @@
+{
+  "server": {
+    "port": 80
+  },
+  "sequence": [
+    ["env.local.set-payload", {
+        "response_body": ["hex", "base64.raw", "${response_body_b64}"]
+      }
+    ],
+    ["tcp.handshake"],
+    ["sys.print", "http: ${RSGCLI_TCP_CLIENT_IP} -> ${RSGCLI_TCP_SERVER_IP}:80"],
+    ["tcp.send", "text", [
+        "GET ${request_path} HTTP/1.1",
+        "Host: ${RSGCLI_TCP_SERVER_IP}:80",
+        "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:83.0) Gecko/20100101 Firefox/83.0",
+        "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Connection: keep-alive",
+        "",
+        ""
+      ]
+    ],
+    ["tcp.recv", "multi", [
+        [
+          "text", [
+            "HTTP/1.1 200 OK",
+            "Connection: Keep-Alive",
+            "Keep-Alive: timeout=10 ,max=100",
+            "Date: ${RSGCLI_DATE_RFC1123}",
+            "Content-Type: ${response_content_type}",
+            "Content-Length: $response_body=(val.length() / 2)}",
+            ""
+          ]
+        ],
+        [
+          "hex.raw", "${response_body}"
+        ]
+      ]
+    ]
+  ]
+}
