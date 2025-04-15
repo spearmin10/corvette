@@ -34,7 +34,7 @@
             "Keep-Alive: timeout=10 ,max=100",
             "Date: ${RSGCLI_DATE_RFC1123}",
             "Content-Type: ${response_content_type}",
-            "Content-Length: $response_body=(val.length() / 2)}",
+            "Content-Length: ${response_body=(val.length() / 2)}",
             ""
           ]
         ],
