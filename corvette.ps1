@@ -1,3 +1,4 @@
+Add-Type -AssemblyName System.IO.Compression
 Set-Variable -Scope script -Name PATTERN_IPV4_ADDR -Option Constant -Value "^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$"
 
 
@@ -21,9 +22,9 @@ function BuildFullPath (
 }
 
 function ReadAllBytes (
-    [IO.BinaryReader] $reader
+    [IO.Stream] $reader
 ) {
-    $mem = New-Object IO.MemoryStream
+    $mem = [IO.MemoryStream]::New()
     $buf = New-Object byte[] 4096
     $actual = 0
     do {
@@ -46,7 +47,7 @@ function DownloadString (
 function DownloadBytes (
     [string]$url
 ) {
-    $resp = New-Object IO.BinaryReader([Net.HttpWebRequest]::Create($url).GetResponse().GetResponseStream())
+    $resp = [Net.HttpWebRequest]::Create($url).GetResponse().GetResponseStream()
     return ReadAllBytes($resp)
 }
 
@@ -81,6 +82,30 @@ function DownloadAndExtractArchive (
     $file = DownloadFile $url ([IO.Path]::GetTempPath())
     Expand-Archive -Force $file $directory
     Remove-Item $file
+}
+
+function ExtractBytesFromZipFileInUrl (
+    [string]$url,
+    [string]$file_path
+) {
+    $z_data = DownloadBytes $url
+    $zip = New-Object IO.Compression.ZipArchive([IO.MemoryStream]::New($z_data))
+    
+    $z_entry = $zip.Entries | Where-Object { $_.FullName -eq $file_path }
+    if ($null -eq $z_entry) {
+        throw "$file_path is not found in $url"
+    }
+    return ReadAllBytes($z_entry.Open())
+}
+
+function CompressToGzip (
+    [byte[]]$data
+) {
+    $gzs = [IO.MemoryStream]::New()
+    $gz = [IO.Compression.GZipStream]::New($gzs, [IO.Compression.CompressionMode]::Compress)
+    $gz.Write($data, 0, $data.Length)
+    $gz.Close()
+    return $gzs.ToArray()
 }
 
 function ReadInput (
@@ -775,13 +800,7 @@ class Properties {
     }
 
     [string]MakeSureGzScriptFileExists() {
-        $script = [Text.Encoding]::UTF8.GetBytes($this.my_script)
-        $gzs = New-Object IO.MemoryStream
-        $gz = New-Object IO.Compression.GZipStream($gzs, [IO.Compression.CompressionMode]::Compress)
-        $gz.Write($script, 0, $script.Length)
-        $gz.Close()
-        $script_gz = $gzs.ToArray()
-
+        $script_gz = CompressToGzip $([Text.Encoding]::UTF8.GetBytes($this.my_script))
         $path = BuildFullPath $this.home_dir ".\corvette.ps1.gz"
         if (
             !(IsFile $path) -Or
@@ -1463,80 +1482,112 @@ class SetupTools : CommandBase {
     SetupTools([Properties]$props) : base($props) {
     }
 
-    [string]DownloadPsTools() {
+    [hashtable]GetPsToolsProps() {
         $tool_dir = BuildFullPath $this.props.home_dir ".\pstools"
-        $psexec_exe = BuildFullPath $tool_dir "PsExec.exe"
-
-        if (!(IsFile $psexec_exe)) {
-            $url = "https://github.com/spearmin10/corvette/blob/main/bin/PSTools.zip?raw=true"
-            DownloadAndExtractArchive $url $tool_dir
+        $tool_exe = BuildFullPath $tool_dir "PsExec.exe"
+        
+        return @{
+            "tool_dir" = $tool_dir
+            "tool_path" = $tool_exe
+            "url" = "https://github.com/spearmin10/corvette/blob/main/bin/PSTools.zip?raw=true"
         }
-        return $tool_dir
+    }
+
+    [string]DownloadPsTools() {
+        $props = $this.GetPsToolsProps()
+        if (!(IsFile $props.tool_path)) {
+            DownloadAndExtractArchive $props.url $props.tool_dir
+        }
+        return $props.tool_dir
+    }
+
+    [hashtable]GetMimikatzProps() {
+        $tool_dir = BuildFullPath $this.props.home_dir ".\mimikatz"
+        $tool_exe = BuildFullPath $tool_dir "mimikatz.exe"
+        
+        return @{
+            "tool_dir" = $tool_dir
+            "tool_path" = $tool_exe
+            "url" = "https://github.com/spearmin10/corvette/blob/main/bin/mimikatz.zip?raw=true"
+        }
     }
 
     [string]DownloadMimikatz() {
-        $tool_dir = BuildFullPath $this.props.home_dir ".\mimikatz"
-        $tool_exe = BuildFullPath $tool_dir "mimikatz.exe"
-
-        if (!(IsFile $tool_exe)) {
-            $url = "https://github.com/spearmin10/corvette/blob/main/bin/mimikatz.zip?raw=true"
-            DownloadAndExtractArchive $url $tool_dir
+        $props = $this.GetMimikatzProps()
+        if (!(IsFile $props.tool_path)) {
+            DownloadAndExtractArchive $props.url $props.tool_dir
         }
-        return $tool_dir
+        return $props.tool_dir
+    }
+
+    [hashtable]GetWildFireTestPEProps() {
+        $tool_dir = BuildFullPath $this.props.home_dir ".\wildfire"
+        $tool_exe = BuildFullPath $tool_dir "wildfire-test-pe-file.exe"
+        
+        return @{
+            "tool_dir" = $tool_dir
+            "tool_path" = $tool_exe
+            "url" = "https://wildfire.paloaltonetworks.com/publicapi/test/pe"
+        }
     }
 
     [string]DownloadWildFireTestPE() {
-        $tool_dir = BuildFullPath $this.props.home_dir ".\wildfire"
-        $tool_exe = BuildFullPath $tool_dir "wildfire-test-pe-file.exe"
-
-        if (!(IsFile $tool_exe)) {
-            New-Item -ItemType Directory -Force -Path $tool_dir
-
-            $url = "https://wildfire.paloaltonetworks.com/publicapi/test/pe"
-            DownloadFile $url $tool_exe
+        $props = $this.GetWildFireTestPEProps()
+        if (!(IsFile $props.tool_path)) {
+            New-Item -ItemType Directory -Force -Path $props.tool_dir
+            DownloadFile $props.url $props.tool_path
         }
-        return $tool_dir
+        return $props.tool_dir
+    }
+
+    [hashtable]GetEmbeddablePythonProps() {
+        $tool_dir = BuildFullPath $this.props.home_dir ".\python-3.14.0a6"
+        $tool_exe = BuildFullPath $tool_dir "python.exe"
+        
+        return @{
+            "tool_dir" = $tool_dir
+            "tool_path" = $tool_exe
+            "url" = "https://github.com/spearmin10/corvette/blob/main/bin/python-3.14.0a6-embed-win32-custom.zip?raw=true"
+        }
     }
 
     [string]DownloadEmbeddablePython() {
-        $tool_dir = BuildFullPath $this.props.home_dir ".\python-3.14.0a6"
-        $tool_exe = BuildFullPath $tool_dir "python.exe"
-        $complete_path = BuildFullPath $tool_dir "python.installed"
+        $props = $this.GetEmbeddablePythonProps()
+        $complete_path = BuildFullPath $props.tool_dir "python.installed"
 
-        if (!(IsFile $tool_exe) -Or !(IsFile $complete_path)) {
+        if (!(IsFile $props.tool_path) -Or !(IsFile $complete_path)) {
             $use_installed_pack = $true
             if ($use_installed_pack) {
-                $url = "https://github.com/spearmin10/corvette/blob/main/bin/python-3.14.0a6-embed-win32-custom.zip?raw=true"
-                DownloadAndExtractArchive $url $tool_dir
+                DownloadAndExtractArchive $props.url $props.tool_dir
             } else {
-                $url = "https://www.python.org/ftp/python/3.14.0/python-3.14.0a6-embed-win32.zip"
-                DownloadAndExtractArchive $url $tool_dir
+                $props.url = "https://www.python.org/ftp/python/3.14.0/python-3.14.0a6-embed-win32.zip"
+                DownloadAndExtractArchive $props.url $props.tool_dir
 
-                $pth_path = BuildFullPath $tool_dir "python314._pth"
+                $pth_path = BuildFullPath $props.tool_dir "python314._pth"
                 $content = [IO.File]::ReadAllText($pth_path)
                 $content = $content -replace "#import site", "import site"
                 [IO.File]::WriteAllText($pth_path, $content)
 
                 if (!(IsFile $complete_path)) {
-                    $pipexe_path = BuildFullPath $tool_dir "Scripts\pip.exe"
-                    $getpip_path = BuildFullPath $tool_dir "get-pip.py"
+                    $pipexe_path = BuildFullPath $props.tool_dir "Scripts\pip.exe"
+                    $getpip_path = BuildFullPath $props.tool_dir "get-pip.py"
                     
                     $url = "https://bootstrap.pypa.io/get-pip.py"
                     DownloadFile $url $getpip_path
                     
-                    Start-Process -FilePath $tool_exe `
+                    Start-Process -FilePath $props.tool_path `
                         -ArgumentList @($getpip_path, "--no-warn-script-location") `
-                        -Wait -NoNewWindow -WorkingDirectory $tool_dir
+                        -Wait -NoNewWindow -WorkingDirectory $props.tool_dir
 
-                    Start-Process -FilePath $tool_exe `
+                    Start-Process -FilePath $props.tool_path `
                         -ArgumentList @($pipexe_path, "install", "requests", "--no-warn-script-location") `
-                        -Wait -NoNewWindow -WorkingDirectory $tool_dir
+                        -Wait -NoNewWindow -WorkingDirectory $props.tool_dir
                     
                     [IO.File]::WriteAllText($complete_path, "")
                 }
             }
         }
-        return $tool_dir
+        return $props.tool_dir
     }
 
     [void]InstallPython() {
@@ -1859,7 +1910,7 @@ class IptgenBase : CommandBase {
     [string]$iptgen_exename
 
     IptgenBase([Properties]$props) : base($props) {
-        $iptgen_ver = "0.14.0"
+        $iptgen_ver = "0.15.0"
         $this.iptgen_exename = "iptgen.exe"
         $this.iptgen_dir = BuildFullPath $props.home_dir ".\iptgen-${iptgen_ver}"
         $this.iptgen_bin = BuildFullPath $this.iptgen_dir ".\bin"
@@ -1938,7 +1989,7 @@ class RsgcliBase : CommandBase {
     [string]$rsgcli_exename
 
     RsgcliBase([Properties]$props) : base($props) {
-        $rsgcli_ver = "0.4.1"
+        $rsgcli_ver = "0.5.0"
         $this.rsgcli_exename = "rsgcli.exe"
         $this.rsgcli_dir = BuildFullPath $props.home_dir ".\rsgcli-${rsgcli_ver}"
         $this.rsgcli_bin = BuildFullPath $this.rsgcli_dir ".\bin"
@@ -2286,9 +2337,9 @@ class IptgenHttpFileDownload : IptgenBase {
         [string]$response_content_type,
         [byte[]]$response_body
     ) {
-        $response_body_64 = [Convert]::ToBase64String($response_body)
+        $response_body_gz64 = [Convert]::ToBase64String($(CompressToGzip $response_body))
         $iptgen_json_data = [IO.File]::ReadAllText($this.iptgen_json)
-        $iptgen_json_data = $iptgen_json_data.Replace('${response_body_b64}', $response_body_64)
+        $iptgen_json_data = $iptgen_json_data.Replace('${response_body_gz64}', $response_body_gz64)
         $iptgen_json_path = $this.iptgen_json + ".tmp"
 
         $Env:client_ip = $client_ip
@@ -2353,11 +2404,15 @@ class IptgenHttpFileDownload : IptgenBase {
         [string]$client_ip,
         [string]$server_ip
     ) {
-        $mimikatz_dir = [SetupTools]::New($this.props).DownloadMimikatz()
-        $mimikatz_name = "mimikatz.exe"
-        $mimikatz_local_path = BuildFullPath $mimikatz_dir $mimikatz_name
-
-        $request_path = ReadInput "Request Path" "/$mimikatz_name" @("^.+$")
+        $setup_tools = [SetupTools]::New($this.props)
+        $props = $setup_tools.GetMimikatzProps()
+        if (!(IsFile $props.tool_path)) {
+            $mimikatz_bin = ExtractBytesFromZipFileInUrl $props.url "mimikatz.exe"
+        } else {
+            $setup_tools.DownloadMimikatz()
+            $mimikatz_bin = [IO.File]::ReadAllBytes($props.tool_path)
+        }
+        $request_path = ReadInput "Request Path" "/mimikatz.exe" @("^.+$")
         if (!$request_path.StartsWith("/")) {
             $request_path = "/" + $request_path
         }
@@ -2367,7 +2422,7 @@ class IptgenHttpFileDownload : IptgenBase {
             $server_ip,
             $(EncodeUrlPath $request_path),
             "application/octet-stream",
-            [IO.File]::ReadAllBytes($mimikatz_local_path)
+            $mimikatz_bin
         )
     }
 
@@ -2986,9 +3041,9 @@ class RsgcliHttpFileDownload : RsgcliBase {
         [string]$response_content_type,
         [byte[]]$response_body
     ) {
-        $response_body_64 = [Convert]::ToBase64String($response_body)
+        $response_body_gz64 = [Convert]::ToBase64String($(CompressToGzip $response_body))
         $rsgcli_json_data = [IO.File]::ReadAllText($this.rsgcli_json)
-        $rsgcli_json_data = $rsgcli_json_data.Replace('${response_body_b64}', $response_body_64)
+        $rsgcli_json_data = $rsgcli_json_data.Replace('${response_body_gz64}', $response_body_gz64)
         $rsgcli_json_path = $this.rsgcli_json + ".tmp"
 
         $Env:request_path = $request_path
@@ -3030,19 +3085,23 @@ class RsgcliHttpFileDownload : RsgcliBase {
     }
 
     [void]DownloadMimikatz([PropsRsgSvr]$rsgsvr) {
-        $mimikatz_dir = [SetupTools]::New($this.props).DownloadMimikatz()
-        $mimikatz_name = "mimikatz.exe"
-        $mimikatz_local_path = BuildFullPath $mimikatz_dir $mimikatz_name
-        
-        $request_path = ReadInput "Request Path" "/$mimikatz_name" @("^.+$")
+        $setup_tools = [SetupTools]::New($this.props)
+        $props = $setup_tools.GetMimikatzProps()
+        if (!(IsFile $props.tool_path)) {
+            $mimikatz_bin = ExtractBytesFromZipFileInUrl $props.url "mimikatz.exe"
+        } else {
+            $setup_tools.DownloadMimikatz()
+            $mimikatz_bin = [IO.File]::ReadAllBytes($props.tool_path)
+        }
+        $request_path = ReadInput "Request Path" "/mimikatz.exe" @("^.+$")
         if (!$request_path.StartsWith("/")) {
             $request_path = "/" + $request_path
         }
-        $this.DownloadFile(
+         $this.DownloadFile(
             $rsgsvr,
             $(EncodeUrlPath $request_path),
             "application/octet-stream",
-            [IO.File]::ReadAllBytes($mimikatz_local_path)
+            $mimikatz_bin
         )
     }
 
