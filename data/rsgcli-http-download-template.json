@@ -11,7 +11,7 @@
   },
   "sequence": [
     ["env.local.set-payload", {
-        "response_body": ["hex", "base64.raw", "${response_body_b64}"]
+        "response_body": ["hex", "gzip+base64.raw", "${response_body_gz64}"]
       }
     ],
     ["tcp.handshake"],
