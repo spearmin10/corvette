@@ -3,7 +3,8 @@
     "environment":{
       "request_path": "/",
       "response_content_type": "application/octet-stream",
-      "response_body_b64": ""
+      "response_body_b64": "",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:83.0) Gecko/20100101 Firefox/83.0"
     }
   },
   "client": "${client_ip}", 
@@ -17,7 +18,7 @@
     ["ssl.send", "text", [
         "GET ${request_path} HTTP/1.1",
         "Host: ${server_ip}:443",
-        "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:83.0) Gecko/20100101 Firefox/83.0",
+        "User-Agent: ${user_agent}",
         "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Connection: keep-alive",
         ""
