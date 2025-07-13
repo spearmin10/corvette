@@ -4834,7 +4834,7 @@ class HighRiskToolsAndCommands : CommandBase {
             Write-Host " 5) Run nmap"
             Write-Host " 6) Run Kerberos Brute Force"
             Write-Host " 7) Run WildFire Test PE"
-            Write-Host " 8) Exit"
+            Write-Host " q) Exit"
             try {
                 :retry do {
                     $cmd = Read-Host "Please choose a menu item"
