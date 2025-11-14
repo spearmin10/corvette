@@ -1665,6 +1665,7 @@ class PsExec : CommandBase {
         $userid = ReadInput "Remote User ID" "" @("^.+$")
         $password = ReadPassword "Remote User Password" "" @("^.*$")
         $cmdline = ReadInput "Remote Command Line" "" @("^.+$")
+        $runas_et = AskYesNo "Run with the account's elevated token" "N"
 
         if (AskYesNo "Are you sure you want to run?") {
             $exe_dir = [IO.Path]::GetDirectoryName($this.psexec_exe)
@@ -1677,6 +1678,9 @@ class PsExec : CommandBase {
                       "-accepteula",
                       "-u", $userid,
                       "-i")
+            if ($runas_et) {
+                $cargs += @("-h")
+            }
             if (![string]::IsNullOrEmpty($password)) {
                 $cargs += @("-p", $password)
             }
