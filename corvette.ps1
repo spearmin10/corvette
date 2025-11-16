@@ -4840,7 +4840,7 @@ class HighRiskToolsAndCommands : CommandBase {
             $trigger = New-ScheduledTaskTrigger -AtLogOn
             $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive
             Register-ScheduledTask -TaskName $name -Action $action -Trigger $trigger -Principal $principal -Force
-            Write-Host "Persistence was achieved to ensure that 'corvette' runs on a scheduled task - $name"
+            Write-Host "Persistence was achieved to ensure that 'corvette' runs on a scheduled task."
         }
     }
 
