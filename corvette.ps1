@@ -5146,6 +5146,24 @@ class Menu {
                 [RsgcliMenu]::New($this.props).Run()
             }
             "7" {
+                [FortigateLogs]::New($this.props).Run()
+            }
+            "8" {
+                [CheckPointLogs]::New($this.props).Run()
+            }
+            "9" {
+                [CiscoLogs]::New($this.props).Run()
+            }
+            "10" {
+                [PaloAltoNGFWLogs]::New($this.props).Run()
+            }
+            "11" {
+                [BindLogs]::New($this.props).Run()
+            }
+            "12" {
+                [NetflowLogs]::New($this.props).Run()
+            }
+            "13" {
                 [ServerMenu]::New($this.props).Run()
             }
             default {
@@ -5167,7 +5185,13 @@ class Menu {
             Write-Host " 4) High-Risk Tools and Commands"
             Write-Host " 5) Generate Network Traffic (iptgen)"
             Write-Host " 6) Generate Network Traffic (rsgen)"
-            Write-Host " 7) Run Server"
+            Write-Host " 7) Send Fortigate Logs"
+            Write-Host " 8) Send CheckPoint Logs"
+            Write-Host " 9) Send Cisco Logs"
+            Write-Host "10) Send Palo Alto Networks NGFW Logs"
+            Write-Host "11) Send BIND Logs"
+            Write-Host "12) Send Netflow Logs"
+            Write-Host "13) Run Server"
             try {
                 while (!$this.LaunchAdminModeCommand((Read-Host "Please choose a menu item to run"))) {}
             } catch {
