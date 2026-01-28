@@ -161,16 +161,23 @@ class Main {
             [int]$client_port = $(Get-Random -Minimum 1025 -Maximum 65534)
             [string]$log_time = $(Get-Date).ToUniversalTime().ToString("dd-MMM-yyyy HH:mm:ss.fff", [System.Globalization.CultureInfo]::CreateSpecificCulture("en-US"))
             [string]$query_name = "${hostname}.${tld}"
-            
-            $log = @"
+
+            $logs = @(
+@"
 $log_time queries: info: client @0x${client_id} ${client_ip}#${client_port} (${query_name}): query: ${query_name} IN A +E(0) (${server_ip})
 "@
-
-            $this.syslog.Send($this.syslog.Build($log, "dns", "named", "1234"))
-            if ($verbose) {
-                Write-Host $log
-            } else {
-                Write-Host "DNS: ${client_ip} > ${server_ip} : ${query_name}"
+,
+@"
+$log_time query-errors: info: client @0x${client_id} ${client_ip}#${client_port} (${query_name}): query failed (NXDOMAIN) for ${query_name}/IN/A at ../../../bin/named/query.c:1234
+"@
+            )
+            foreach ($log in $logs) {
+                $this.syslog.Send($this.syslog.Build($log, "dns", "named", "1234"))
+                if ($verbose) {
+                    Write-Host $log
+                } else {
+                    Write-Host "DNS: ${client_ip} > ${server_ip} : ${query_name}"
+                }
             }
         }
     }
