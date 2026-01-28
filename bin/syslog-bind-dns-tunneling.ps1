@@ -9,6 +9,7 @@ Param(
   [parameter(mandatory=$true)][string]$DNSClientIP,
   [parameter(mandatory=$true)][string]$DNSServerIP,
   [parameter(mandatory=$true)][string]$QueryDomain,
+  [string]$QueryHostName = "",
   [int]$Count = 1
 )
 
@@ -149,6 +150,7 @@ class Main {
     [void]Run([string]$client_ip,
               [string]$server_ip,
               [string]$domain,
+              [string]$hostname,
               [int]$count,
               [bool]$verbose) {
         
@@ -157,10 +159,13 @@ class Main {
         $client_id = ([System.BitConverter]::ToString($md5.ComputeHash($utf8.GetBytes($client_ip))).ToLower() -replace '-', '').Substring(0, 12)
 
         1..$count | %{
-            [string]$hostname = -Join (Get-Random -Count 12 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)
+            [string]$qhostname = $hostname
+            if ([string]::IsNullOrEmpty($hostname)) {
+                $qhostname = -Join (Get-Random -Count 12 -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)
+            }
             [int]$client_port = $(Get-Random -Minimum 1025 -Maximum 65534)
             [string]$log_time = $(Get-Date).ToUniversalTime().ToString("dd-MMM-yyyy HH:mm:ss.fff", [System.Globalization.CultureInfo]::CreateSpecificCulture("en-US"))
-            [string]$query_name = "${hostname}.${domain}"
+            [string]$query_name = "${qhostname}.${domain}"
             
             $log = @"
 $log_time queries: info: client @0x${client_id} ${client_ip}#${client_port} (${query_name}): query: ${query_name} IN A +E(0) (${server_ip})
@@ -181,6 +186,6 @@ $log_time queries: info: client @0x${client_id} ${client_ip}#${client_port} (${q
 }
 
 $main = [Main]::New($SyslogProtocol, $SyslogHost, $SyslogPort, $SyslogFormat, $SyslogFacility, $SyslogSeverity)
-$main.Run($DNSClientIP, $DNSServerIP, $QueryDomain, $Count, $ShowLogs)
+$main.Run($DNSClientIP, $DNSServerIP, $QueryDomain, $QueryHostName, $Count, $ShowLogs)
 $main.Close()
 
