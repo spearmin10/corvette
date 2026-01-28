@@ -4520,8 +4520,10 @@ class BindLogs : CommandBase {
                        "-DNSClientIP", $client_ip,
                        "-DNSServerIP", $server_ip,
                        "-QueryDomain", $domain,
-                       "-QueryHostname", $query_hostname,
                        "-Count", [string]$numof_queries)
+            if (![string]::IsNullOrEmpty($query_hostname)) {
+                $cargs += @("-QueryHostname", $query_hostname)
+            }
             StartProcess "powershell.exe" $cargs
         }
     }
