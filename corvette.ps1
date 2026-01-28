@@ -4505,6 +4505,7 @@ class BindLogs : CommandBase {
                                @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $domain = ReadInput "DNS tunnel domain" $null @("^.+$")
+        $query_hostname = ReadInput "Query hostname (Optional)" ""
         $numof_queries = ParseNumber(ReadInput "Number of queries" `
                                                "10000" `
                                                @("^[0-9]+$") `
@@ -4519,6 +4520,7 @@ class BindLogs : CommandBase {
                        "-DNSClientIP", $client_ip,
                        "-DNSServerIP", $server_ip,
                        "-QueryDomain", $domain,
+                       "-QueryHostname", $query_hostname,
                        "-Count", [string]$numof_queries)
             StartProcess "powershell.exe" $cargs
         }
