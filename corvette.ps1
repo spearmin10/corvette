@@ -4505,7 +4505,7 @@ class BindLogs : CommandBase {
                                @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         $domain = ReadInput "DNS tunnel domain" $null @("^.+$")
-        $query_hostname = ReadInput "Query hostname (Optional)" ""
+        $query_hostname = ReadInput "Query hostname (Optional)" "" @("^[^\.\s]*$")
         $numof_queries = ParseNumber(ReadInput "Number of queries" `
                                                "10000" `
                                                @("^[0-9]+$") `
