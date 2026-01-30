@@ -4436,8 +4436,9 @@ class BindLogs : CommandBase {
     [void]Run() {
         while ($true) {
             Write-Host "************************************"
-            Write-Host " 1) Simulate DNS tunneling"
-            Write-Host " 2) Simulate DNS random query"
+            Write-Host " 1) Simulate DNS query"
+            Write-Host " 2) Simulate DNS tunneling"
+            Write-Host " 3) Simulate DNS random query"
             Write-Host " q) Exit"
 
             try {
@@ -4445,9 +4446,12 @@ class BindLogs : CommandBase {
                     $cmd = Read-Host "Please choose a menu item to run"
                     switch($cmd) {
                         "1" {
-                            $this.RunDNSTunneling()
+                            $this.RunDNSQuery()
                         }
                         "2" {
+                            $this.RunDNSTunneling()
+                        }
+                        "3" {
                             $this.RunDNSRandomQuery()
                         }
                         "q" {
@@ -4462,6 +4466,65 @@ class BindLogs : CommandBase {
             } catch {
                 Write-Host $_
             }
+        }
+    }
+
+    [void]RunDNSQuery() {
+        $file_name = "syslog-bind-dns.ps1"
+        $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
+        $script_file = BuildFullPath $scripts_dir $file_name
+
+        if (!(IsDirectory $scripts_dir)) {
+            New-Item -ItemType Directory -Force -Path $scripts_dir
+        }
+
+        $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/bin/$($file_name)"
+        DownloadFile $url $script_file
+
+        Write-Host ""
+        Write-Host "### Enter the syslog configuration"
+        $syslog = $this.props.SelectDefaultSyslogServer()
+        if ($null -eq $syslog) {
+            $syslog = [PropsSyslog]::New()
+            $syslog.host = ReadInput "Syslog Host" `
+                                     $syslog.host `
+                                     @("^.+$")
+            $syslog.port = ReadInput "Syslog Port" `
+                                     $syslog.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+            $syslog.protocol = ReadInput "Syslog Protocol" `
+                                         $syslog.protocol `
+                                         @("^UDP|TCP|udp|tcp$") `
+                                         "Please retype a valid protocol"
+        }
+        Write-Host ""
+        Write-Host "### Enter the DNS configuration"
+        $client_ip = ReadInput "DNS client IP" `
+                               "" `
+                               @($script:PATTERN_IPV4_ADDR) `
+                               "Please retype a valid IPv4 address"
+        $server_ip = ReadInput "DNS server IP" `
+                               "" `
+                               @($script:PATTERN_IPV4_ADDR) `
+                               "Please retype a valid IPv4 address"
+        $pattern = ReadInput "DNS query name pattern" "*.?{6}.(com|net|org|xyz)" @("^.+$")
+        $numof_queries = ParseNumber(ReadInput "Number of queries" `
+                                               "10000" `
+                                               @("^[0-9]+$") `
+                                               "Please retype a valid number")
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
+                       "-SyslogHost", $syslog.host,
+                       "-SyslogPort", $syslog.port,
+                       "-SyslogProtocol", $syslog.protocol.ToUpper(),
+                       "-SyslogFormat", "RFC-3164",
+                       "-DNSClientIP", $client_ip,
+                       "-DNSServerIP", $server_ip,
+                       "-QueryNamePattern", $pattern,
+                       "-Count", [string]$numof_queries)
+            StartProcess "powershell.exe" $cargs
         }
     }
 
@@ -4520,9 +4583,6 @@ class BindLogs : CommandBase {
                        "-DNSServerIP", $server_ip,
                        "-QueryNamePattern", "?{12}.${domain}",
                        "-Count", [string]$numof_queries)
-            if (![string]::IsNullOrEmpty($query_hostname)) {
-                $cargs += @("-QueryHostname", $query_hostname)
-            }
             StartProcess "powershell.exe" $cargs
         }
     }
