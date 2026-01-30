@@ -286,7 +286,7 @@ function QuoteCmdParam (
         $value = ,@($value | % { (QuoteCmdParam $_) })
     } else {
         if ($value.Contains('|')) {
-            $value = '"{0}"' -f $value
+            $value = "'$value'"
         }
         if ($value.Contains('"')) {
             $value = $value.Replace('"', '""""""')
