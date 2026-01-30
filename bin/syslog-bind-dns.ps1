@@ -154,6 +154,18 @@ class Main {
         [int]$mcw_min,
         [int]$mcw_max
     ) {
+        while ($pattern -match "\?\{(\d+)(?:,(\d+))?\}") {
+            $min = [int]$matches[1]
+            $max = if ($matches[2]) { [int]$matches[2] } else { $min }
+            $len = Get-Random -Minimum $min -Maximum ($max + 1)
+            $expanded = "?" * $len
+            $pattern = [regex]::Replace(
+                $pattern,
+                "\?\{\d+(?:,\d+)?\}",
+                $expanded,
+                1
+            )
+        }
         while ($pattern -match "\(([^()]+)\)") {
             $options = $matches[1] -split '\|'
             $choice  = $options | Get-Random
@@ -196,7 +208,7 @@ class Main {
         $client_id = ([System.BitConverter]::ToString($md5.ComputeHash($utf8.GetBytes($client_ip))).ToLower() -replace '-', '').Substring(0, 12)
 
         1..$count | %{
-            $query_name = $this.MakeQueryName($pattern, 1, 16)
+            $query_name = $this.MakeQueryName($pattern, 1, 12)
             [int]$client_port = $(Get-Random -Minimum 1025 -Maximum 65534)
             [string]$log_time = $(Get-Date).ToUniversalTime().ToString("dd-MMM-yyyy HH:mm:ss.fff", [System.Globalization.CultureInfo]::CreateSpecificCulture("en-US"))
 
