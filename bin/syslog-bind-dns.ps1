@@ -184,7 +184,7 @@ class Main {
                     $qname = -Join (Get-Random -Count $mcw_len -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)
                 }
                 "?" {
-                    $qname += ("abcdefghijklmnopqrstuvwxyz" | Get-Random)
+                    $qname += (Get-Random -input a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z)
                 }
                 default {
                     $qname += $c
