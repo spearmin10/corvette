@@ -4466,7 +4466,7 @@ class BindLogs : CommandBase {
     }
 
     [void]RunDNSTunneling() {
-        $file_name = "syslog-bind-dns-tunneling.ps1"
+        $file_name = "syslog-bind-dns.ps1"
         $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
         $script_file = BuildFullPath $scripts_dir $file_name
 
@@ -4504,8 +4504,7 @@ class BindLogs : CommandBase {
                                "" `
                                @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
-        $domain = ReadInput "DNS tunnel domain" $null @("^.+$")
-        $query_hostname = ReadInput "Query hostname (Optional)" "" @("^[^\.\s]*$")
+        $domain = ReadInput "DNS tunnel domain pattern" "?{6}.(com|net|org|xyz)" @("^.+$")
         $numof_queries = ParseNumber(ReadInput "Number of queries" `
                                                "10000" `
                                                @("^[0-9]+$") `
@@ -4519,7 +4518,7 @@ class BindLogs : CommandBase {
                        "-SyslogFormat", "RFC-3164",
                        "-DNSClientIP", $client_ip,
                        "-DNSServerIP", $server_ip,
-                       "-QueryDomain", $domain,
+                       "-QueryNamePattern", "?{12}.${domain}",
                        "-Count", [string]$numof_queries)
             if (![string]::IsNullOrEmpty($query_hostname)) {
                 $cargs += @("-QueryHostname", $query_hostname)
@@ -4529,7 +4528,7 @@ class BindLogs : CommandBase {
     }
 
     [void]RunDNSRandomQuery() {
-        $file_name = "syslog-bind-dns-random-failed-query.ps1"
+        $file_name = "syslog-bind-dns.ps1"
         $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
         $script_file = BuildFullPath $scripts_dir $file_name
 
@@ -4580,6 +4579,8 @@ class BindLogs : CommandBase {
                        "-SyslogFormat", "RFC-3164",
                        "-DNSClientIP", $client_ip,
                        "-DNSServerIP", $server_ip,
+                       "-QueryNamePattern", "?{16}.(com|info|net|org|biz)",
+                       "-QueryErrors", "NXDOMAIN",
                        "-Count", [string]$numof_queries)
             StartProcess "powershell.exe" $cargs
         }
