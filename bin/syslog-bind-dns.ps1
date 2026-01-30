@@ -159,22 +159,14 @@ class Main {
             $max = if ($matches[2]) { [int]$matches[2] } else { $min }
             $len = Get-Random -Minimum $min -Maximum ($max + 1)
             $expanded = "?" * $len
-            $pattern = [regex]::Replace(
-                $pattern,
-                "\?\{\d+(?:,\d+)?\}",
-                $expanded,
-                1
-            )
+            $regex = [regex]"\?\{(\d+)(?:,(\d+))?\}"
+            $pattern = $regex.Replace($pattern, $expanded, 1)
         }
         while ($pattern -match "\(([^()]+)\)") {
             $options = $matches[1] -split '\|'
             $choice  = $options | Get-Random
-            $pattern = [regex]::Replace(
-                $pattern,
-                "\([^()]+\)",
-                $choice,
-                1
-            )
+            $regex = [regex]"\(([^()]+)\)"
+            $pattern = $regex.Replace($pattern, $choice, 1)
         }
         $qname = ""
         foreach ($c in $pattern.ToCharArray()) {
