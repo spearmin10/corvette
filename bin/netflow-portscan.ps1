@@ -208,69 +208,36 @@ class Main {
             throw "Subnet [$subnet] is not in a valid format"
         }
         # Split IP and subnet
-        [string]$subnet_ip = ($subnet -split '\/')[0]
+        [IPAddress]$subnet_ip = ($subnet -split '\/')[0]
         [int]$subnet_bits = ($subnet -split '\/')[1]
-        if ($subnet_bits -lt 7 -or $subnet_bits -gt 30) {
-            throw "The number following the / must be between 7 and 30"
+        if ($subnet_bits -lt 7 -or $subnet_bits -gt 32) {
+            throw "The number following the / must be between 7 and 32"
         }
-        # Convert IP into binary
-        # Split IP into different octects and for each one, figure out the binary with leading zeros and add to the total
-        [string[]]$octets = $subnet_ip -split '\.'
-        [string]$ip_in_binary = ''
-        foreach ($octet in $octets) {
-            # convert to binary
-            [string]$octet_in_binary = [convert]::ToString($octet, 2)
 
-            # get length of binary string add leading zeros to make octet
-            $ip_in_binary += ('0' * (8 - ($octet_in_binary).Length) + $octet_in_binary)
+        # Convert IP into int
+        $ip4bin = $subnet_ip.GetAddressBytes()
+        if ([BitConverter]::IsLittleEndian) { [Array]::Reverse($ip4bin) }
+        $ip4int = [BitConverter]::ToUInt32($ip4bin, 0)
+
+        # Calculate the mask range
+        $total_hosts = [Math]::Pow(2, (32 - $subnet_bits))
+        $network_int = $ip4int -band ([uint32]::MaxValue -shl (32 - $subnet_bits))
+
+        # Create an IP list
+        if ($subnet_bits -ge 31) {
+            # Returns all IPs in range if mask is /31 or /32.
+            $start = 0
+            $end = $total_hosts - 1
+        } else {
+            # Excludes network and broadcast IPs for masks <= /30.
+            $start = 1
+            $end = $total_hosts - 2
         }
-        # Get network ID by subtracting subnet mask
-        [int]$host_bits = 32 - $subnet_bits
-        [string]$network_id_in_binary = $ip_in_binary.Substring(0, $subnet_bits)
-
-        # Get host ID and get the first host ID by converting all 1s into 0s
-        [string]$host_id_in_binary = $ip_in_binary.Substring($subnet_bits, $host_bits) -replace '1', '0'
-
-        # Work out all the host IDs in that subnet by cycling through $i from 1 up to max $host_id_in_binary (i.e. 1s stringed up to $host_bits)
-        # Work out max $host_id_in_binary
-        [int32]$imax = [convert]::ToInt32(('1' * $host_bits), 2) - 1
-        [IPAddress[]]$ips = @()
-
-        # Next ID is first network ID converted to decimal plus $i then converted to binary
-        for ($i = 1 ; $i -le $imax ; $i++) {
-            # Convert to decimal and add $i
-            [int32]$next_host_id_in_decimal = [convert]::ToInt32($host_id_in_binary, 2) + $i
-
-            # Convert back to binary
-            [string]$next_host_id_in_binary = [convert]::ToString($next_host_id_in_decimal, 2)
-
-            # Add leading zeros
-            # Number of zeros to add
-            [int]$num_of_zeros_to_add = $host_id_in_binary.Length - $next_host_id_in_binary.Length
-            [string]$next_host_id_in_binary = ('0' * $num_of_zeros_to_add) + $next_host_id_in_binary
-
-            # Work out next IP
-            # Add networkID to hostID
-            [string]$next_ip_in_binary = $network_id_in_binary + $next_host_id_in_binary
-
-            # Split into octets and separate by . then join
-            [string[]]$octets = @()
-            for ($x = 1 ; $x -le 4 ; $x++) {
-                # Work out start character position
-                [int]$start_char_number = ($x - 1) * 8
-
-                # Get octet in binary
-                [string]$ip_octet_in_binary = $next_ip_in_binary.Substring($start_char_number, 8)
-
-                # Convert octet into decimal
-                $ip_octet_in_decimal = [convert]::ToInt32($ip_octet_in_binary, 2)
-
-                # Add octet to IP
-                $octets += $ip_octet_in_decimal
-            }
-            # Separate by .
-            [IPAddress]$ip = $octets -join '.'
-            $ips += $ip
+        $ips = for ($i = $start; $i -le $end; $i++) {
+            $ip4int = $network_int + $i
+            $ip4bin = [BitConverter]::GetBytes([uint32]$ip4int)
+            if ([BitConverter]::IsLittleEndian) { [Array]::Reverse($ip4bin) }
+            [IPAddress]::new($ip4bin)
         }
         return $ips
     }
