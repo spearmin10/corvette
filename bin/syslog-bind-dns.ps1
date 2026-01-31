@@ -222,10 +222,9 @@ $log_time query-errors: info: client @0x${client_id} ${client_ip}#${client_port}
                 $this.syslog.Send($this.syslog.Build($log, "dns", "named", "1234"))
                 if ($verbose) {
                     Write-Host $log
-                } else {
-                    Write-Host "DNS: ${client_ip} > ${server_ip} : ${query_name}"
                 }
             }
+            Write-Host "DNS: ${client_ip} > ${server_ip} : ${query_name}"
         }
     }
 
