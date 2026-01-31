@@ -4525,7 +4525,8 @@ class BindLogs : CommandBase {
                        "-SyslogFormat", "RFC-3164",
                        "-DNSClientIP", $client_ip,
                        "-DNSServerIP", $server_ip,
-                       "-QueryNamePattern", $pattern,
+                       "-QueryNamePattern", $([Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($pattern))),
+                       "-QueryNamePatternEncoded",
                        "-Count", [string]$numof_queries)
             StartProcess "powershell.exe" $cargs
         }
@@ -4584,7 +4585,8 @@ class BindLogs : CommandBase {
                        "-SyslogFormat", "RFC-3164",
                        "-DNSClientIP", $client_ip,
                        "-DNSServerIP", $server_ip,
-                       "-QueryNamePattern", "?{12}.${domain}",
+                       "-QueryNamePattern", $([Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes("?{12}.${domain}"))),
+                       "-QueryNamePatternEncoded",
                        "-Count", [string]$numof_queries)
             StartProcess "powershell.exe" $cargs
         }
@@ -4643,7 +4645,8 @@ class BindLogs : CommandBase {
                        "-SyslogFormat", "RFC-3164",
                        "-DNSClientIP", $client_ip,
                        "-DNSServerIP", $server_ip,
-                       "-QueryNamePattern", "?{16}.(com|info|net|org|biz)",
+                       "-QueryNamePattern", $([Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes("?{16}.(com|info|net|org|biz)"))),
+                       "-QueryNamePatternEncoded",
                        "-Count", [string]$numof_queries)            
             if ($nxdomain) {
                  $cargs += @("-QueryErrors", "NXDOMAIN")
