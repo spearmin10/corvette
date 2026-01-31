@@ -14,7 +14,6 @@ Param(
   [int]$Count = 1
 )
 
-
 class Syslog {
     [string]$format
     [int]$pri
@@ -156,18 +155,18 @@ class Main {
         [int]$mcw_min,
         [int]$mcw_max
     ) {
-        while ($pattern -match "\?\{(\d+)(?:,(\d+))?\}") {
+        $regex = [regex]"\?\{(\d+)(?:,(\d+))?\}"
+        while ($pattern -match $regex) {
             $min = [int]$matches[1]
             $max = if ($matches[2]) { [int]$matches[2] } else { $min }
             $len = Get-Random -Minimum $min -Maximum ($max + 1)
             $expanded = "?" * $len
-            $regex = [regex]"\?\{(\d+)(?:,(\d+))?\}"
             $pattern = $regex.Replace($pattern, $expanded, 1)
         }
-        while ($pattern -match "\(([^()]+)\)") {
+        $regex = [regex]"\(([^()]+)\)"
+        while ($pattern -match $regex) {
             $options = $matches[1] -split '\|'
             $choice  = $options | Get-Random
-            $regex = [regex]"\(([^()]+)\)"
             $pattern = $regex.Replace($pattern, $choice, 1)
         }
         $qname = ""
@@ -240,6 +239,7 @@ $main = [Main]::New($SyslogProtocol, $SyslogHost, $SyslogPort, $SyslogFormat, $S
 if ($QueryNamePatternEncoded) {
     $QueryNamePattern = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($QueryNamePattern))
 }
+Write-Host $QueryNamePattern
 
 $main.Run($DNSClientIP, $DNSServerIP, $QueryNamePattern, $QueryErrors, $Count, $ShowLogs)
 $main.Close()
