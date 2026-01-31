@@ -5,7 +5,7 @@ Param(
   [int]$SyslogFacility = 16,
   [int]$SyslogSeverity = 6,
   [string]$SyslogFormat = "RFC-5424",
-  [bool]$ShowLogs = $false,
+  [switch]$ShowLogs,
   [string]$UserIP = "192.168.1.1",
   [string]$PublicIP = "1.2.3.4",
   [string]$UserID,

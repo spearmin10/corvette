@@ -5,7 +5,7 @@ Param(
   [int]$SyslogFacility = 16,
   [int]$SyslogSeverity = 6,
   [string]$SyslogFormat = "RFC-5424",
-  [bool]$ShowLogs = $false,
+  [switch]$ShowLogs,
   [int64]$TotalUploadSize = 1 * 1024 * 1024 * 1024,
   [int]$NumberOfRecords = 1,
   [parameter(mandatory=$true)][string]$SourceIP,

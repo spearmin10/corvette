@@ -5,7 +5,7 @@ Param(
   [int]$SyslogFacility = 16,
   [int]$SyslogSeverity = 6,
   [string]$SyslogFormat = "RFC-3164",
-  [bool]$ShowLogs = $false,
+  [switch]$ShowLogs,
   [parameter(mandatory=$true)][string]$DNSClientIP,
   [parameter(mandatory=$true)][string]$DNSServerIP,
   [parameter(mandatory=$true)][string]$QueryDomain,

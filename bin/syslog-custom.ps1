@@ -5,7 +5,7 @@ Param(
   [int]$SyslogFacility = 16,
   [int]$SyslogSeverity = 6,
   [string]$SyslogFormat = "RFC-5424",
-  [bool]$ShowLogs = $false,
+  [switch]$ShowLogs,
   [parameter(mandatory=$true)][string]$CEFVendor,
   [parameter(mandatory=$true)][string]$CEFDeviceProduct,
   [parameter(mandatory=$true)][string]$CEFDeviceVersion,
