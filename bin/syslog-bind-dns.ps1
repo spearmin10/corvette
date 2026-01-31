@@ -11,7 +11,7 @@ Param(
   [parameter(mandatory=$true)][string]$QueryNamePattern,
   [switch]$QueryNamePatternEncoded,
   [string]$QueryErrors = "",
-  [int]$Count = 1,
+  [int]$Count = 1
 )
 
 
