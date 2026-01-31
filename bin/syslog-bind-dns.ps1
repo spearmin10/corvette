@@ -239,7 +239,6 @@ $main = [Main]::New($SyslogProtocol, $SyslogHost, $SyslogPort, $SyslogFormat, $S
 if ($QueryNamePatternEncoded) {
     $QueryNamePattern = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($QueryNamePattern))
 }
-Write-Host $QueryNamePattern
 
 $main.Run($DNSClientIP, $DNSServerIP, $QueryNamePattern, $QueryErrors, $Count, $ShowLogs)
 $main.Close()
