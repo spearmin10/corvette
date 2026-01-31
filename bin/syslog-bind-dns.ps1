@@ -9,7 +9,7 @@ Param(
   [parameter(mandatory=$true)][string]$DNSClientIP,
   [parameter(mandatory=$true)][string]$DNSServerIP,
   [parameter(mandatory=$true)][string]$QueryNamePattern,
-  [switch]QueryNamePatternBase64,
+  [switch]$QueryNamePatternEncoded,
   [string]$QueryErrors = "",
   [int]$Count = 1,
 )
@@ -237,7 +237,7 @@ $log_time query-errors: info: client @0x${client_id} ${client_ip}#${client_port}
 
 $main = [Main]::New($SyslogProtocol, $SyslogHost, $SyslogPort, $SyslogFormat, $SyslogFacility, $SyslogSeverity)
 
-if ($QueryNamePatternBase64) {
+if ($QueryNamePatternEncoded) {
     $QueryNamePattern = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($QueryNamePattern))
 }
 
