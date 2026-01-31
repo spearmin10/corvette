@@ -5,13 +5,15 @@ Param(
   [int]$SyslogFacility = 16,
   [int]$SyslogSeverity = 6,
   [string]$SyslogFormat = "RFC-3164",
-  [bool]$ShowLogs = $false,
+  [switch]$ShowLogs = $false,
   [parameter(mandatory=$true)][string]$DNSClientIP,
   [parameter(mandatory=$true)][string]$DNSServerIP,
   [parameter(mandatory=$true)][string]$QueryNamePattern,
+  [switch]QueryNamePatternBase64,
   [string]$QueryErrors = "",
-  [int]$Count = 1
+  [int]$Count = 1,
 )
+
 
 class Syslog {
     [string]$format
@@ -234,5 +236,10 @@ $log_time query-errors: info: client @0x${client_id} ${client_ip}#${client_port}
 }
 
 $main = [Main]::New($SyslogProtocol, $SyslogHost, $SyslogPort, $SyslogFormat, $SyslogFacility, $SyslogSeverity)
+
+if ($QueryNamePatternBase64) {
+    $QueryNamePattern = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($QueryNamePattern))
+}
+
 $main.Run($DNSClientIP, $DNSServerIP, $QueryNamePattern, $QueryErrors, $Count, $ShowLogs)
 $main.Close()
