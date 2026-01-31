@@ -4570,7 +4570,7 @@ class BindLogs : CommandBase {
                                "" `
                                @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
-        $domain = ReadInput "DNS tunnel domain pattern" "?{6}.(com|net|org|xyz)" @("^.+$")
+        $domain = ReadInput "DNS tunnel domain" $null @("^.+$")
         $numof_queries = ParseNumber(ReadInput "Number of queries" `
                                                "10000" `
                                                @("^[0-9]+$") `
@@ -4633,6 +4633,7 @@ class BindLogs : CommandBase {
                                                "10000" `
                                                @("^[0-9]+$") `
                                                "Please retype a valid number")
+        $nxdomain = AskYesNo "Do you want to send error logs (NXDOMAIN)?" "n"
 
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
@@ -4643,8 +4644,10 @@ class BindLogs : CommandBase {
                        "-DNSClientIP", $client_ip,
                        "-DNSServerIP", $server_ip,
                        "-QueryNamePattern", "?{16}.(com|info|net|org|biz)",
-                       "-QueryErrors", "NXDOMAIN",
-                       "-Count", [string]$numof_queries)
+                       "-Count", [string]$numof_queries)            
+            if ($nxdomain) {
+                 $cargs += @("-QueryErrors", "NXDOMAIN")
+            }
             StartProcess "powershell.exe" $cargs
         }
     }
