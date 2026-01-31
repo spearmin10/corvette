@@ -4426,7 +4426,7 @@ class PaloAltoNGFWLogs : CommandBase {
                        "-CEFName", "THREAT",
                        "-CEFSeverity", "4",
                        "-CEFExtension", $cef_extention,
-                       "-ShowLogs", "1")
+                       "-ShowLogs")
             StartProcess "powershell.exe" $cargs
         }
     }
@@ -4525,7 +4525,7 @@ class BindLogs : CommandBase {
                        "-SyslogFormat", "RFC-3164",
                        "-DNSClientIP", $client_ip,
                        "-DNSServerIP", $server_ip,
-                       "-QueryNamePattern", $([Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($pattern))),
+                       "-QueryNamePattern", $([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($pattern))),
                        "-QueryNamePatternEncoded",
                        "-Count", [string]$numof_queries)
             StartProcess "powershell.exe" $cargs
@@ -4585,7 +4585,7 @@ class BindLogs : CommandBase {
                        "-SyslogFormat", "RFC-3164",
                        "-DNSClientIP", $client_ip,
                        "-DNSServerIP", $server_ip,
-                       "-QueryNamePattern", $([Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes("?{12}.${domain}"))),
+                       "-QueryNamePattern", $([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("?{12}.${domain}"))),
                        "-QueryNamePatternEncoded",
                        "-Count", [string]$numof_queries)
             StartProcess "powershell.exe" $cargs
@@ -4645,7 +4645,7 @@ class BindLogs : CommandBase {
                        "-SyslogFormat", "RFC-3164",
                        "-DNSClientIP", $client_ip,
                        "-DNSServerIP", $server_ip,
-                       "-QueryNamePattern", $([Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes("?{16}.(com|info|net|org|biz)"))),
+                       "-QueryNamePattern", $([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("?{16}.(com|info|net|org|biz)"))),
                        "-QueryNamePatternEncoded",
                        "-Count", [string]$numof_queries)            
             if ($nxdomain) {
