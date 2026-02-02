@@ -641,28 +641,44 @@ class PropsCortexHttpCollector {
     }
 
     [object]Import([PSCustomObject]$props) {
-        $this.Init(@{
-            "api_url" = $props.api_url
-            "compression" = $props.compression
-            "api_key_raw" = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR(
+        $api_key_raw = $null
+        if (![string]::IsNullOrEmpty($props.api_key_raw)) {
+            $api_key_raw = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR(
                 [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR(
                     $(ConvertTo-SecureString -String ([string]$props.api_key_raw))
                 )
             )
-            "api_key_cef" = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR(
+        }
+        $api_key_cef = $null
+        if (![string]::IsNullOrEmpty($props.api_key_cef)) {
+            $api_key_cef = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR(
                 [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR(
                     $(ConvertTo-SecureString -String ([string]$props.api_key_cef))
                 )
             )
+        }
+        $this.Init(@{
+            "api_url" = $props.api_url
+            "compression" = $props.compression
+            "api_key_raw" = $api_key_raw
+            "api_key_cef" = $api_key_cef
         })
         return $this
     }
 
     [hashtable]Export() {
+        $api_key_raw = $null
+        if (![string]::IsNullOrEmpty($this.api_key_raw)) {
+            $api_key_raw = $(ConvertTo-SecureString -string ([string]$this.api_key_raw) -AsPlainText -Force | ConvertFrom-SecureString)
+        }
+        $api_key_cef = $null
+        if (![string]::IsNullOrEmpty($this.api_key_cef)) {
+            $api_key_cef = $(ConvertTo-SecureString -string ([string]$this.api_key_cef) -AsPlainText -Force | ConvertFrom-SecureString)
+        }
         return @{
             "api_url" = $this.api_url
-            "api_key_raw" = $(ConvertTo-SecureString -string ([string]$this.api_key_raw) -AsPlainText -Force | ConvertFrom-SecureString)
-            "api_key_cef" = $(ConvertTo-SecureString -string ([string]$this.api_key_cef) -AsPlainText -Force | ConvertFrom-SecureString)
+            "api_key_raw" = $api_key_raw
+            "api_key_cef" = $api_key_cef
             "compression" = $this.compression
         }
     }
