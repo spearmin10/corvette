@@ -4878,16 +4878,16 @@ class ServerSyslogToHec : CommandBase {
         if (AskYesNo "Are you sure you want to run?") {
             $cargs = @(
                 $script_file,
-                "--syslog_protocol", $syslog_protocol.ToLower(),
-                "--syslog_port", $syslog_port,
-                "--hec_api_url", $hec.api_url,
-                "--hec_api_key_raw", $hec.api_key_raw,
-                "--hec_api_key_cef", $hec.api_key_cef,
-                "--print_logs",
-                "--ignore_non_syslog_message"
+                "--syslog-protocol", $syslog_protocol.ToLower(),
+                "--syslog-port", $syslog_port,
+                "--hec-api-url", $hec.api_url,
+                "--hec-api-key-raw", $hec.api_key_raw,
+                "--hec-api-key-cef", $hec.api_key_cef,
+                "--print-logs",
+                "--ignore-non-syslog-message"
             )
             if ($hec.compression) {
-                $cargs += "--hec_compression"
+                $cargs += "--hec-compression"
             }
             StartProcess $this.python_exe $cargs
         }
