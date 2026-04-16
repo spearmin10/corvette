@@ -4067,6 +4067,7 @@ class PaloAltoNGFWLogs : CommandBase {
             Write-Host "************************************"
             Write-Host " 1) Simulate port scan"
             Write-Host " 2) Send a threat log"
+            Write-Host " 3) Send a URL log"
             Write-Host " q) Exit"
 
             try {
@@ -4078,6 +4079,9 @@ class PaloAltoNGFWLogs : CommandBase {
                         }
                         "2" {
                             $this.RunSendingThreatLog()
+                        }
+                        "3" {
+                            $this.RunSendingUrlLog()
                         }
                         "q" {
                             return
@@ -4440,6 +4444,137 @@ class PaloAltoNGFWLogs : CommandBase {
                        "-CEFDeviceVersion", "11.1.1",
                        "-CEFEventClassID", $log_params["threat_name"],
                        "-CEFName", "THREAT",
+                       "-CEFSeverity", "4",
+                       "-CEFExtension", $cef_extention,
+                       "-ShowLogs")
+            StartProcess "powershell.exe" $cargs
+        }
+    }
+
+    [void]RunSendingUrlLog() {
+        $file_name = "syslog-custom.ps1"
+        $scripts_dir = BuildFullPath $this.props.home_dir ".\scripts"
+        $script_file = BuildFullPath $scripts_dir $file_name
+
+        if (!(IsDirectory $scripts_dir)) {
+            New-Item -ItemType Directory -Force -Path $scripts_dir
+        }
+
+        $url = "https://raw.githubusercontent.com/spearmin10/corvette/main/bin/$($file_name)"
+        DownloadFile $url $script_file
+
+        Write-Host ""
+        Write-Host "### Enter the syslog configuration"
+        $syslog = $this.props.SelectDefaultSyslogServer()
+        if ($null -eq $syslog) {
+            $syslog = [PropsSyslog]::New()
+            $syslog.host = ReadInput "Syslog Host" `
+                                     $syslog.host `
+                                     @("^.+$")
+            $syslog.port = ReadInput "Syslog Port" `
+                                     $syslog.port `
+                                     @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
+                                     "Please retype a valid port number"
+            $syslog.protocol = ReadInput "Syslog Protocol" `
+                                         $syslog.protocol `
+                                         @("^UDP|TCP|udp|tcp$") `
+                                         "Please retype a valid protocol"
+        }
+        Write-Host ""
+        Write-Host "### Enter the URL log parameters"
+        $url = ReadInput "URL" "" @("^https?://.+$")
+        $url = [System.Uri]$url
+        $client_ip = ReadInput "Client IP" `
+                               ""`
+                               @($script:PATTERN_IPV4_ADDR) `
+                               "Please retype a valid IPv4 address"
+        $server_ip = ReadInput "Server IP" `
+                               "" `
+                               @($script:PATTERN_IPV4_ADDR) `
+                               "Please retype a valid IPv4 address"
+        
+        if ($url.Scheme -eq "http") {
+            $app = "web-browsing"
+        } else {
+            $app = "ssl"
+        }
+
+        $log_params = @{
+            __firewall_type="firewall.url"
+            __timestamp="$($(Get-Date).ToUniversalTime().ToString("MMM dd yyyy HH:mm:ss", [System.Globalization.CultureInfo]::CreateSpecificCulture("en-US"))) GMT"
+            __tz=$(Get-Date $(Get-Date).ToUniversalTime() -Format "yyyy-MM-ddTHH:mm:ss.fff+00:00")
+            action="allow"
+            app=$app
+            app_category=""
+            app_sub_category=""
+            dest_device_category=""
+            dest_device_mac=""
+            dest_device_model=""
+            dest_device_osfamily=""
+            dest_device_osversion=""
+            dest_device_profile=""
+            dest_device_vendor=""
+            dest_ip=$server_ip
+            dest_port=$url.Port
+            dest_user=""
+            direction="client-to-server"
+            from_zone="slp"
+            http2_connection=0
+            http_headers=""
+            inbound_if="ethernet1/2"
+            log_source_id="123456787654321"
+            log_source_name="panw-ngfw"
+            log_time="$($(Get-Date).ToUniversalTime().ToString("MMM dd yyyy HH:mm:ss", [System.Globalization.CultureInfo]::CreateSpecificCulture("en-US"))) GMT"
+            log_type="THREAT"  # not URL
+            nat_dest="0.0.0.0"
+            nat_dest_port="0"
+            nat_source="0.0.0.0"
+            nat_source_port="0"
+            outbound_if="ethernet1/1"
+            pcap_id=0
+            protocol="tcp"
+            rule_matched="Any"
+            rule_matched_uuid="fa85ca6b-e103-4c9d-bdef-73ae824e4282"
+            sequence_no=[DateTimeOffset]::Now.ToUnixTimeSeconds()
+            session_id=([DateTimeOffset]::Now.ToUnixTimeSeconds() * 123)
+            severity="1"
+            source_device_category=""
+            source_device_mac=""
+            source_device_model=""
+            source_device_osfamily=""
+            source_device_osversion=""
+            source_device_profile=""
+            source_device_vendor=""
+            source_ip=$client_ip
+            source_port=$(Get-Random -Minimum 10000 -Maximum 65534)
+            source_user=""
+            subtype="url"
+            threat_category=""
+            threat_id=""
+            threat_name=""
+            time_generated="$($(Get-Date).ToUniversalTime().ToString("MMM dd yyyy HH:mm:ss", [System.Globalization.CultureInfo]::CreateSpecificCulture("en-US"))) GMT"
+            to_zone="slp"
+            url_category=""
+            url_category_list=""
+            vsys="vsys1"
+            vsys_name=""
+            xff=""
+            xff_ip=""
+        }
+
+        $cef_extention = ConvertTo-Json -Compress $log_params
+        $cef_extention = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($cef_extention))
+
+        if (AskYesNo "Are you sure you want to run?") {
+            $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
+                       "-SyslogHost", $syslog.host,
+                       "-SyslogPort", $syslog.port,
+                       "-SyslogProtocol", $syslog.protocol.ToUpper(),
+                       "-CEFVendor", "PANW",
+                       "-CEFDeviceProduct", "NGFW_CEF",
+                       "-CEFDeviceVersion", "11.1.1",
+                       "-CEFEventClassID", "end",
+                       "-CEFName", "URL",
                        "-CEFSeverity", "4",
                        "-CEFExtension", $cef_extention,
                        "-ShowLogs")
