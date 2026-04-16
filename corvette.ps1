@@ -4495,14 +4495,14 @@ class PaloAltoNGFWLogs : CommandBase {
         
         if ($uri_obj.Scheme -eq "http") {
             $app = "web-browsing"
-            $http_method = "get"
-            $uri = "$($uri_obj.Scheme)://$($uri_obj.Authority)$($uri_obj.AbsolutePath)"
-            $user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
-            $content_type = "text/html; charset=UTF-8"
+            $uri = "$($uri_obj.Scheme)://$($uri_obj.Authority)$($uri_obj.AbsolutePath)"            
+            $http_method = ReadInput "Method" "get" @("^.+$")
+            $user_agent = ReadInput "User-Agent" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36" @("^.+$")
+            $content_type = ReadInput "Content-Type" "text/html; charset=UTF-8" @("^.+$")
         } else {
             $app = "ssl"
-            $http_method = "connect"
             $uri = "$($uri_obj.Authority)/"
+            $http_method = "connect"
             $user_agent = ""
             $content_type = ""
         }
@@ -4529,7 +4529,7 @@ class PaloAltoNGFWLogs : CommandBase {
             from_zone="slp"
             http2_connection=0
             http_headers=""
-            http_method=$http_method
+            http_method=$http_method.ToLower()
             inbound_if="ethernet1/2"
             log_source_id="123456787654321"
             log_source_name="panw-ngfw"
