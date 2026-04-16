@@ -4482,8 +4482,8 @@ class PaloAltoNGFWLogs : CommandBase {
         }
         Write-Host ""
         Write-Host "### Enter the URL log parameters"
-        $url = ReadInput "URL" "" @("^https?://.+$")
-        $url = [System.Uri]$url
+        $uri_str = ReadInput "URL" "" @("^https?://.+$")
+        $uri_obj = [System.Uri]$uri_str
         $client_ip = ReadInput "Client IP" `
                                ""`
                                @($script:PATTERN_IPV4_ADDR) `
@@ -4493,12 +4493,19 @@ class PaloAltoNGFWLogs : CommandBase {
                                @($script:PATTERN_IPV4_ADDR) `
                                "Please retype a valid IPv4 address"
         
-        if ($url.Scheme -eq "http") {
+        if ($uri_obj.Scheme -eq "http") {
             $app = "web-browsing"
+            $http_method = "get"
+            $uri = "$($uri_obj.Scheme)://$($uri_obj.Authority)$($uri_obj.AbsolutePath)"
+            $user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
+            $content_type = "text/html; charset=UTF-8"
         } else {
             $app = "ssl"
+            $http_method = "connect"
+            $uri = "$($uri_obj.Authority)/"
+            $user_agent = ""
+            $content_type = ""
         }
-
         $log_params = @{
             __firewall_type="firewall.url"
             __timestamp="$($(Get-Date).ToUniversalTime().ToString("MMM dd yyyy HH:mm:ss", [System.Globalization.CultureInfo]::CreateSpecificCulture("en-US"))) GMT"
@@ -4507,6 +4514,7 @@ class PaloAltoNGFWLogs : CommandBase {
             app=$app
             app_category=""
             app_sub_category=""
+            content_type=$content_type
             dest_device_category=""
             dest_device_mac=""
             dest_device_model=""
@@ -4521,6 +4529,7 @@ class PaloAltoNGFWLogs : CommandBase {
             from_zone="slp"
             http2_connection=0
             http_headers=""
+            http_method=$http_method
             inbound_if="ethernet1/2"
             log_source_id="123456787654321"
             log_source_name="panw-ngfw"
@@ -4533,6 +4542,7 @@ class PaloAltoNGFWLogs : CommandBase {
             outbound_if="ethernet1/1"
             pcap_id=0
             protocol="tcp"
+            referer=""
             rule_matched="Any"
             rule_matched_uuid="fa85ca6b-e103-4c9d-bdef-73ae824e4282"
             sequence_no=[DateTimeOffset]::Now.ToUnixTimeSeconds()
@@ -4554,8 +4564,10 @@ class PaloAltoNGFWLogs : CommandBase {
             threat_name=""
             time_generated="$($(Get-Date).ToUniversalTime().ToString("MMM dd yyyy HH:mm:ss", [System.Globalization.CultureInfo]::CreateSpecificCulture("en-US"))) GMT"
             to_zone="slp"
+            uri=$uri
             url_category=""
             url_category_list=""
+            user_agent=$user_agent
             vsys="vsys1"
             vsys_name=""
             xff=""
