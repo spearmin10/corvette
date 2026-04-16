@@ -94,7 +94,6 @@ class UdpSyslog : Syslog {
         : base($syslog_format, $syslog_facility, $syslog_severity) {
         $this.socket = New-Object System.Net.Sockets.UdpClient($sylog_host, $syslog_port)
         $this.socket.DontFragment = $true
-        $this.socket.Client.SendBufferSize = 65535
     }
 
     [void]Send([string]$log) {
