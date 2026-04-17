@@ -1707,7 +1707,7 @@ class PsExec : CommandBase {
             
             do {
                 StartProcess $exe_name $cargs
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -1767,7 +1767,7 @@ if (`$sess -ne `$null) {
                 } else {
                     StartEncodedScript $script_pssess -no_exit $true
                 }
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
 
             <#
             $run_configure = !$trusted -And (AskYesNo "Do you want to configure the local PsRemoting?")
@@ -2148,7 +2148,7 @@ class IptgenDnsTunneling : IptgenBase {
         if (AskYesNo "Are you sure you want to proceed?") {
             do {
                 $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -2187,7 +2187,7 @@ class IptgenDnsRandomQuery : IptgenBase {
         if (AskYesNo "Are you sure you want to proceed?") {
             do {
                 $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -2235,7 +2235,7 @@ class IptgenSmtpFileUpload : IptgenBase {
         if (AskYesNo "Are you sure you want to proceed?") {
             do {
                 $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -2283,7 +2283,7 @@ class IptgenFtpFileUpload : IptgenBase {
         if (AskYesNo "Are you sure you want to proceed?") {
             do {
                 $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -2342,7 +2342,7 @@ class IptgenHttpFileUpload : IptgenBase {
             }
             do {
               $this.Run($interface.InterfaceAlias, $this.iptgen_json, $response_interval)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -2395,7 +2395,7 @@ class IptgenHttpFileDownload : IptgenBase {
             }
             do {
                 $this.Run($interface.InterfaceAlias, $iptgen_json_path, $response_interval)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 
@@ -2560,7 +2560,7 @@ class IptgenHttpUnauthorizedLoginAttempts : IptgenBase {
         if (AskYesNo "Are you sure you want to proceed?") {
             do {
                 $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -2627,7 +2627,7 @@ class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
         if (AskYesNo "Are you sure you want to proceed?") {
             do {
                 $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -2693,7 +2693,7 @@ class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
         if (AskYesNo "Are you sure you want to proceed?") {
             do {
                 $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -2747,7 +2747,7 @@ class IptgenKerberosUnauthorizedLoginAttempts : IptgenBase {
         if (AskYesNo "Are you sure you want to proceed?") {
             do {
                 $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -2792,7 +2792,7 @@ class IptgenKerberosUserEnumerationBruteForce : IptgenBase {
         if (AskYesNo "Are you sure you want to proceed?") {
             do {
                 $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -2910,7 +2910,7 @@ class RsgcliDnsTunneling : RsgcliBase {
         if (AskYesNo "Are you sure you want to proceed?") {
             do {
                 $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -2945,7 +2945,7 @@ class RsgcliDnsRandomQuery : RsgcliBase {
         if (AskYesNo "Are you sure you want to proceed?") {
             do {
                 $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -2990,7 +2990,7 @@ class RsgcliSmtpFileUpload : RsgcliBase {
         if (AskYesNo "Are you sure you want to proceed?") {
             do {
                 $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -3035,7 +3035,7 @@ class RsgcliFtpFileUpload : RsgcliBase {
         if (AskYesNo "Are you sure you want to proceed?") {
             do {
                 $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -3078,7 +3078,7 @@ class RsgcliHttpFileUpload : RsgcliBase {
         if (AskYesNo "Are you sure you want to proceed?") {
             do {
                 $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -3114,7 +3114,7 @@ class RsgcliHttpFileDownload : RsgcliBase {
             [IO.File]::WriteAllText($rsgcli_json_path, $rsgcli_json_data)
             do {
                 $this.Run($rsgsvr.host, $rsgsvr.port, $rsgcli_json_path)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 
@@ -3252,7 +3252,7 @@ class RsgcliHttpUnauthorizedLoginAttempts : RsgcliBase {
         if (AskYesNo "Are you sure you want to proceed?") {
             do {
                 $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -3316,7 +3316,7 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
         if (AskYesNo "Are you sure you want to proceed?") {
             do {
                 $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -3381,7 +3381,7 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
         if (AskYesNo "Are you sure you want to proceed?") {
             do {
                 $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -3433,7 +3433,7 @@ class RsgcliKerberosUnauthorizedLoginAttempts : RsgcliBase {
         if (AskYesNo "Are you sure you want to proceed?") {
             do {
                 $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -3476,7 +3476,7 @@ class RsgcliKerberosUserEnumerationBruteForce : RsgcliBase {
         if (AskYesNo "Are you sure you want to proceed?") {
             do {
                 $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -3643,7 +3643,7 @@ class FortigateLogs : CommandBase {
                        "-DestinationIP", $destination_ip)
             do {
                 StartProcess "powershell.exe" $cargs
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 
@@ -3708,7 +3708,7 @@ class FortigateLogs : CommandBase {
                        "-NumberOfRecords", [string]$numof_session)
             do {
                 StartProcess "powershell.exe" $cargs
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 
@@ -3780,7 +3780,7 @@ class FortigateLogs : CommandBase {
                        "-LogType", $log_type)
             do {
                 StartProcess "powershell.exe" $cargs
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -3871,7 +3871,7 @@ class CheckPointLogs : CommandBase {
                        "-DestinationIP", $destination_ip)
             do {
                 StartProcess "powershell.exe" $cargs
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -3965,7 +3965,7 @@ class CiscoLogs : CommandBase {
                        "-DestinationIP", $destination_ip)
             do {
                 StartProcess "powershell.exe" $cargs
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 
@@ -4029,7 +4029,7 @@ class CiscoLogs : CommandBase {
                        "-NumberOfRecords", [string]$numof_session)
             do {
                 StartProcess "powershell.exe" $cargs
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 
@@ -4116,7 +4116,7 @@ class CiscoLogs : CommandBase {
             }
             do {
                 StartProcess "powershell.exe" $cargs
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -4211,7 +4211,7 @@ class PaloAltoNGFWLogs : CommandBase {
                        "-DestinationIP", $destination_ip)
             do {
                 StartProcess "powershell.exe" $cargs
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 
@@ -4515,7 +4515,7 @@ class PaloAltoNGFWLogs : CommandBase {
                        "-ShowLogs")
             do {
                 StartProcess "powershell.exe" $cargs
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 
@@ -4660,7 +4660,7 @@ class PaloAltoNGFWLogs : CommandBase {
                        "-ShowLogs")
             do {
                 StartProcess "powershell.exe" $cargs
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -4763,7 +4763,7 @@ class BindLogs : CommandBase {
                        "-Count", [string]$numof_queries)
             do {
                 StartProcess "powershell.exe" $cargs
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 
@@ -4825,7 +4825,7 @@ class BindLogs : CommandBase {
                        "-Count", [string]$numof_queries)
             do {
                 StartProcess "powershell.exe" $cargs
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 
@@ -4890,7 +4890,7 @@ class BindLogs : CommandBase {
             }
             do {
                 StartProcess "powershell.exe" $cargs
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
@@ -4972,7 +4972,7 @@ class NetflowLogs : CommandBase {
                        "-ScanSubnet", $scan_subnet)
             do {
                 StartProcess "powershell.exe" $cargs
-            } until(AskYesNo "Run again?" "N")
+            } until(!(AskYesNo "Run again?" "N"))
         }
     }
 }
