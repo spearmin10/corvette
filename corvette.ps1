@@ -4495,7 +4495,7 @@ class PaloAltoNGFWLogs : CommandBase {
         
         if ($uri_obj.Scheme -eq "http") {
             $app = "web-browsing"
-            $uri = "$($uri_obj.Scheme)://$($uri_obj.Authority)$($uri_obj.AbsolutePath)"            
+            $uri = "$($uri_obj.Authority)$($uri_obj.AbsolutePath)"
             $http_method = ReadInput "Method" "get"
             $user_agent = ReadInput "User-Agent" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
             $content_type = ReadInput "Content-Type" "text/html; charset=UTF-8"
