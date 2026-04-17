@@ -1686,7 +1686,7 @@ class PsExec : CommandBase {
         $cmdline = ReadInput "Remote Command Line" "" @("^.+$")
         $runas_et = AskYesNo "Run with the account's elevated token" "N"
 
-        if (AskYesNo "Are you sure you want to run?") {
+        if (AskYesNo "Are you sure you want to proceed?") {
             $exe_dir = [IO.Path]::GetDirectoryName($this.psexec_exe)
             $exe_name = [IO.Path]::GetFileName($this.psexec_exe)
 
@@ -1704,7 +1704,10 @@ class PsExec : CommandBase {
                 $cargs += @("-p", $password)
             }
             $cargs += SplitCommandLine $cmdline
-            StartProcess $exe_name $cargs
+            
+            do {
+                StartProcess $exe_name $cargs
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -1719,7 +1722,7 @@ class PsRemoting : CommandBase {
         $hostname = ReadInput "Remote Host Name" "" @("^.+$")
         $userid = ReadInput "Remote User ID" "" @("^.+$")
 
-        if (AskYesNo "Are you sure you want to run?") {
+        if (AskYesNo "Are you sure you want to proceed?") {
             $q_hostname = Quote $hostname
             $q_userid = Quote $userid
             $script_configure =
@@ -1749,20 +1752,23 @@ if (`$sess -ne `$null) {
     Enter-PSSession -Session `$sess
 }
 "@
-            $trusted = $false
-            $status = Get-Service -Name WinRM -ErrorAction SilentlyContinue
-            if ($status -and $status.Status -eq "Running") {
-                if (Test-Path WSMan:\localhost\Client\TrustedHosts) {
-                    $trusted_hosts = (Get-Item WSMan:\localhost\Client\TrustedHosts).Value.ToLower().Split(",")
-                    $trusted = $trusted_hosts -contains "*" -Or $trusted_hosts -contains $hostname.ToLower()
+            do {
+                $trusted = $false
+                $status = Get-Service -Name WinRM -ErrorAction SilentlyContinue
+                if ($status -and $status.Status -eq "Running") {
+                    if (Test-Path WSMan:\localhost\Client\TrustedHosts) {
+                        $trusted_hosts = (Get-Item WSMan:\localhost\Client\TrustedHosts).Value.ToLower().Split(",")
+                        $trusted = $trusted_hosts -contains "*" -Or $trusted_hosts -contains $hostname.ToLower()
+                    }
                 }
-            }
-            if (!$trusted -And (AskYesNo "Do you want to configure the local PsRemoting?")) {
-                $script = $script_configure, $script_pssess -join "`r`n"
-                StartEncodedScript $script -no_exit $true -run_as $true
-            } else {
-                StartEncodedScript $script_pssess -no_exit $true
-            }
+                if (!$trusted -And (AskYesNo "Do you want to configure the local PsRemoting?")) {
+                    $script = $script_configure, $script_pssess -join "`r`n"
+                    StartEncodedScript $script -no_exit $true -run_as $true
+                } else {
+                    StartEncodedScript $script_pssess -no_exit $true
+                }
+            } until(AskYesNo "Run again?" "N")
+
             <#
             $run_configure = !$trusted -And (AskYesNo "Do you want to configure the local PsRemoting?")
             $run_as_admin = AskYesNo "Do you want to run this with admin rights?"
@@ -2139,8 +2145,10 @@ class IptgenDnsTunneling : IptgenBase {
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
         $Env:domain = $domain
-        if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+        if (AskYesNo "Are you sure you want to proceed?") {
+            do {
+                $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -2176,8 +2184,10 @@ class IptgenDnsRandomQuery : IptgenBase {
 
         $Env:client_ip = $client_ip
         $Env:server_ip = $server_ip
-        if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+        if (AskYesNo "Are you sure you want to proceed?") {
+            do {
+                $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -2222,8 +2232,10 @@ class IptgenSmtpFileUpload : IptgenBase {
         $Env:upload_filename = $upload_filename
         $Env:upload_filesize = $upload_filesize
         $Env:repeat_count = $repeat_count
-        if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+        if (AskYesNo "Are you sure you want to proceed?") {
+            do {
+                $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -2268,8 +2280,10 @@ class IptgenFtpFileUpload : IptgenBase {
         $Env:upload_filename = $upload_filename
         $Env:upload_filesize = $upload_filesize
         $Env:repeat_count = $repeat_count
-        if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+        if (AskYesNo "Are you sure you want to proceed?") {
+            do {
+                $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -2321,12 +2335,14 @@ class IptgenHttpFileUpload : IptgenBase {
         $Env:upload_filesize = $upload_filesize
         $Env:repeat_count = $repeat_count
 
-        if (AskYesNo "Are you sure you want to run?") {
+        if (AskYesNo "Are you sure you want to proceed?") {
             $response_interval = 10
             if ($this.https) {
                 $response_interval = 0
             }
-            $this.Run($interface.InterfaceAlias, $this.iptgen_json, $response_interval)
+            do {
+              $this.Run($interface.InterfaceAlias, $this.iptgen_json, $response_interval)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -2370,14 +2386,16 @@ class IptgenHttpFileDownload : IptgenBase {
         $Env:request_path = $request_path
         $Env:response_content_type = $response_content_type
 
-        if (AskYesNo "Are you sure you want to run?") {
+        if (AskYesNo "Are you sure you want to proceed?") {
             [IO.File]::WriteAllText($iptgen_json_path, $iptgen_json_data)
 
             $response_interval = 10
             if ($this.https) {
                 $response_interval = 0
             }
-            $this.Run($interface.InterfaceAlias, $iptgen_json_path, $response_interval)
+            do {
+                $this.Run($interface.InterfaceAlias, $iptgen_json_path, $response_interval)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 
@@ -2539,8 +2557,10 @@ class IptgenHttpUnauthorizedLoginAttempts : IptgenBase {
         $Env:server_ip = $server_ip
         $Env:attempt_count = $numof_attempts
 
-        if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+        if (AskYesNo "Are you sure you want to proceed?") {
+            do {
+                $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -2604,8 +2624,10 @@ class IptgenSmbNtlmUnauthorizedLoginAttempts : IptgenBase {
             }
             $Env:user_name_max14 = $username
         }
-        if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+        if (AskYesNo "Are you sure you want to proceed?") {
+            do {
+                $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -2668,8 +2690,10 @@ class IptgenLdapNtlmUnauthorizedLoginAttempts : IptgenBase {
             }
             $Env:user_name_max14 = $username
         }
-        if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+        if (AskYesNo "Are you sure you want to proceed?") {
+            do {
+                $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -2720,8 +2744,10 @@ class IptgenKerberosUnauthorizedLoginAttempts : IptgenBase {
                                   "Please retype a user name (max 14 charactors)"
             $Env:user_name = $username
         }
-        if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+        if (AskYesNo "Are you sure you want to proceed?") {
+            do {
+                $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -2763,8 +2789,10 @@ class IptgenKerberosUserEnumerationBruteForce : IptgenBase {
         $Env:domain_name = $domain_name
         $Env:attempt_count = $numof_attempts
 
-        if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+        if (AskYesNo "Are you sure you want to proceed?") {
+            do {
+                $this.Run($interface.InterfaceAlias, $this.iptgen_json, 10)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -2879,8 +2907,10 @@ class RsgcliDnsTunneling : RsgcliBase {
         $domain = ReadInput "DNS tunnel domain" $null @("^.+$")
 
         $Env:domain = $domain
-        if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
+        if (AskYesNo "Are you sure you want to proceed?") {
+            do {
+                $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -2912,8 +2942,10 @@ class RsgcliDnsRandomQuery : RsgcliBase {
                                      @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                      "Please retype a valid port number"
         }
-        if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
+        if (AskYesNo "Are you sure you want to proceed?") {
+            do {
+                $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -2955,8 +2987,10 @@ class RsgcliSmtpFileUpload : RsgcliBase {
         $Env:upload_filename = $upload_filename
         $Env:upload_filesize = $upload_filesize
         $Env:repeat_count = $repeat_count
-        if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
+        if (AskYesNo "Are you sure you want to proceed?") {
+            do {
+                $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -2998,8 +3032,10 @@ class RsgcliFtpFileUpload : RsgcliBase {
         $Env:upload_filename = $upload_filename
         $Env:upload_filesize = $upload_filesize
         $Env:repeat_count = $repeat_count
-        if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
+        if (AskYesNo "Are you sure you want to proceed?") {
+            do {
+                $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -3039,8 +3075,10 @@ class RsgcliHttpFileUpload : RsgcliBase {
 
         $Env:upload_filesize = $upload_filesize
         $Env:repeat_count = $repeat_count
-        if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
+        if (AskYesNo "Are you sure you want to proceed?") {
+            do {
+                $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -3072,9 +3110,11 @@ class RsgcliHttpFileDownload : RsgcliBase {
         $Env:request_path = $request_path
         $Env:response_content_type = $response_content_type
 
-        if (AskYesNo "Are you sure you want to run?") {
+        if (AskYesNo "Are you sure you want to proceed?") {
             [IO.File]::WriteAllText($rsgcli_json_path, $rsgcli_json_data)
-            $this.Run($rsgsvr.host, $rsgsvr.port, $rsgcli_json_path)
+            do {
+                $this.Run($rsgsvr.host, $rsgsvr.port, $rsgcli_json_path)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 
@@ -3209,8 +3249,10 @@ class RsgcliHttpUnauthorizedLoginAttempts : RsgcliBase {
         }
         $Env:attempt_count = 10000
 
-        if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
+        if (AskYesNo "Are you sure you want to proceed?") {
+            do {
+                $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -3271,8 +3313,10 @@ class RsgcliSmbNtlmUnauthorizedLoginAttempts : RsgcliBase {
             }
             $Env:user_name_max14 = $username
         }
-        if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
+        if (AskYesNo "Are you sure you want to proceed?") {
+            do {
+                $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -3334,8 +3378,10 @@ class RsgcliLdapNtlmUnauthorizedLoginAttempts : RsgcliBase {
             }
             $Env:user_name_max14 = $username
         }
-        if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
+        if (AskYesNo "Are you sure you want to proceed?") {
+            do {
+                $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -3384,8 +3430,10 @@ class RsgcliKerberosUnauthorizedLoginAttempts : RsgcliBase {
 
             $Env:user_name = $username
         }
-        if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
+        if (AskYesNo "Are you sure you want to proceed?") {
+            do {
+                $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -3425,8 +3473,10 @@ class RsgcliKerberosUserEnumerationBruteForce : RsgcliBase {
         $Env:domain_name = $domain_name
         $Env:attempt_count = $numof_attempts
 
-        if (AskYesNo "Are you sure you want to run?") {
-            $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
+        if (AskYesNo "Are you sure you want to proceed?") {
+            do {
+                $this.Run($rsgsvr.host, $rsgsvr.port, $this.rsgcli_json)
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -3584,14 +3634,16 @@ class FortigateLogs : CommandBase {
                                     @($script:PATTERN_IPV4_ADDR) `
                                     "Please retype a valid IPv4 address"
 
-        if (AskYesNo "Are you sure you want to run?") {
+        if (AskYesNo "Are you sure you want to proceed?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog.host,
                        "-SyslogPort", $syslog.port,
                        "-SyslogProtocol", $syslog.protocol.ToUpper(),
                        "-SourceIP", $source_ip,
                        "-DestinationIP", $destination_ip)
-            StartProcess "powershell.exe" $cargs
+            do {
+                StartProcess "powershell.exe" $cargs
+            } until(AskYesNo "Run again?" "N")
         }
     }
 
@@ -3644,7 +3696,7 @@ class FortigateLogs : CommandBase {
                                                @("^[0-9]+$") `
                                                "Please retype a valid number")
 
-        if (AskYesNo "Are you sure you want to run?") {
+        if (AskYesNo "Are you sure you want to proceed?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog.host,
                        "-SyslogPort", $syslog.port,
@@ -3654,7 +3706,9 @@ class FortigateLogs : CommandBase {
                        "-SessionType", $session_type,
                        "-TotalUploadSize", [string]$upload_size,
                        "-NumberOfRecords", [string]$numof_session)
-            StartProcess "powershell.exe" $cargs
+            do {
+                StartProcess "powershell.exe" $cargs
+            } until(AskYesNo "Run again?" "N")
         }
     }
 
@@ -3714,7 +3768,7 @@ class FortigateLogs : CommandBase {
                 $log_type = "NTLM-auth:failure"
             }
         }
-        if (AskYesNo "Are you sure you want to run?") {
+        if (AskYesNo "Are you sure you want to proceed?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog.host,
                        "-SyslogPort", $syslog.port,
@@ -3724,7 +3778,9 @@ class FortigateLogs : CommandBase {
                        "-Domain", $domain,
                        "-Count", [string]$numof_logs,
                        "-LogType", $log_type)
-            StartProcess "powershell.exe" $cargs
+            do {
+                StartProcess "powershell.exe" $cargs
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -3805,7 +3861,7 @@ class CheckPointLogs : CommandBase {
                          "HTTP" `
                          @("^.+$")
 
-        if (AskYesNo "Are you sure you want to run?") {
+        if (AskYesNo "Are you sure you want to proceed?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog.host,
                        "-SyslogPort", $syslog.port,
@@ -3813,7 +3869,9 @@ class CheckPointLogs : CommandBase {
                        "-App", $app,
                        "-SourceIP", $source_ip,
                        "-DestinationIP", $destination_ip)
-            StartProcess "powershell.exe" $cargs
+            do {
+                StartProcess "powershell.exe" $cargs
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -3898,14 +3956,16 @@ class CiscoLogs : CommandBase {
                                     @($script:PATTERN_IPV4_ADDR) `
                                     "Please retype a valid IPv4 address"
 
-        if (AskYesNo "Are you sure you want to run?") {
+        if (AskYesNo "Are you sure you want to proceed?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog.host,
                        "-SyslogPort", $syslog.port,
                        "-SyslogProtocol", $syslog.protocol.ToUpper(),
                        "-SourceIP", $source_ip,
                        "-DestinationIP", $destination_ip)
-            StartProcess "powershell.exe" $cargs
+            do {
+                StartProcess "powershell.exe" $cargs
+            } until(AskYesNo "Run again?" "N")
         }
     }
 
@@ -3957,7 +4017,7 @@ class CiscoLogs : CommandBase {
                                                "100" `
                                                @("^[0-9]+$") `
                                                "Please retype a valid number")
-        if (AskYesNo "Are you sure you want to run?") {
+        if (AskYesNo "Are you sure you want to proceed?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog.host,
                        "-SyslogPort", $syslog.port,
@@ -3967,7 +4027,9 @@ class CiscoLogs : CommandBase {
                        "-DestinationPort", $destination_port,
                        "-TotalUploadSize", [string]$upload_size,
                        "-NumberOfRecords", [string]$numof_session)
-            StartProcess "powershell.exe" $cargs
+            do {
+                StartProcess "powershell.exe" $cargs
+            } until(AskYesNo "Run again?" "N")
         }
     }
 
@@ -4039,7 +4101,7 @@ class CiscoLogs : CommandBase {
                                             "Please retype a valid number")
         $group_policy = "group"
 
-        if (AskYesNo "Are you sure you want to run?") {
+        if (AskYesNo "Are you sure you want to proceed?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog.host,
                        "-SyslogPort", $syslog.port,
@@ -4052,7 +4114,9 @@ class CiscoLogs : CommandBase {
             if (![string]::IsNullOrEmpty($user_id)) {
                 $cargs += @("-UserID", $user_id)
             }
-            StartProcess "powershell.exe" $cargs
+            do {
+                StartProcess "powershell.exe" $cargs
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -4138,14 +4202,16 @@ class PaloAltoNGFWLogs : CommandBase {
                                     @($script:PATTERN_IPV4_ADDR) `
                                     "Please retype a valid IPv4 address"
 
-        if (AskYesNo "Are you sure you want to run?") {
+        if (AskYesNo "Are you sure you want to proceed?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog.host,
                        "-SyslogPort", $syslog.port,
                        "-SyslogProtocol", $syslog.protocol.ToUpper(),
                        "-SourceIP", $source_ip,
                        "-DestinationIP", $destination_ip)
-            StartProcess "powershell.exe" $cargs
+            do {
+                StartProcess "powershell.exe" $cargs
+            } until(AskYesNo "Run again?" "N")
         }
     }
 
@@ -4434,7 +4500,7 @@ class PaloAltoNGFWLogs : CommandBase {
         $cef_extention = ConvertTo-Json -Compress $log_params
         $cef_extention = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($cef_extention))
 
-        if (AskYesNo "Are you sure you want to run?") {
+        if (AskYesNo "Are you sure you want to proceed?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog.host,
                        "-SyslogPort", $syslog.port,
@@ -4447,7 +4513,9 @@ class PaloAltoNGFWLogs : CommandBase {
                        "-CEFSeverity", "4",
                        "-CEFExtension", $cef_extention,
                        "-ShowLogs")
-            StartProcess "powershell.exe" $cargs
+            do {
+                StartProcess "powershell.exe" $cargs
+            } until(AskYesNo "Run again?" "N")
         }
     }
 
@@ -4577,7 +4645,7 @@ class PaloAltoNGFWLogs : CommandBase {
         $cef_extention = ConvertTo-Json -Compress $log_params
         $cef_extention = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($cef_extention))
 
-        if (AskYesNo "Are you sure you want to run?") {
+        if (AskYesNo "Are you sure you want to proceed?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog.host,
                        "-SyslogPort", $syslog.port,
@@ -4590,7 +4658,9 @@ class PaloAltoNGFWLogs : CommandBase {
                        "-CEFSeverity", "4",
                        "-CEFExtension", $cef_extention,
                        "-ShowLogs")
-            StartProcess "powershell.exe" $cargs
+            do {
+                StartProcess "powershell.exe" $cargs
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -4680,7 +4750,7 @@ class BindLogs : CommandBase {
                                                @("^[0-9]+$") `
                                                "Please retype a valid number")
 
-        if (AskYesNo "Are you sure you want to run?") {
+        if (AskYesNo "Are you sure you want to proceed?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog.host,
                        "-SyslogPort", $syslog.port,
@@ -4691,7 +4761,9 @@ class BindLogs : CommandBase {
                        "-QueryNamePattern", $([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($pattern))),
                        "-QueryNamePatternEncoded",
                        "-Count", [string]$numof_queries)
-            StartProcess "powershell.exe" $cargs
+            do {
+                StartProcess "powershell.exe" $cargs
+            } until(AskYesNo "Run again?" "N")
         }
     }
 
@@ -4740,7 +4812,7 @@ class BindLogs : CommandBase {
                                                @("^[0-9]+$") `
                                                "Please retype a valid number")
 
-        if (AskYesNo "Are you sure you want to run?") {
+        if (AskYesNo "Are you sure you want to proceed?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog.host,
                        "-SyslogPort", $syslog.port,
@@ -4751,7 +4823,9 @@ class BindLogs : CommandBase {
                        "-QueryNamePattern", $([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("?{12}.${domain}"))),
                        "-QueryNamePatternEncoded",
                        "-Count", [string]$numof_queries)
-            StartProcess "powershell.exe" $cargs
+            do {
+                StartProcess "powershell.exe" $cargs
+            } until(AskYesNo "Run again?" "N")
         }
     }
 
@@ -4800,7 +4874,7 @@ class BindLogs : CommandBase {
                                                "Please retype a valid number")
         $nxdomain = AskYesNo "Do you want to send error logs (NXDOMAIN)?" "n"
 
-        if (AskYesNo "Are you sure you want to run?") {
+        if (AskYesNo "Are you sure you want to proceed?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-SyslogHost", $syslog.host,
                        "-SyslogPort", $syslog.port,
@@ -4814,7 +4888,9 @@ class BindLogs : CommandBase {
             if ($nxdomain) {
                  $cargs += @("-QueryErrors", "NXDOMAIN")
             }
-            StartProcess "powershell.exe" $cargs
+            do {
+                StartProcess "powershell.exe" $cargs
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -4887,14 +4963,16 @@ class NetflowLogs : CommandBase {
                                  @("^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$") `
                                  "Please retype a valid subnet"
 
-        if (AskYesNo "Are you sure you want to run?") {
+        if (AskYesNo "Are you sure you want to proceed?") {
             $cargs = @("-ExecutionPolicy", "Bypass", $script_file,
                        "-NetflowHost", $netflow.host,
                        "-NetflowPort", $netflow.port,
                        "-NetflowProtocol", "UDP",
                        "-SourceIP", $source_ip,
                        "-ScanSubnet", $scan_subnet)
-            StartProcess "powershell.exe" $cargs
+            do {
+                StartProcess "powershell.exe" $cargs
+            } until(AskYesNo "Run again?" "N")
         }
     }
 }
@@ -4965,7 +5043,7 @@ class ServerRsg : CommandBase {
                                  @("^([0-9]{1,4}|6553[0-4]|655[0-3][0-4]|65[0-5][0-3][0-4]|6[0-5][0-5][0-3][0-4]|[0-5][0-9]{4})$") `
                                  "Please retype a valid port number"
 
-        if (AskYesNo "Are you sure you want to run?") {
+        if (AskYesNo "Are you sure you want to proceed?") {
             $cargs = @(
                 $script_file,
                 "--port", $server_port
@@ -5022,7 +5100,7 @@ class ServerSyslogToHec : CommandBase {
             $hec.api_key_raw = "`$env:hec_api_key_raw"
             $hec.api_key_cef = "`$env:hec_api_key_cef"
         }	
-        if (AskYesNo "Are you sure you want to run?") {
+        if (AskYesNo "Are you sure you want to proceed?") {
             $cargs = @(
                 $script_file,
                 "--syslog-protocol", $syslog_protocol.ToLower(),
