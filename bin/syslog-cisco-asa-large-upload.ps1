@@ -91,7 +91,9 @@ class UdpSyslog : Syslog {
               [string]$syslog_format, [int]$syslog_facility, [int]$syslog_severity)
         : base($syslog_format, $syslog_facility, $syslog_severity) {
         $this.socket = New-Object System.Net.Sockets.UdpClient($sylog_host, $syslog_port)
-        $this.socket.DontFragment = $true
+        if ($this.socket.AddressFamily -eq [System.Net.Sockets.AddressFamily]::InterNetwork) {
+            $this.socket.DontFragment = $true
+        }
     }
 
     [void]Send([string]$log) {
